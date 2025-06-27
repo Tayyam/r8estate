@@ -1,0 +1,701 @@
+import React, { useState, useEffect } from 'react';
+import { Users, Plus, Trash2, User, Shield, Mail, Calendar, AlertCircle, CheckCircle, Search, Key } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../../config/firebase';
+import { User as UserType } from '../../types/user';
+
+const UserManagement = () => {
+  const { currentUser } = useAuth();
+  const { translations } = useLanguage();
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
+  const [newUserData, setNewUserData] = useState({
+    displayName: '',
+    email: '',
+    password: ''
+  });
+  const [newPassword, setNewPassword] = useState('');
+
+  // Initialize the cloud functions
+  const createUserFunction = httpsCallable(functions, 'createUser');
+  const deleteUserFunction = httpsCallable(functions, 'deleteUser');
+  const changePasswordFunction = httpsCallable(functions, 'changeUserPassword');
+
+  // Load users from Firestore
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      const usersSnapshot = await getDocs(usersQuery);
+      const usersData = usersSnapshot.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+      })) as UserType[];
+      
+      // Filter out company users - only show admin and regular users
+      const filteredUsers = usersData.filter(user => user.role !== 'company');
+      setUsers(filteredUsers);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setError('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  // Filter users based on search query
+  const filteredUsers = users.filter(user => 
+    user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.role.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Delete user using cloud function
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setActionLoading(true);
+      setError('');
+      
+      const result = await deleteUserFunction({
+        uid: selectedUser.uid
+      });
+
+      const data = result.data as any;
+      
+      if (data.success) {
+        setUsers(users.filter(user => user.uid !== selectedUser.uid));
+        setSuccess('User deleted successfully');
+        setShowDeleteModal(false);
+        setSelectedUser(null);
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        throw new Error(data.error || 'Failed to delete user');
+      }
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      setError(error.message || 'Failed to delete user');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Change password using cloud function
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser || !newPassword) return;
+
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setError('');
+      
+      const result = await changePasswordFunction({
+        uid: selectedUser.uid,
+        newPassword: newPassword
+      });
+
+      const data = result.data as any;
+      
+      if (data.success) {
+        setSuccess('Password changed successfully');
+        setShowChangePasswordModal(false);
+        setSelectedUser(null);
+        setNewPassword('');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        throw new Error(data.error || 'Failed to change password');
+      }
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      setError(error.message || 'Failed to change password');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Add new admin using cloud function
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserData.displayName || !newUserData.email || !newUserData.password) {
+      setError('Please fill in all fields');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setError('');
+      
+      const result = await createUserFunction({
+        email: newUserData.email,
+        password: newUserData.password,
+        displayName: newUserData.displayName,
+        role: 'admin'
+      });
+
+      const data = result.data as any;
+      
+      if (data.success) {
+        setSuccess('Admin user created successfully');
+        setNewUserData({ displayName: '', email: '', password: '' });
+        setShowAddAdmin(false);
+        loadUsers(); // Reload users list
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        throw new Error(data.error || 'Failed to create admin user');
+      }
+    } catch (error: any) {
+      console.error('Error creating admin:', error);
+      setError(error.message || 'Failed to create admin user');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Open delete modal
+  const openDeleteModal = (user: UserType) => {
+    setSelectedUser(user);
+    setShowDeleteModal(true);
+  };
+
+  // Open change password modal
+  const openChangePasswordModal = (user: UserType) => {
+    setSelectedUser(user);
+    setNewPassword('');
+    setShowChangePasswordModal(true);
+  };
+
+  // Close modals
+  const closeModals = () => {
+    setShowDeleteModal(false);
+    setShowChangePasswordModal(false);
+    setShowAddAdmin(false);
+    setSelectedUser(null);
+    setNewPassword('');
+    setNewUserData({ displayName: '', email: '', password: '' });
+    setError('');
+  };
+
+  // Get role badge color
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return { bg: 'rgba(239, 68, 68, 0.1)', text: '#dc2626' };
+      default:
+        return { bg: 'rgba(107, 114, 128, 0.1)', text: '#4b5563' };
+    }
+  };
+
+  // Get role icon
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return Shield;
+      default:
+        return User;
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+      {/* Section Header */}
+      <div className="px-4 sm:px-8 py-6 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+            <Users className="h-6 w-6" style={{ color: '#194866' }} />
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold" style={{ color: '#194866' }}>
+                User Management
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {loading ? (
+                  'Loading users...'
+                ) : (
+                  `Total users: ${users.length}`
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
+            {/* Add Admin Button */}
+            <button
+              onClick={() => setShowAddAdmin(true)}
+              className="flex items-center justify-center space-x-2 rtl:space-x-reverse px-4 py-2 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg text-sm"
+              style={{ backgroundColor: '#dc2626' }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#b91c1c';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#dc2626';
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Admin</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Success/Error Messages */}
+      {error && (
+        <div className="mx-4 sm:mx-8 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
+          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+          <p className="text-red-700 text-sm sm:text-base">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="mx-4 sm:mx-8 mt-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
+          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+          <p className="text-green-700 text-sm sm:text-base">{success}</p>
+        </div>
+      )}
+
+      {/* Search Bar */}
+      <div className="px-4 sm:px-8 py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+              style={{ 
+                focusBorderColor: '#194866',
+                focusRingColor: '#194866'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#194866';
+                e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+          </div>
+          {!loading && (
+            <div className="text-sm text-gray-600">
+              Showing {filteredUsers.length} of {users.length} users
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Users List */}
+      <div className="overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="text-center py-12">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">No users found</p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-8 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredUsers.map((user) => {
+                    const roleColors = getRoleBadgeColor(user.role);
+                    const RoleIcon = getRoleIcon(user.role);
+                    
+                    return (
+                      <tr key={user.uid} className="hover:bg-gray-50 transition-colors duration-150">
+                        {/* User Info */}
+                        <td className="px-8 py-6">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4" style={{ backgroundColor: '#194866' }}>
+                              {user.photoURL ? (
+                                <img 
+                                  src={user.photoURL} 
+                                  alt={user.displayName}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <User className="w-5 h-5 text-white" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.displayName}
+                              </div>
+                              <div className="flex items-center text-sm text-gray-500">
+                                <Mail className="w-3 h-3 mr-1" />
+                                {user.email}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Role */}
+                        <td className="px-6 py-6">
+                          <div className="flex items-center">
+                            <div 
+                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize"
+                              style={{ 
+                                backgroundColor: roleColors.bg,
+                                color: roleColors.text
+                              }}
+                            >
+                              <RoleIcon className="w-3 h-3 mr-1" />
+                              {user.role}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Created Date */}
+                        <td className="px-6 py-6">
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {user.createdAt.toLocaleDateString()}
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-6 py-6 text-right">
+                          {user.uid !== currentUser?.uid && (
+                            <div className="flex items-center justify-end space-x-2">
+                              {/* Change Password Button */}
+                              <button
+                                onClick={() => openChangePasswordModal(user)}
+                                disabled={actionLoading}
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
+                                title="Change Password"
+                              >
+                                <Key className="w-3 h-3 mr-1" />
+                                Password
+                              </button>
+
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => openDeleteModal(user)}
+                                disabled={actionLoading}
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
+                                title="Delete User"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden">
+              <div className="space-y-4 p-4">
+                {filteredUsers.map((user) => {
+                  const roleColors = getRoleBadgeColor(user.role);
+                  const RoleIcon = getRoleIcon(user.role);
+                  
+                  return (
+                    <div key={user.uid} className="bg-gray-50 rounded-xl p-4 space-y-3">
+                      {/* User Info */}
+                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#194866' }}>
+                          {user.photoURL ? (
+                            <img 
+                              src={user.photoURL} 
+                              alt={user.displayName}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-6 h-6 text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {user.displayName}
+                          </div>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Mail className="w-3 h-3 mr-1" />
+                            <span className="truncate">{user.email}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Role and Date */}
+                      <div className="flex items-center justify-between">
+                        <div 
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                          style={{ 
+                            backgroundColor: roleColors.bg,
+                            color: roleColors.text
+                          }}
+                        >
+                          <RoleIcon className="w-3 h-3 mr-1" />
+                          {user.role}
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          {user.createdAt.toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      {user.uid !== currentUser?.uid && (
+                        <div className="flex space-x-2 rtl:space-x-reverse pt-2">
+                          <button
+                            onClick={() => openChangePasswordModal(user)}
+                            disabled={actionLoading}
+                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
+                          >
+                            <Key className="w-4 h-4 mr-1" />
+                            Password
+                          </button>
+                          <button
+                            onClick={() => openDeleteModal(user)}
+                            disabled={actionLoading}
+                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Add Admin Modal */}
+      {showAddAdmin && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-screen overflow-y-auto">
+            <h3 className="text-lg sm:text-xl font-bold mb-6" style={{ color: '#194866' }}>
+              Add New Admin
+            </h3>
+            <form onSubmit={handleAddAdmin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newUserData.displayName}
+                  onChange={(e) => setNewUserData({ ...newUserData, displayName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                  style={{ 
+                    focusBorderColor: '#194866',
+                    focusRingColor: '#194866'
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={newUserData.email}
+                  onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                  style={{ 
+                    focusBorderColor: '#194866',
+                    focusRingColor: '#194866'
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newUserData.password}
+                  onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                  style={{ 
+                    focusBorderColor: '#194866',
+                    focusRingColor: '#194866'
+                  }}
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center"
+                >
+                  {actionLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Create Admin'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Modal */}
+      {showDeleteModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-screen overflow-y-auto">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="h-8 w-8 text-red-500" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">
+                Delete User
+              </h3>
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">
+                Are you sure you want to delete {selectedUser.displayName}? This action cannot be undone and will permanently remove all user data.
+              </p>
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
+                <button
+                  onClick={handleDeleteUser}
+                  disabled={actionLoading}
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center"
+                >
+                  {actionLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Delete User'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showChangePasswordModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-screen overflow-y-auto">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Key className="h-8 w-8 text-blue-500" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                Change Password
+              </h3>
+              <p className="text-gray-600 mt-2 text-sm sm:text-base">
+                Change password for {selectedUser.displayName}
+              </p>
+            </div>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 6 characters)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                  style={{ 
+                    focusBorderColor: '#194866',
+                    focusRingColor: '#194866'
+                  }}
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
+                <button
+                  type="submit"
+                  disabled={actionLoading || newPassword.length < 6}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center"
+                >
+                  {actionLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Change Password'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default UserManagement;
