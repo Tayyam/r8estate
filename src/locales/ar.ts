@@ -17,6 +17,7 @@ import { arCompanyProfile } from './ar-company-profile';
 import { arStats } from './ar-stats';
 import { arFooter } from './ar-footer';
 import { arContact } from './ar-contact';
+import { arTerms } from './ar-terms';
 
 export const ar = {
   ...arCommon,
@@ -37,4 +38,5 @@ export const ar = {
   ...arStats,
   ...arFooter,
   ...arContact,
+  ...arTerms,
 };
