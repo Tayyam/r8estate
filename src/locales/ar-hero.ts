@@ -7,13 +7,20 @@ export const arHero = {
   allLocations: 'جميع المواقع',
   shareExperiencePrompt: 'لسه طالع من تجربة مع شركة؟',
   shareWithUs: 'شاركها معانا',
+  search: 'بحث',
+  explore: 'استكشف',
   
   // Top rated companies
   topRatedCompanies: 'الشركات الأعلى تقييماً',
   
   // Latest reviews
   latestReviews: 'أحدث التقييمات',
-  sampleReview1: 'خدمة ممتازة وفريق محترف. أنصح بشدة لأي شخص يبحث عن عقارات عالية الجودة.',
-  sampleReview2: 'تجربة جيدة بشكل عام. الوسيط كان مفيد ومتجاوب خلال العملية كلها.',
-  sampleReview3: 'جودة مشروع رائعة وخدمة عملاء ممتازة. راضي جداً عن الشراء.',
+  noReviewsAvailable: 'لا توجد تقييمات متاحة حالياً.',
+  reviews: 'تقييمات',
+  
+  // Categories
+  browseByCategory: 'تصفح حسب الفئة',
+  developers: 'المطورين العقاريين',
+  brokers: 'الوسطاء العقاريين',
+  consultants: 'المستشارين العقاريين'
 };

@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Star, Building2, Users, MessageSquare, Calendar, ChevronRight } from 'lucide-react';
+import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Review } from '../types/property';
+import { Company } from '../types/company';
 
 const Hero = () => {
   const { translations } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [recentReviews, setRecentReviews] = useState<(Review & { companyName: string })[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Categories data
   const categories = [
@@ -43,33 +49,61 @@ const Hero = () => {
     },
   ];
 
-  // Recent reviews data
-  const recentReviews = [
-    {
-      id: 1,
-      company: 'Palm Hills Development',
-      rating: 5,
-      review: translations?.sampleReview1 || 'Excellent service and professional team. Highly recommended for anyone looking for quality properties.',
-      reviewer: 'Ahmed M.',
-      date: '2024-01-15',
-    },
-    {
-      id: 2,
-      company: 'Cairo Real Estate',
-      rating: 4,
-      review: translations?.sampleReview2 || 'Good experience overall. The broker was helpful and responsive throughout the process.',
-      reviewer: 'Sarah K.',
-      date: '2024-01-14',
-    },
-    {
-      id: 3,
-      company: 'Emaar Misr',
-      rating: 5,
-      review: translations?.sampleReview3 || 'Amazing project quality and excellent customer service. Very satisfied with my purchase.',
-      reviewer: 'Mohamed A.',
-      date: '2024-01-13',
-    },
-  ];
+  // Fetch recent high-rated reviews (3 stars or more)
+  useEffect(() => {
+    const fetchRecentReviews = async () => {
+      setLoading(true);
+      try {
+        // Create a query to get reviews with rating >= 3, ordered by date
+        const reviewsQuery = query(
+          collection(db, 'reviews'),
+          where('rating', '>=', 3),
+          orderBy('rating', 'desc'),
+          orderBy('createdAt', 'desc'),
+          limit(3)
+        );
+        
+        // Get the reviews
+        const reviewsSnapshot = await getDocs(reviewsQuery);
+        const reviewsData = reviewsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        })) as Review[];
+        
+        // Get company names for each review
+        const reviewsWithCompanyNames = await Promise.all(
+          reviewsData.map(async (review) => {
+            const companyDoc = await getDocs(
+              query(collection(db, 'companies'), where('id', '==', review.companyId))
+            );
+            
+            let companyName = "Unknown Company";
+            if (!companyDoc.empty) {
+              const companyData = companyDoc.docs[0].data() as Company;
+              companyName = companyData.name;
+            }
+            
+            return {
+              ...review,
+              companyName
+            };
+          })
+        );
+        
+        setRecentReviews(reviewsWithCompanyNames);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        // Fallback to empty array if error occurs
+        setRecentReviews([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchRecentReviews();
+  }, []);
 
   const handleSearch = () => {
     console.log('Search:', searchQuery, 'Category:', selectedCategory);
@@ -77,6 +111,11 @@ const Hero = () => {
 
   const handleShareExperience = () => {
     console.log('Share experience clicked');
+  };
+
+  // Format date in a readable way
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString();
   };
 
   return (
@@ -268,42 +307,58 @@ const Hero = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
             {translations?.latestReviews || 'Latest Reviews'}
           </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-            {recentReviews.map((review) => (
-              <div
-                key={review.id}
-                className="bg-gray-50 rounded-2xl p-8 border-2 border-gray-200 transition-all duration-300"
-                onMouseEnter={(e) => {
-                  e.target.style.borderColor = '#194866';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.borderColor = '#e5e7eb';
-                }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-gray-900">{review.company}</h3>
-                  <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
+          
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+            </div>
+          ) : recentReviews.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+              {recentReviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="bg-gray-50 rounded-2xl p-8 border-2 border-gray-200 transition-all duration-300"
+                  onMouseEnter={(e) => {
+                    e.target.style.borderColor = '#194866';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.borderColor = '#e5e7eb';
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-gray-900">{review.companyName}</h3>
+                    <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <h4 className="font-medium text-gray-800 mb-3">{review.title}</h4>
+                  <p className="text-gray-700 mb-6 leading-relaxed line-clamp-3">
+                    {review.content}
+                  </p>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span>{review.userName}</span>
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                      <Calendar className="w-4 h-4" />
+                      <span>{formatDate(review.createdAt)}</span>
+                    </div>
                   </div>
                 </div>
-                <p className="text-gray-700 mb-6 leading-relaxed">{review.review}</p>
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <span>{review.reviewer}</span>
-                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <Calendar className="w-4 h-4" />
-                    <span>{new Date(review.date).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500">
+                {translations?.noReviewsAvailable || 'No reviews available at the moment.'}
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </div>
