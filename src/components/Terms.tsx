@@ -11,18 +11,20 @@ const Terms: React.FC<TermsProps> = ({ onNavigate }) => {
 
   const text = {
     ar: {
-      title: 'شروط الاستخدام',
-      lastUpdated: 'آخر تحديث: 15 ديسمبر 2024',
-      section1Title: '1. قبول الشروط',
-      section2Title: '2. وصف الخدمة',
-      section3Title: '3. حسابات المستخدمين',
-      section4Title: '4. السلوك المقبول',
-      section5Title: '5. الملكية الفكرية',
-      section6Title: '6. الخصوصية',
-      section7Title: '7. إخلاء المسؤولية',
-      section8Title: '8. التعديلات على الشروط',
-      section9Title: '9. القانون المطبق',
-      section10Title: '10. معلومات الاتصال'
+      title: translations?.termsOfUse || 'شروط الاستخدام',
+      lastUpdated: translations?.lastUpdated || 'آخر تحديث: 15 ديسمبر 2024',
+      section1Title: translations?.acceptanceOfTerms || '1. قبول الشروط',
+      section2Title: translations?.serviceDescription || '2. وصف الخدمة',
+      section3Title: translations?.userAccounts || '3. حسابات المستخدمين',
+      section4Title: translations?.acceptableConduct || '4. السلوك المقبول',
+      section5Title: translations?.intellectualProperty || '5. الملكية الفكرية',
+      section6Title: translations?.privacy || '6. الخصوصية',
+      section7Title: translations?.disclaimers || '7. إخلاء المسؤولية',
+      section8Title: translations?.termsModifications || '8. التعديلات على الشروط',
+      section9Title: translations?.governingLaw || '9. القانون المطبق',
+      section10Title: translations?.contactInformation || '10. معلومات الاتصال',
+      importantNotice: translations?.importantNotice || 'ملاحظة مهمة',
+      importantNoticeText: translations?.importantNoticeText || 'يرجى قراءة هذه الشروط بعناية قبل استخدام منصة R8 ESTATE. باستخدامك للمنصة، فإنك توافق على الالتزام بهذه الشروط والأحكام.'
     },
     en: {
       title: 'Terms of Use',
@@ -36,7 +38,9 @@ const Terms: React.FC<TermsProps> = ({ onNavigate }) => {
       section7Title: '7. Disclaimers',
       section8Title: '8. Modifications to Terms',
       section9Title: '9. Governing Law',
-      section10Title: '10. Contact Information'
+      section10Title: '10. Contact Information',
+      importantNotice: 'Important Notice',
+      importantNoticeText: 'Please read these terms carefully before using the R8 ESTATE platform. By using the platform, you agree to be bound by these terms and conditions.'
     }
   };
 
@@ -113,13 +117,10 @@ const Terms: React.FC<TermsProps> = ({ onNavigate }) => {
               </div>
               <div>
                 <h3 className="text-xl font-bold mb-3" style={{ color: '#194866' }}>
-                  {language === 'ar' ? 'ملاحظة مهمة' : 'Important Notice'}
+                  {text[language].importantNotice}
                 </h3>
                 <p className="text-gray-700 leading-relaxed">
-                  {language === 'ar' 
-                    ? 'يرجى قراءة هذه الشروط بعناية قبل استخدام منصة R8 ESTATE. باستخدامك للمنصة، فإنك توافق على الالتزام بهذه الشروط والأحكام.'
-                    : 'Please read these terms carefully before using the R8 ESTATE platform. By using the platform, you agree to be bound by these terms and conditions.'
-                  }
+                  {text[language].importantNoticeText}
                 </p>
               </div>
             </div>
