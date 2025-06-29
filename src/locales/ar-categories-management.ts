@@ -1,4 +1,4 @@
-// ترجمات صفحة إدارة الفئات
+// Add to src/locales/ar-categories-management.ts or update existing file
 export const arCategoriesManagement = {
   // Page Title and Headers
   categoryManagement: 'إدارة الفئات',
@@ -21,12 +21,14 @@ export const arCategoriesManagement = {
   // Form Fields
   englishNameLabel: 'اسم الفئة (الإنجليزية) *',
   arabicNameLabel: 'اسم الفئة (العربية)',
-  descriptionLabel: 'الوصف',
+  descriptionLabel: 'الوصف (الإنجليزية)',
+  descriptionLabelAr: 'الوصف (العربية)',
   
   // Form Placeholders
   enterCategoryNameEn: 'أدخل اسم الفئة بالإنجليزية',
   enterCategoryNameAr: 'أدخل اسم الفئة بالعربية',
-  enterCategoryDescription: 'أدخل وصف الفئة',
+  enterCategoryDescription: 'أدخل وصف الفئة بالإنجليزية',
+  enterCategoryDescriptionAr: 'أدخل وصف الفئة بالعربية',
   
   // Delete Confirmation
   deleteCategoryTitle: 'حذف الفئة',
