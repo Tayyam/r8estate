@@ -15,7 +15,7 @@ export const arCompanies = {
   viewCompanyProfile: 'عرض ملف الشركة',
   
   // Bulk Actions
-  bulkUpload: 'رفع مجموعي',
+  bulkUpload: 'رفع جماعي',
   downloadTemplate: 'تحميل النموذج',
   uploadExcel: 'رفع ملف Excel',
   bulkUploadCompanies: 'رفع شركات متعددة',
