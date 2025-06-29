@@ -30,6 +30,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
     { id: 'categories', label: translations?.categories || 'Categories' },
     { id: 'about', label: translations?.about || 'About' },
     { id: 'pricing', label: translations?.pricing || 'Pricing' },
+    { id: 'contact', label: translations?.contact || 'Contact' },
   ];
 
   const currentLanguage = languages.find(lang => lang.code === language);
@@ -311,9 +312,9 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                       }
                     </p>
                     <p className="text-xs text-gray-500 capitalize">
-                      {currentUser.role === 'company' 
+                      {currentUser.role === 'company'
                         ? (translations?.companyAccount || 'Company Account')
-                        : currentUser.role === 'admin' 
+                        : currentUser.role === 'admin'
                           ? (translations?.adminAccount || 'Admin Account')
                           : (translations?.userAccount || 'User Account')
                       }

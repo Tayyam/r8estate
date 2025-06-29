@@ -7,6 +7,7 @@ import Hero from './components/Hero';
 import Categories from './components/Categories';
 import About from './components/About';
 import Pricing from './components/Pricing';
+import Contact from './components/Contact';
 import Settings from './components/Settings';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -47,6 +48,8 @@ function App() {
         return <About />;
       case 'pricing':
         return <Pricing />;
+      case 'contact':
+        return <Contact onNavigate={setCurrentPage} />;
       case 'settings':
         return <Settings onNavigateToProfile={(companyId) => {
           setSelectedCompanyId(companyId);

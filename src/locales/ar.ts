@@ -16,6 +16,7 @@ import { arCategoriesManagement } from './ar-categories-management';
 import { arCompanyProfile } from './ar-company-profile';
 import { arStats } from './ar-stats';
 import { arFooter } from './ar-footer';
+import { arContact } from './ar-contact';
 
 export const ar = {
   ...arCommon,
@@ -35,4 +36,5 @@ export const ar = {
   ...arCompanyProfile,
   ...arStats,
   ...arFooter,
+  ...arContact,
 };
