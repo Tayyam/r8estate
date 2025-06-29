@@ -311,8 +311,12 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                       }
                     </p>
                     <p className="text-xs text-gray-500 capitalize">
-                      {currentUser.role === 'company' ? 'Company Account' : 
-                       currentUser.role === 'admin' ? 'Admin Account' : 'User Account'}
+                      {currentUser.role === 'company' 
+                        ? (translations?.companyAccount || 'Company Account')
+                        : currentUser.role === 'admin' 
+                          ? (translations?.adminAccount || 'Admin Account')
+                          : (translations?.userAccount || 'User Account')
+                      }
                     </p>
                   </div>
                   <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -329,8 +333,12 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                       </p>
                       <p className="text-xs text-gray-500">{currentUser.email}</p>
                       <p className="text-xs text-gray-500 capitalize mt-1">
-                        {currentUser.role === 'company' ? 'Company Account' : 
-                         currentUser.role === 'admin' ? 'Admin Account' : 'User Account'}
+                        {currentUser.role === 'company'
+                          ? (translations?.companyAccount || 'Company Account')
+                          : currentUser.role === 'admin'
+                            ? (translations?.adminAccount || 'Admin Account')
+                            : (translations?.userAccount || 'User Account')
+                        }
                       </p>
                     </div>
 
@@ -344,7 +352,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                         {loadingCompanyId ? (
                           <>
                             <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Loading...</span>
+                            <span>{translations?.loading || 'Loading...'}</span>
                           </>
                         ) : userCompanyId ? (
                           <>
@@ -354,7 +362,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                         ) : (
                           <>
                             <Building2 className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-400">No Company Found</span>
+                            <span className="text-gray-400">{translations?.noCompanyFound || 'No Company Found'}</span>
                           </>
                         )}
                       </button>
@@ -381,7 +389,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
                       >
                         <SettingsIcon className="w-4 h-4" />
-                        <span>Admin Settings</span>
+                        <span>{translations?.adminSettings || 'Admin Settings'}</span>
                       </button>
                     )}
 
@@ -513,8 +521,12 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                           }
                         </p>
                         <p className="text-xs text-gray-500 capitalize">
-                          {currentUser.role === 'company' ? 'Company Account' : 
-                           currentUser.role === 'admin' ? 'Admin Account' : 'User Account'}
+                          {currentUser.role === 'company'
+                            ? (translations?.companyAccount || 'Company Account')
+                            : currentUser.role === 'admin'
+                              ? (translations?.adminAccount || 'Admin Account')
+                              : (translations?.userAccount || 'User Account')
+                          }
                         </p>
                       </div>
                     </div>
@@ -529,7 +541,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                         {loadingCompanyId ? (
                           <>
                             <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Loading Company...</span>
+                            <span>{translations?.loadingCompany || 'Loading Company...'}</span>
                           </>
                         ) : userCompanyId ? (
                           <>
@@ -539,7 +551,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                         ) : (
                           <>
                             <Building2 className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-400">No Company Found</span>
+                            <span className="text-gray-400">{translations?.noCompanyFound || 'No Company Found'}</span>
                           </>
                         )}
                       </button>
@@ -565,8 +577,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                         }}
                         className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
                       >
-                        <SettingsIcon className="w-4 w-4" />
-                        <span>Admin Settings</span>
+                        <SettingsIcon className="w-4 h-4" />
+                        <span>{translations?.adminSettings || 'Admin Settings'}</span>
                       </button>
                     )}
                     
