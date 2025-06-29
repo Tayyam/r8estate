@@ -38,17 +38,17 @@ const ReplyModal: React.FC<ReplyModalProps> = ({
     e.preventDefault();
     
     if (!currentUser || !canReply) {
-      onError('You do not have permission to reply to this review');
+      onError(translations?.noPermissionReply || 'You do not have permission to reply to this review');
       return;
     }
 
     if (!replyContent.trim()) {
-      onError('Please enter a reply message');
+      onError(translations?.enterReplyMessage || 'Please enter a reply message');
       return;
     }
 
     if (replyContent.trim().length < 10) {
-      onError('Reply must be at least 10 characters long');
+      onError(translations?.replyMinLength || 'Reply must be at least 10 characters long');
       return;
     }
 
@@ -71,7 +71,7 @@ const ReplyModal: React.FC<ReplyModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error('Error adding reply:', error);
-      onError('Failed to add reply. Please try again.');
+      onError(translations?.failedToAddReply || 'Failed to add reply. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -95,15 +95,17 @@ const ReplyModal: React.FC<ReplyModalProps> = ({
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <X className="h-8 w-8 text-red-500" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Access Denied</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              {translations?.accessDenied || 'Access Denied'}
+            </h3>
             <p className="text-gray-600 mb-6">
-              You do not have permission to reply to reviews for this company.
+              {translations?.noPermissionReply || 'You do not have permission to reply to reviews for this company.'}
             </p>
             <button
               onClick={onClose}
               className="w-full bg-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-400 transition-all duration-200"
             >
-              Close
+              {translations?.close || 'Close'}
             </button>
           </div>
         </div>
@@ -125,10 +127,10 @@ const ReplyModal: React.FC<ReplyModalProps> = ({
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                Reply to Review
+                {translations?.replyToReview || 'Reply to Review'}
               </h3>
               <p className="text-sm text-gray-600">
-                Responding as {company.name}
+                {translations?.respondingAs?.replace('{company}', company.name) || `Responding as ${company.name}`}
               </p>
             </div>
           </div>
@@ -196,7 +198,7 @@ const ReplyModal: React.FC<ReplyModalProps> = ({
                   {company.name}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Replying as company representative
+                  {translations?.companyRepresentative || 'Replying as company representative'}
                 </p>
               </div>
             </div>
@@ -205,36 +207,37 @@ const ReplyModal: React.FC<ReplyModalProps> = ({
           {/* Reply Content */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Your Reply *
+              {translations?.yourReply || 'Your Reply'} *
             </label>
             <textarea
               required
               rows={6}
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="Thank you for your review. We appreciate your feedback and would like to address your concerns..."
+              placeholder={translations?.thankForReview || 'Thank you for your review. We appreciate your feedback and would like to address your concerns...'}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 resize-none"
               maxLength={1000}
             />
             <div className="flex justify-between items-center mt-2">
               <p className="text-xs text-gray-500">
-                {replyContent.length}/1000 characters
+                {translations?.charactersLimit?.replace('{current}', replyContent.length.toString()).replace('{max}', '1000') || 
+                 `${replyContent.length}/1000 characters`}
               </p>
               <p className="text-xs text-gray-500">
-                Minimum 10 characters required
+                {translations?.minCharsRequired || 'Minimum 10 characters required'}
               </p>
             </div>
           </div>
 
           {/* Guidelines */}
           <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-            <h4 className="font-medium text-amber-900 mb-2">Reply Guidelines</h4>
+            <h4 className="font-medium text-amber-900 mb-2">{translations?.replyGuidelines || 'Reply Guidelines'}</h4>
             <ul className="text-sm text-amber-800 space-y-1">
-              <li>• Thank the customer for their feedback</li>
-              <li>• Address their specific concerns professionally</li>
-              <li>• Provide solutions or next steps if applicable</li>
-              <li>• Keep the tone respectful and constructive</li>
-              <li>• Avoid sharing personal information publicly</li>
+              <li>{translations?.thankCustomer || '• Thank the customer for their feedback'}</li>
+              <li>{translations?.addressConcerns || '• Address their specific concerns professionally'}</li>
+              <li>{translations?.provideSolutions || '• Provide solutions or next steps if applicable'}</li>
+              <li>{translations?.keepToneRespectful || '• Keep the tone respectful and constructive'}</li>
+              <li>{translations?.avoidSharingPersonal || '• Avoid sharing personal information publicly'}</li>
             </ul>
           </div>
 
@@ -248,12 +251,12 @@ const ReplyModal: React.FC<ReplyModalProps> = ({
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Sending Reply...</span>
+                  <span>{translations?.sendingReply || 'Sending Reply...'}</span>
                 </>
               ) : (
                 <>
                   <Send className="h-5 w-5" />
-                  <span>Send Reply</span>
+                  <span>{translations?.sendReply || 'Send Reply'}</span>
                 </>
               )}
             </button>
@@ -263,7 +266,7 @@ const ReplyModal: React.FC<ReplyModalProps> = ({
               disabled={loading}
               className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-400 transition-all duration-200 disabled:opacity-50"
             >
-              Cancel
+              {translations?.cancel || 'Cancel'}
             </button>
           </div>
         </form>

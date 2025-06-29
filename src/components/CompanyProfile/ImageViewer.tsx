@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ImageViewerProps {
   images: string[];
@@ -14,6 +15,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
   setCurrentIndex,
   onClose
 }) => {
+  const { translations } = useLanguage();
+
   // Navigate to previous image
   const previousImage = () => {
     setCurrentIndex(currentIndex === 0 ? images.length - 1 : currentIndex - 1);
@@ -142,7 +145,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
           >
             <img
               src={images[currentIndex]}
-              alt={`Gallery ${currentIndex + 1}`}
+              alt={translations?.image ? `${translations.image} ${currentIndex + 1}` : `Gallery ${currentIndex + 1}`}
               className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
               style={{
                 maxWidth: '100%',
@@ -187,7 +190,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
                   >
                     <img
                       src={imageUrl}
-                      alt={`Thumbnail ${index + 1}`}
+                      alt={translations?.thumbnail ? `${translations.thumbnail} ${index + 1}` : `Thumbnail ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
                   </button>

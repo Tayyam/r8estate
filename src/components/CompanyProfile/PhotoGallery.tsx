@@ -3,6 +3,7 @@ import { Camera, Plus, Trash2, Eye } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
 import ImageViewer from './ImageViewer';
 
@@ -93,6 +94,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   setError,
   company
 }) => {
+  const { translations } = useLanguage();
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllImages, setShowAllImages] = useState(false);
@@ -131,11 +133,11 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
       });
 
       setGalleryImages(updatedGallery);
-      setSuccess('Image removed from gallery');
+      setSuccess(translations?.imageRemovedSuccess || 'Image removed from gallery');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error deleting gallery image:', error);
-      setError('Failed to delete image');
+      setError(translations?.failedToDeleteImage || 'Failed to delete image');
       setTimeout(() => setError(''), 3000);
     } finally {
       setUploadLoading(false);
@@ -157,14 +159,16 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Photo Gallery</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {translations?.photoGallery || 'Photo Gallery'}
+            </h2>
             {canEdit && (
               <button
                 onClick={() => setShowImageUpload(true)}
                 className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200"
               >
                 <Plus className="h-4 w-4" />
-                <span>Add Photos</span>
+                <span>{translations?.addPhotos || 'Add Photos'}</span>
               </button>
             )}
           </div>
@@ -209,7 +213,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                                   openImageViewer(index);
                                 }}
                                 className="p-3 bg-white bg-opacity-95 hover:bg-white text-gray-800 rounded-full transition-all duration-200 shadow-lg hover:scale-110 backdrop-blur-sm"
-                                title="View Image"
+                                title={translations?.viewImage || 'View Image'}
                               >
                                 <Eye className="h-5 w-5" />
                               </button>
@@ -221,7 +225,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                                   }}
                                   disabled={uploadLoading}
                                   className="p-3 bg-red-600 hover:bg-red-700 text-white rounded-full transition-all duration-200 shadow-lg hover:scale-110 disabled:opacity-50"
-                                  title="Delete Image"
+                                  title={translations?.deleteImage || 'Delete Image'}
                                 >
                                   <Trash2 className="h-5 w-5" />
                                 </button>
@@ -236,8 +240,6 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                             </div>
                           )}
                         </div>
-
-                      
                       </div>
                     </div>
                   ))}
@@ -253,8 +255,8 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   >
                     <span>
                       {showAllImages 
-                        ? `Show Less` 
-                        : `View All ${galleryImages.length} Photos`
+                        ? (translations?.showLess || 'Show Less')
+                        : (translations?.viewAll?.replace('{count}', galleryImages.length.toString()) || `View All ${galleryImages.length} Photos`)
                       }
                     </span>
                   </button>
@@ -268,15 +270,19 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Camera className="h-10 w-10 text-gray-300" />
                 </div>
-                <p className="text-gray-500 text-xl mb-2 font-medium">No photos in gallery yet</p>
-                <p className="text-gray-400 text-sm mb-6">Add photos to showcase your company</p>
+                <p className="text-gray-500 text-xl mb-2 font-medium">
+                  {translations?.noPhotosInGallery || 'No photos in gallery yet'}
+                </p>
+                <p className="text-gray-400 text-sm mb-6">
+                  {translations?.addPhotosToShowcase || 'Add photos to showcase your company'}
+                </p>
                 {canEdit && (
                   <button
                     onClick={() => setShowImageUpload(true)}
                     className="inline-flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
                   >
                     <Plus className="h-5 w-5" />
-                    <span>Add First Photo</span>
+                    <span>{translations?.addFirstPhoto || 'Add First Photo'}</span>
                   </button>
                 )}
               </div>

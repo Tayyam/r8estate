@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
 import { Category, egyptianGovernorates } from '../../types/company';
 import PhotoGallery from './PhotoGallery';
@@ -30,6 +31,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   setError,
   categories
 }) => {
+  const { translations } = useLanguage();
+
   // Get governorate name
   const getGovernorateName = (governorateId: string) => {
     const governorate = egyptianGovernorates.find(gov => gov.id === governorateId);
@@ -42,9 +45,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       <div className="lg:col-span-2 space-y-8">
         {/* About Company */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">About Company</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            {translations?.aboutCompany || 'About Company'}
+          </h2>
           <p className="text-gray-700 leading-relaxed">
-            {company.description || 'No description available.'}
+            {company.description || (translations?.noDescriptionAvailable || 'No description available.')}
           </p>
         </div>
 

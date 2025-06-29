@@ -3,6 +3,7 @@ import { Upload } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
 
 interface ImageUploadModalProps {
@@ -26,6 +27,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   setSuccess,
   setError
 }) => {
+  const { translations } = useLanguage();
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Compress image before upload
@@ -116,12 +118,12 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
         });
 
         setGalleryImages(updatedGallery);
-        setSuccess(`${newImages.length} image(s) added to gallery`);
+        setSuccess(translations?.imagesAddedSuccess?.replace('{count}', newImages.length.toString()) || `${newImages.length} image(s) added to gallery`);
         setTimeout(() => setSuccess(''), 3000);
       }
     } catch (error) {
       console.error('Error uploading gallery images:', error);
-      setError('Failed to upload gallery images');
+      setError(translations?.failedToUploadImages || 'Failed to upload gallery images');
       setTimeout(() => setError(''), 3000);
     } finally {
       setUploadLoading(false);
@@ -133,7 +135,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl p-6 max-w-md w-full">
         <h3 className="text-xl font-bold mb-6" style={{ color: '#194866' }}>
-          Add Gallery Images
+          {translations?.addGalleryImages || 'Add Gallery Images'}
         </h3>
         
         <div className="mb-6">
@@ -157,14 +159,14 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
             {uploadLoading ? (
               <div className="flex items-center justify-center">
                 <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <span className="ml-2 text-gray-600">Uploading...</span>
+                <span className="ml-2 text-gray-600">{translations?.uploading || 'Uploading...'}</span>
               </div>
             ) : (
               <>
                 <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-2">Click to upload images</p>
-                <p className="text-sm text-gray-500">You can select multiple images at once</p>
-                <p className="text-xs text-gray-400 mt-2">Images will be automatically optimized</p>
+                <p className="text-gray-600 mb-2">{translations?.clickToUploadImages || 'Click to upload images'}</p>
+                <p className="text-sm text-gray-500">{translations?.selectMultipleImages || 'You can select multiple images at once'}</p>
+                <p className="text-xs text-gray-400 mt-2">{translations?.imagesOptimizedAutomatically || 'Images will be automatically optimized'}</p>
               </>
             )}
           </button>
@@ -175,7 +177,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
             onClick={() => setShowImageUpload(false)}
             className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
           >
-            Cancel
+            {translations?.cancel || 'Cancel'}
           </button>
         </div>
       </div>

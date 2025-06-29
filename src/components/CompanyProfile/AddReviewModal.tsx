@@ -53,7 +53,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
           </button>
         ))}
         <span className="ml-3 text-sm text-gray-600 font-medium">
-          {rating > 0 ? `${rating} / 5` : 'Select rating'}
+          {rating > 0 ? `${rating} / 5` : (translations?.selectRating || 'Select rating')}
         </span>
       </div>
     );
@@ -93,17 +93,17 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
     e.preventDefault();
     
     if (!currentUser) {
-      onError('You must be logged in to add a review');
+      onError(translations?.mustBeLoggedIn || 'You must be logged in to add a review');
       return;
     }
 
     if (formData.rating === 0) {
-      onError('Please select a rating');
+      onError(translations?.pleaseSelectRating || 'Please select a rating');
       return;
     }
 
     if (!formData.title.trim() || !formData.content.trim()) {
-      onError('Please fill in all fields');
+      onError(translations?.pleaseFillAllFields || 'Please fill in all fields');
       return;
     }
 
@@ -131,7 +131,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error('Error adding review:', error);
-      onError('Failed to add review. Please try again.');
+      onError(translations?.failedToAddReview || 'Failed to add review. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -163,10 +163,10 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                {translations?.addReview || 'Add Review'}
+                {translations?.addReviewTitle || 'Add Review'}
               </h3>
               <p className="text-sm text-gray-600">
-                Share your experience with {company.name}
+                {translations?.shareExperienceWith?.replace('{company}', company.name) || `Share your experience with ${company.name}`}
               </p>
             </div>
           </div>
@@ -199,7 +199,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
                   {currentUser?.displayName || currentUser?.email}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Reviewing as: {currentUser?.role}
+                  {translations?.reviewingAs?.replace('{role}', currentUser?.role || 'user') || `Reviewing as: ${currentUser?.role}`}
                 </p>
               </div>
             </div>
@@ -208,7 +208,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
           {/* Rating */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Rating *
+              {translations?.rating || 'Rating'} *
             </label>
             <div className="bg-gray-50 rounded-xl p-4">
               <StarRating 
@@ -216,7 +216,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
                 onRatingChange={(rating) => handleInputChange('rating', rating)} 
               />
               <p className="text-xs text-gray-500 mt-2">
-                Click the stars to rate your experience
+                {translations?.clickStarsToRate || 'Click the stars to rate your experience'}
               </p>
             </div>
           </div>
@@ -224,38 +224,38 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Review Title *
+              {translations?.reviewTitle || 'Review Title'} *
             </label>
             <input
               type="text"
               required
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              placeholder="Summarize your experience..."
+              placeholder={translations?.summarizeExperience || 'Summarize your experience...'}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
               maxLength={100}
             />
             <p className="text-xs text-gray-500 mt-1">
-              {formData.title.length}/100 characters
+              {translations?.charactersLimit?.replace('{current}', formData.title.length.toString()).replace('{max}', '100') || `${formData.title.length}/100 characters`}
             </p>
           </div>
 
           {/* Content */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Your Review *
+              {translations?.yourReview || 'Your Review'} *
             </label>
             <textarea
               required
               rows={5}
               value={formData.content}
               onChange={(e) => handleInputChange('content', e.target.value)}
-              placeholder="Tell others about your experience with this company. What did you like? What could be improved?"
+              placeholder={translations?.tellOthersExperience || 'Tell others about your experience with this company. What did you like? What could be improved?'}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 resize-none"
               maxLength={1000}
             />
             <p className="text-xs text-gray-500 mt-1">
-              {formData.content.length}/1000 characters
+              {translations?.charactersLimit?.replace('{current}', formData.content.length.toString()).replace('{max}', '1000') || `${formData.content.length}/1000 characters`}
             </p>
           </div>
 
@@ -264,12 +264,12 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
             <div className="flex items-start space-x-3 rtl:space-x-reverse">
               <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-blue-900 mb-2">Review Guidelines</h4>
+                <h4 className="font-medium text-blue-900 mb-2">{translations?.reviewGuidelines || 'Review Guidelines'}</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Be honest and constructive in your feedback</li>
-                  <li>• Focus on your personal experience</li>
-                  <li>• Keep it respectful and professional</li>
-                  <li>• Avoid sharing personal information</li>
+                  <li>{translations?.beHonestConstructive || '• Be honest and constructive in your feedback'}</li>
+                  <li>{translations?.focusPersonalExperience || '• Focus on your personal experience'}</li>
+                  <li>{translations?.keepRespectful || '• Keep it respectful and professional'}</li>
+                  <li>{translations?.avoidPersonalInfo || '• Avoid sharing personal information'}</li>
                 </ul>
               </div>
             </div>
@@ -285,12 +285,12 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Submitting...</span>
+                  <span>{translations?.submitting || 'Submitting...'}</span>
                 </>
               ) : (
                 <>
                   <MessageSquare className="h-5 w-5" />
-                  <span>Submit Review</span>
+                  <span>{translations?.submitReview || 'Submit Review'}</span>
                 </>
               )}
             </button>
@@ -300,7 +300,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
               disabled={loading}
               className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-400 transition-all duration-200 disabled:opacity-50"
             >
-              Cancel
+              {translations?.cancel || 'Cancel'}
             </button>
           </div>
         </form>

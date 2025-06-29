@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
 import { Property } from '../../types/property';
 
@@ -24,6 +25,7 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
   setError,
   loadCompanyData
 }) => {
+  const { translations } = useLanguage();
   const [propertyForm, setPropertyForm] = useState({
     name: '',
     description: '',
@@ -152,17 +154,49 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
       });
 
       setShowAddProperty(false);
-      setSuccess('Property added successfully');
+      setSuccess(translations?.propertyAddedSuccess || 'Property added successfully');
       setTimeout(() => setSuccess(''), 3000);
       
       // Reload properties
       loadCompanyData();
     } catch (error) {
       console.error('Error adding property:', error);
-      setError('Failed to add property');
+      setError(translations?.failedToAddProperty || 'Failed to add property');
       setTimeout(() => setError(''), 3000);
     } finally {
       setUploadLoading(false);
+    }
+  };
+
+  // Get property type translation
+  const getPropertyTypeTranslation = (type: string) => {
+    switch (type) {
+      case 'apartment':
+        return translations?.apartment || 'Apartment';
+      case 'villa':
+        return translations?.villa || 'Villa';
+      case 'commercial':
+        return translations?.commercial || 'Commercial';
+      case 'land':
+        return translations?.land || 'Land';
+      case 'office':
+        return translations?.office || 'Office';
+      default:
+        return type;
+    }
+  };
+
+  // Get status translation
+  const getStatusTranslation = (status: string) => {
+    switch (status) {
+      case 'available':
+        return translations?.available || 'Available';
+      case 'sold':
+        return translations?.sold || 'Sold';
+      case 'reserved':
+        return translations?.reserved || 'Reserved';
+      default:
+        return status;
     }
   };
 
@@ -170,14 +204,14 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-screen overflow-y-auto">
         <h3 className="text-2xl font-bold mb-8" style={{ color: '#194866' }}>
-          Add New Property
+          {translations?.addNewProperty || 'Add New Property'}
         </h3>
         
         <form onSubmit={handleAddProperty} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Property Name *
+                {translations?.propertyName || 'Property Name'} *
               </label>
               <input
                 type="text"
@@ -185,13 +219,13 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                 value={propertyForm.name}
                 onChange={(e) => setPropertyForm({ ...propertyForm, name: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="Enter property name"
+                placeholder={translations?.enterPropertyName || 'Enter property name'}
               />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Property Type *
+                {translations?.propertyType || 'Property Type'} *
               </label>
               <select
                 required
@@ -199,17 +233,17 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                 onChange={(e) => setPropertyForm({ ...propertyForm, propertyType: e.target.value as Property['propertyType'] })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
-                <option value="apartment">Apartment</option>
-                <option value="villa">Villa</option>
-                <option value="commercial">Commercial</option>
-                <option value="land">Land</option>
-                <option value="office">Office</option>
+                <option value="apartment">{translations?.apartment || 'Apartment'}</option>
+                <option value="villa">{translations?.villa || 'Villa'}</option>
+                <option value="commercial">{translations?.commercial || 'Commercial'}</option>
+                <option value="land">{translations?.land || 'Land'}</option>
+                <option value="office">{translations?.office || 'Office'}</option>
               </select>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Area (m²) *
+                {translations?.areaSquareMeters || 'Area (m²)'} *
               </label>
               <input
                 type="number"
@@ -217,13 +251,13 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                 value={propertyForm.area}
                 onChange={(e) => setPropertyForm({ ...propertyForm, area: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="Enter area in square meters"
+                placeholder={translations?.enterAreaInSquareMeters || 'Enter area in square meters'}
               />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status *
+                {translations?.status || 'Status'} *
               </label>
               <select
                 required
@@ -231,15 +265,15 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                 onChange={(e) => setPropertyForm({ ...propertyForm, status: e.target.value as Property['status'] })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
-                <option value="available">Available</option>
-                <option value="sold">Sold</option>
-                <option value="reserved">Reserved</option>
+                <option value="available">{translations?.available || 'Available'}</option>
+                <option value="sold">{translations?.sold || 'Sold'}</option>
+                <option value="reserved">{translations?.reserved || 'Reserved'}</option>
               </select>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location *
+                {translations?.locationField || 'Location'} *
               </label>
               <input
                 type="text"
@@ -247,26 +281,26 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                 value={propertyForm.location}
                 onChange={(e) => setPropertyForm({ ...propertyForm, location: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="Enter location"
+                placeholder={translations?.enterLocation || 'Enter location'}
               />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location (Arabic)
+                {translations?.locationArabic || 'Location (Arabic)'}
               </label>
               <input
                 type="text"
                 value={propertyForm.locationAr}
                 onChange={(e) => setPropertyForm({ ...propertyForm, locationAr: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="أدخل الموقع بالعربية"
+                placeholder={translations?.enterLocationArabic || 'أدخل الموقع بالعربية'}
               />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Name *
+                {translations?.projectName || 'Project Name'} *
               </label>
               <input
                 type="text"
@@ -274,39 +308,39 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                 value={propertyForm.projectName}
                 onChange={(e) => setPropertyForm({ ...propertyForm, projectName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="Enter project name"
+                placeholder={translations?.enterProjectName || 'Enter project name'}
               />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Name (Arabic)
+                {translations?.projectNameArabic || 'Project Name (Arabic)'}
               </label>
               <input
                 type="text"
                 value={propertyForm.projectNameAr}
                 onChange={(e) => setPropertyForm({ ...propertyForm, projectNameAr: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="أدخل اسم المشروع بالعربية"
+                placeholder={translations?.enterProjectNameArabic || 'أدخل اسم المشروع بالعربية'}
               />
             </div>
             
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price (EGP)
+                {translations?.priceEGP || 'Price (EGP)'}
               </label>
               <input
                 type="number"
                 value={propertyForm.price}
                 onChange={(e) => setPropertyForm({ ...propertyForm, price: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="Enter price (optional)"
+                placeholder={translations?.enterPriceOptional || 'Enter price (optional)'}
               />
             </div>
             
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description *
+                {translations?.description || 'Description'} *
               </label>
               <textarea
                 required
@@ -314,26 +348,26 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
                 value={propertyForm.description}
                 onChange={(e) => setPropertyForm({ ...propertyForm, description: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="Enter property description"
+                placeholder={translations?.enterPropertyDescription || 'Enter property description'}
               />
             </div>
             
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description (Arabic)
+                {translations?.descriptionArabic || 'Description (Arabic)'}
               </label>
               <textarea
                 rows={3}
                 value={propertyForm.descriptionAr}
                 onChange={(e) => setPropertyForm({ ...propertyForm, descriptionAr: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                placeholder="أدخل وصف العقار بالعربية"
+                placeholder={translations?.enterPropertyDescriptionArabic || 'أدخل وصف العقار بالعربية'}
               />
             </div>
             
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Property Images * (Max 10 images)
+                {translations?.propertyImages || 'Property Images'} * ({translations?.maxImages?.replace('{max}', '10') || 'Max 10 images'})
               </label>
               <input
                 type="file"
@@ -350,7 +384,8 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
               />
               {propertyForm.images.length > 0 && (
                 <p className="text-sm text-gray-600 mt-2">
-                  {propertyForm.images.length} image(s) selected
+                  {translations?.imagesSelected?.replace('{count}', propertyForm.images.length.toString()) || 
+                   `${propertyForm.images.length} image(s) selected`}
                 </p>
               )}
             </div>
@@ -365,7 +400,7 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
               {uploadLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                'Add Property'
+                translations?.addProperty || 'Add Property'
               )}
             </button>
             <button
@@ -373,7 +408,7 @@ const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
               onClick={() => setShowAddProperty(false)}
               className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
             >
-              Cancel
+              {translations?.cancel || 'Cancel'}
             </button>
           </div>
         </form>

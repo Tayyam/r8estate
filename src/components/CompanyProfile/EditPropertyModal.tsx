@@ -3,6 +3,7 @@ import { Edit, X, Upload, Trash2, Building2 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Property } from '../../types/property';
 
 interface EditPropertyModalProps {
@@ -18,6 +19,7 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
   onSuccess,
   onError
 }) => {
+  const { translations } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: property.name,
@@ -129,6 +131,38 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
     }));
   };
 
+  // Get property type translation
+  const getPropertyTypeTranslation = (type: string) => {
+    switch (type) {
+      case 'apartment':
+        return translations?.apartment || 'Apartment';
+      case 'villa':
+        return translations?.villa || 'Villa';
+      case 'commercial':
+        return translations?.commercial || 'Commercial';
+      case 'land':
+        return translations?.land || 'Land';
+      case 'office':
+        return translations?.office || 'Office';
+      default:
+        return type;
+    }
+  };
+
+  // Get status translation
+  const getStatusTranslation = (status: string) => {
+    switch (status) {
+      case 'available':
+        return translations?.available || 'Available';
+      case 'sold':
+        return translations?.sold || 'Sold';
+      case 'reserved':
+        return translations?.reserved || 'Reserved';
+      default:
+        return status;
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,7 +201,7 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error('Error updating property:', error);
-      onError('Failed to update property');
+      onError(translations?.failedToUpdateProperty || 'Failed to update property');
     } finally {
       setLoading(false);
     }
@@ -193,8 +227,8 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
               <Edit className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Edit Property</h3>
-              <p className="text-sm text-gray-600">Update property information</p>
+              <h3 className="text-xl font-bold text-gray-900">{translations?.editProperty || 'Edit Property'}</h3>
+              <p className="text-sm text-gray-600">{translations?.updatePropertyInfo || 'Update property information'}</p>
             </div>
           </div>
           <button
@@ -211,7 +245,7 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
             {/* Property Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Property Name *
+                {translations?.propertyName || 'Property Name'} *
               </label>
               <input
                 type="text"
@@ -219,14 +253,14 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                placeholder="Enter property name"
+                placeholder={translations?.enterPropertyName || 'Enter property name'}
               />
             </div>
             
             {/* Property Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Property Type *
+                {translations?.propertyType || 'Property Type'} *
               </label>
               <select
                 required
@@ -234,18 +268,18 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, propertyType: e.target.value as Property['propertyType'] })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
               >
-                <option value="apartment">Apartment</option>
-                <option value="villa">Villa</option>
-                <option value="commercial">Commercial</option>
-                <option value="land">Land</option>
-                <option value="office">Office</option>
+                <option value="apartment">{translations?.apartment || 'Apartment'}</option>
+                <option value="villa">{translations?.villa || 'Villa'}</option>
+                <option value="commercial">{translations?.commercial || 'Commercial'}</option>
+                <option value="land">{translations?.land || 'Land'}</option>
+                <option value="office">{translations?.office || 'Office'}</option>
               </select>
             </div>
             
             {/* Area */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Area (m²) *
+                {translations?.areaSquareMeters || 'Area (m²)'} *
               </label>
               <input
                 type="number"
@@ -253,14 +287,14 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 value={formData.area}
                 onChange={(e) => setFormData({ ...formData, area: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                placeholder="Enter area in square meters"
+                placeholder={translations?.enterAreaInSquareMeters || 'Enter area in square meters'}
               />
             </div>
             
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status *
+                {translations?.status || 'Status'} *
               </label>
               <select
                 required
@@ -268,16 +302,16 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as Property['status'] })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
               >
-                <option value="available">Available</option>
-                <option value="sold">Sold</option>
-                <option value="reserved">Reserved</option>
+                <option value="available">{translations?.available || 'Available'}</option>
+                <option value="sold">{translations?.sold || 'Sold'}</option>
+                <option value="reserved">{translations?.reserved || 'Reserved'}</option>
               </select>
             </div>
             
             {/* Location */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location *
+                {translations?.locationField || 'Location'} *
               </label>
               <input
                 type="text"
@@ -285,28 +319,28 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                placeholder="Enter location"
+                placeholder={translations?.enterLocation || 'Enter location'}
               />
             </div>
             
             {/* Location Arabic */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location (Arabic)
+                {translations?.locationArabic || 'Location (Arabic)'}
               </label>
               <input
                 type="text"
                 value={formData.locationAr}
                 onChange={(e) => setFormData({ ...formData, locationAr: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                placeholder="أدخل الموقع بالعربية"
+                placeholder={translations?.enterLocationArabic || 'أدخل الموقع بالعربية'}
               />
             </div>
             
             {/* Project Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Name *
+                {translations?.projectName || 'Project Name'} *
               </label>
               <input
                 type="text"
@@ -314,42 +348,42 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 value={formData.projectName}
                 onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                placeholder="Enter project name"
+                placeholder={translations?.enterProjectName || 'Enter project name'}
               />
             </div>
             
             {/* Project Name Arabic */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Name (Arabic)
+                {translations?.projectNameArabic || 'Project Name (Arabic)'}
               </label>
               <input
                 type="text"
                 value={formData.projectNameAr}
                 onChange={(e) => setFormData({ ...formData, projectNameAr: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                placeholder="أدخل اسم المشروع بالعربية"
+                placeholder={translations?.enterProjectNameArabic || 'أدخل اسم المشروع بالعربية'}
               />
             </div>
             
             {/* Price */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price (EGP)
+                {translations?.priceEGP || 'Price (EGP)'}
               </label>
               <input
                 type="number"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                placeholder="Enter price (optional)"
+                placeholder={translations?.enterPriceOptional || 'Enter price (optional)'}
               />
             </div>
             
             {/* Description */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description *
+                {translations?.description || 'Description'} *
               </label>
               <textarea
                 required
@@ -357,35 +391,35 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                placeholder="Enter property description"
+                placeholder={translations?.enterPropertyDescription || 'Enter property description'}
               />
             </div>
             
             {/* Description Arabic */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description (Arabic)
+                {translations?.descriptionArabic || 'Description (Arabic)'}
               </label>
               <textarea
                 rows={3}
                 value={formData.descriptionAr}
                 onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                placeholder="أدخل وصف العقار بالعربية"
+                placeholder={translations?.enterPropertyDescriptionArabic || 'أدخل وصف العقار بالعربية'}
               />
             </div>
 
             {/* Current Images */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Images
+                {translations?.currentImages || 'Current Images'}
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {formData.images.map((imageUrl, index) => (
                   <div key={index} className="relative group">
                     <img
                       src={imageUrl}
-                      alt={`Property ${index + 1}`}
+                      alt={`${translations?.property || 'Property'} ${index + 1}`}
                       className="w-full h-24 object-cover rounded-lg"
                     />
                     <button
@@ -403,7 +437,8 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
             {/* Add New Images */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Add New Images (Max {10 - formData.images.length} more)
+                {translations?.addNewImages?.replace('{count}', (10 - formData.images.length).toString()) || 
+                 `Add New Images (Max ${10 - formData.images.length} more)`}
               </label>
               <input
                 type="file"
@@ -419,7 +454,8 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
               />
               {formData.newImages.length > 0 && (
                 <p className="text-sm text-gray-600 mt-2">
-                  {formData.newImages.length} new image(s) selected
+                  {translations?.newImagesSelected?.replace('{count}', formData.newImages.length.toString()) || 
+                   `${formData.newImages.length} new image(s) selected`}
                 </p>
               )}
             </div>
@@ -435,12 +471,12 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Updating...</span>
+                  <span>{translations?.updatingProperty || 'Updating...'}</span>
                 </>
               ) : (
                 <>
                   <Edit className="h-5 w-5" />
-                  <span>Update Property</span>
+                  <span>{translations?.updateProperty || 'Update Property'}</span>
                 </>
               )}
             </button>
@@ -450,7 +486,7 @@ const EditPropertyModal: React.FC<EditPropertyModalProps> = ({
               disabled={loading}
               className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200 disabled:opacity-50"
             >
-              Cancel
+              {translations?.cancel || 'Cancel'}
             </button>
           </div>
         </form>

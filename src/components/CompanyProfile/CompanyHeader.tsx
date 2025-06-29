@@ -3,6 +3,7 @@ import { ArrowLeft, Building2, MapPin, Globe, Phone, Mail, Star, Camera } from '
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
 import { Property } from '../../types/property';
 import { Review } from '../../types/property';
@@ -35,6 +36,7 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
   setError,
   onNavigateBack
 }) => {
+  const { translations } = useLanguage();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -137,11 +139,11 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
       });
 
       setCompany({ ...company, logoUrl });
-      setSuccess('Logo updated successfully');
+      setSuccess(translations?.logoUpdatedSuccess || 'Logo updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error uploading logo:', error);
-      setError('Failed to upload logo');
+      setError(translations?.failedToUploadLogo || 'Failed to upload logo');
       setTimeout(() => setError(''), 3000);
     } finally {
       setUploadLoading(false);
@@ -170,11 +172,11 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
       });
 
       setCompany({ ...company, coverImageUrl });
-      setSuccess('Cover image updated successfully');
+      setSuccess(translations?.coverUpdatedSuccess || 'Cover image updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error uploading cover image:', error);
-      setError('Failed to upload cover image');
+      setError(translations?.failedToUploadCover || 'Failed to upload cover image');
       setTimeout(() => setError(''), 3000);
     } finally {
       setUploadLoading(false);
@@ -212,7 +214,7 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
             className="flex items-center space-x-2 rtl:space-x-reverse text-gray-600 hover:text-gray-800 transition-colors duration-200"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span>Back to Companies</span>
+            <span>{translations?.backToCompanies || 'Back to Companies'}</span>
           </button>
         </div>
       </div>
@@ -222,14 +224,14 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
         {company.coverImageUrl ? (
           <img
             src={company.coverImageUrl}
-            alt="Company Cover"
+            alt={translations?.companyCoverImage || 'Company Cover'}
             className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
             <div className="text-center text-white">
               <Building2 className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg opacity-75">Company Cover Image</p>
+              <p className="text-lg opacity-75">{translations?.companyCoverImage || 'Company Cover Image'}</p>
             </div>
           </div>
         )}
@@ -257,7 +259,7 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
               ) : (
                 <Camera className="h-4 w-4" />
               )}
-              <span className="text-sm font-medium">Change Cover</span>
+              <span className="text-sm font-medium">{translations?.changeCover || 'Change Cover'}</span>
             </button>
           </div>
         )}
@@ -330,7 +332,7 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
                         <div className="flex items-center space-x-1 rtl:space-x-reverse">
                           <Globe className="h-4 w-4" />
                           <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                            Website
+                            {translations?.website || 'Website'}
                           </a>
                         </div>
                       )}
@@ -340,11 +342,11 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
                   <div className="flex items-center space-x-4 rtl:space-x-reverse mt-4 sm:mt-0">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{properties.length}</div>
-                      <div className="text-sm text-gray-600">Properties</div>
+                      <div className="text-sm text-gray-600">{translations?.properties || 'Properties'}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{reviews.length}</div>
-                      <div className="text-sm text-gray-600">Reviews</div>
+                      <div className="text-sm text-gray-600">{translations?.reviews || 'Reviews'}</div>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center justify-center space-x-1 rtl:space-x-reverse">
@@ -353,7 +355,7 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
                           {averageRating > 0 ? averageRating : '0.0'}
                         </span>
                       </div>
-                      <div className="text-sm text-gray-600">Average Rating</div>
+                      <div className="text-sm text-gray-600">{translations?.averageRating || 'Average Rating'}</div>
                     </div>
                   </div>
                 </div>

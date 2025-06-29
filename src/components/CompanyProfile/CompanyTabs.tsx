@@ -1,5 +1,6 @@
 import React from 'react';
 import { Building2, Eye, MessageSquare } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Property } from '../../types/property';
 import { Review } from '../../types/property';
 
@@ -16,10 +17,12 @@ const CompanyTabs: React.FC<CompanyTabsProps> = ({
   properties,
   reviews
 }) => {
+  const { translations } = useLanguage();
+
   const tabs = [
-    { id: 'overview', name: 'Overview', icon: Building2 },
-    { id: 'properties', name: 'Properties', icon: Eye },
-    { id: 'reviews', name: 'Reviews', icon: MessageSquare }
+    { id: 'overview', name: translations?.overview || 'Overview', icon: Building2 },
+    { id: 'properties', name: translations?.propertiesTab || 'Properties', icon: Eye },
+    { id: 'reviews', name: translations?.reviewsTab || 'Reviews', icon: MessageSquare }
   ];
 
   return (

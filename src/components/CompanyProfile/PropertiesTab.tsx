@@ -3,6 +3,7 @@ import { Building2, Plus, Edit, Trash2, MapPin, Ruler, AlertCircle, Eye, Chevron
 import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Property } from '../../types/property';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
@@ -28,6 +29,7 @@ const LazyImage: React.FC<{
   const [isInView, setIsInView] = useState(false);
   const [imageError, setImageError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const { translations } = useLanguage();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -78,7 +80,7 @@ const LazyImage: React.FC<{
         <div className="w-full h-full bg-gray-100 flex items-center justify-center">
           <div className="text-center">
             <Building2 className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-            <span className="text-xs text-gray-400">Image not available</span>
+            <span className="text-xs text-gray-400">{translations?.imageNotAvailable || 'Image not available'}</span>
           </div>
         </div>
       )}
@@ -99,6 +101,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
   setShowAddProperty
 }) => {
   const { currentUser } = useAuth();
+  const { translations } = useLanguage();
   
   // Pagination and loading state
   const [properties, setProperties] = useState<Property[]>([]);
@@ -292,20 +295,54 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
     }
   };
 
+  // Get status translation
+  const getStatusTranslation = (status: string) => {
+    switch (status) {
+      case 'available':
+        return translations?.available || 'Available';
+      case 'sold':
+        return translations?.sold || 'Sold';
+      case 'reserved':
+        return translations?.reserved || 'Reserved';
+      default:
+        return status;
+    }
+  };
+
+  // Get property type translation
+  const getPropertyTypeTranslation = (type: string) => {
+    switch (type) {
+      case 'apartment':
+        return translations?.apartment || 'Apartment';
+      case 'villa':
+        return translations?.villa || 'Villa';
+      case 'commercial':
+        return translations?.commercial || 'Commercial';
+      case 'land':
+        return translations?.land || 'Land';
+      case 'office':
+        return translations?.office || 'Office';
+      default:
+        return type;
+    }
+  };
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Properties</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {translations?.propertiesTitle || 'Properties'}
+          </h2>
           <p className="text-gray-600 mt-1">
             {totalPropertiesCount > 0 
-              ? `${totalPropertiesCount} properties available`
-              : 'No properties listed yet'
+              ? (translations?.propertiesAvailable?.replace('{count}', totalPropertiesCount.toString()) || `${totalPropertiesCount} properties available`)
+              : (translations?.noPropertiesYet || 'No properties listed yet')
             }
             {totalPropertiesCount > properties.length && (
               <span className="text-sm text-gray-500 ml-2">
-                (Showing {properties.length} of {totalPropertiesCount})
+                ({translations?.showing || 'Showing'} {properties.length} {translations?.of || 'of'} {totalPropertiesCount})
               </span>
             )}
           </p>
@@ -317,7 +354,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
             className="flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
           >
             <Plus className="h-5 w-5" />
-            <span>Add Property</span>
+            <span>{translations?.addProperty || 'Add Property'}</span>
           </button>
         )}
       </div>
@@ -345,7 +382,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                   {/* Status Badge */}
                   <div className="absolute top-4 left-4 rtl:right-4 rtl:left-auto">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(property.status)}`}>
-                      {property.status}
+                      {getStatusTranslation(property.status)}
                     </span>
                   </div>
 
@@ -356,7 +393,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                       <button
                         onClick={() => openViewModal(property)}
                         className="p-2 bg-white bg-opacity-90 hover:bg-white text-blue-600 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
-                        title="View Property"
+                        title={translations?.viewProperty || 'View Property'}
                       >
                         <Eye className="h-4 w-4" />
                       </button>
@@ -367,14 +404,14 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                           <button
                             onClick={() => openEditModal(property)}
                             className="p-2 bg-white bg-opacity-90 hover:bg-white text-orange-600 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
-                            title="Edit Property"
+                            title={translations?.editProperty || 'Edit Property'}
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => openDeleteModal(property)}
                             className="p-2 bg-white bg-opacity-90 hover:bg-white text-red-600 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
-                            title="Delete Property"
+                            title={translations?.deleteProperty || 'Delete Property'}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -393,7 +430,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <Ruler className="h-4 w-4" />
-                        <span>Area:</span>
+                        <span>{translations?.area || 'Area'}:</span>
                       </div>
                       <span className="font-medium">{property.area} m²</span>
                     </div>
@@ -401,7 +438,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <MapPin className="h-4 w-4" />
-                        <span>Location:</span>
+                        <span>{translations?.location || 'Location'}:</span>
                       </div>
                       <span className="font-medium">{property.location}</span>
                     </div>
@@ -409,14 +446,14 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <Building2 className="h-4 w-4" />
-                        <span>Project:</span>
+                        <span>{translations?.project || 'Project'}:</span>
                       </div>
                       <span className="font-medium">{property.projectName}</span>
                     </div>
                     
                     {property.price && (
                       <div className="flex items-center justify-between">
-                        <span>Price:</span>
+                        <span>{translations?.price || 'Price'}:</span>
                         <span className="font-medium text-green-600">{formatPrice(property.price)}</span>
                       </div>
                     )}
@@ -424,14 +461,14 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                   
                   <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
                     <span className="text-xs text-gray-500 capitalize">
-                      {property.propertyType}
+                      {getPropertyTypeTranslation(property.propertyType)}
                     </span>
                     
                     <div className="flex items-center space-x-3 rtl:space-x-reverse text-xs text-gray-500">
                       {property.images.length > 1 && (
                         <div className="flex items-center space-x-1 rtl:space-x-reverse">
                           <Eye className="h-3 w-3" />
-                          <span>{property.images.length} photos</span>
+                          <span>{property.images.length} {translations?.photos || 'photos'}</span>
                         </div>
                       )}
                       
@@ -440,7 +477,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                         onClick={() => openViewModal(property)}
                         className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
                       >
-                        View Details
+                        {translations?.viewDetails || 'View Details'}
                       </button>
                     </div>
                   </div>
@@ -460,12 +497,12 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                 {loading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Loading...</span>
+                    <span>{translations?.loading || 'Loading...'}</span>
                   </>
                 ) : (
                   <>
                     <ChevronDown className="h-5 w-5" />
-                    <span>Load More Properties</span>
+                    <span>{translations?.loadMoreProperties || 'Load More Properties'}</span>
                   </>
                 )}
               </button>
@@ -477,7 +514,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
             <div className="text-center py-8">
               <div className="inline-flex items-center space-x-2 rtl:space-x-reverse text-gray-500">
                 <div className="h-px bg-gray-300 w-8"></div>
-                <span className="text-sm">All properties loaded</span>
+                <span className="text-sm">{translations?.allPropertiesLoaded || 'All properties loaded'}</span>
                 <div className="h-px bg-gray-300 w-8"></div>
               </div>
             </div>
@@ -489,9 +526,11 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Building2 className="h-12 w-12 text-gray-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-3">No properties listed yet</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-3">
+            {translations?.noPropertiesYet || 'No properties listed yet'}
+          </h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Start showcasing your properties to potential clients by adding your first listing.
+            {translations?.showcaseProperties || 'Start showcasing your properties to potential clients by adding your first listing.'}
           </p>
           {canEdit && (
             <button
@@ -499,7 +538,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
               className="inline-flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-5 w-5" />
-              <span>Add First Property</span>
+              <span>{translations?.addFirstProperty || 'Add First Property'}</span>
             </button>
           )}
         </div>
@@ -509,7 +548,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
       {loading && properties.length === 0 && (
         <div className="text-center py-16">
           <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading properties...</p>
+          <p className="text-gray-500">{translations?.loadingProperties || 'Loading properties...'}</p>
         </div>
       )}
 
@@ -547,10 +586,11 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                   <AlertCircle className="h-8 w-8 text-red-500" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  Delete Property
+                  {translations?.deleteProperty || 'Delete Property'}
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Are you sure you want to delete "{selectedProperty.name}"? This action cannot be undone and will permanently remove all property data and images.
+                  {translations?.confirmDeleteProperty?.replace('{name}', selectedProperty.name) || 
+                   `Are you sure you want to delete "${selectedProperty.name}"? This action cannot be undone and will permanently remove all property data and images.`}
                 </p>
                 <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
                   <button
@@ -561,12 +601,12 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                     {actionLoading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Deleting...</span>
+                        <span>{translations?.deletingProperty || 'Deleting...'}</span>
                       </>
                     ) : (
                       <>
                         <Trash2 className="h-4 w-4" />
-                        <span>Delete Property</span>
+                        <span>{translations?.deletePropertyButton || 'Delete Property'}</span>
                       </>
                     )}
                   </button>
@@ -579,7 +619,7 @@ const PropertiesTab: React.FC<PropertiesTabProps> = ({
                     disabled={actionLoading}
                     className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-400 transition-all duration-200 disabled:opacity-50"
                   >
-                    Cancel
+                    {translations?.cancel || 'Cancel'}
                   </button>
                 </div>
               </div>

@@ -13,6 +13,7 @@ import { arAdminSettings } from './ar-admin-settings';
 import { arUserManagement } from './ar-user-management';
 import { arCompanies } from './ar-companies';
 import { arCategories as arCategoriesManagement } from './ar-categories';
+import { arCompanyProfile } from './ar-company-profile';
 import { arStats } from './ar-stats';
 import { arFooter } from './ar-footer';
 
@@ -31,6 +32,7 @@ export const ar = {
   ...arUserManagement,
   ...arCompanies,
   ...arCategoriesManagement,
+  ...arCompanyProfile,
   ...arStats,
   ...arFooter,
 };

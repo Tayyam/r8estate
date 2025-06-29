@@ -110,7 +110,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
     } catch (error) {
       console.error('Error loading reviews:', error);
-      onError('Failed to load reviews');
+      onError(translations?.failedToLoadReviews || 'Failed to load reviews');
     } finally {
       setLoading(false);
     }
@@ -170,7 +170,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                      canEditCompany;
     
     if (!canDelete) {
-      onError('You can only delete your own reviews');
+      onError(translations?.canOnlyDeleteOwnReviews || 'You can only delete your own reviews');
       return;
     }
 
@@ -183,7 +183,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       // Update company rating and count
       await updateCompanyRating();
       
-      onSuccess('Review deleted successfully!');
+      onSuccess(translations?.reviewDeletedSuccess || 'Review deleted successfully!');
       setShowDeleteConfirm(false);
       setSelectedReview(null);
       
@@ -192,7 +192,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       onReviewAdded();
     } catch (error: any) {
       console.error('Error deleting review:', error);
-      onError('Failed to delete review. Please try again.');
+      onError(translations?.failedToDeleteReview || 'Failed to delete review. Please try again.');
     } finally {
       setActionLoading(false);
     }
@@ -201,7 +201,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   // Handle edit review success
   const handleEditReviewSuccess = async () => {
     await updateCompanyRating();
-    onSuccess('Review updated successfully!');
+    onSuccess(translations?.reviewUpdatedSuccess || 'Review updated successfully!');
     setShowEditReview(false);
     setSelectedReview(null);
     await loadReviews(); // Reload reviews
@@ -212,7 +212,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const handleAddReviewSuccess = async () => {
     await updateCompanyRating();
     setShowAddReview(false);
-    onSuccess('Review added successfully!');
+    onSuccess(translations?.reviewAddedSuccess || 'Review added successfully!');
     await loadReviews(); // Reload reviews
     onReviewAdded();
   };
@@ -221,7 +221,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const handleReplySuccess = async () => {
     setShowReplyModal(false);
     setSelectedReview(null);
-    onSuccess('Reply added successfully!');
+    onSuccess(translations?.replyAddedSuccess || 'Reply added successfully!');
     await loadReviews(); // Reload reviews
   };
 
@@ -280,15 +280,17 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Customer Reviews</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {translations?.customerReviews || 'Customer Reviews'}
+          </h2>
           <p className="text-gray-600">
             {totalReviewsCount > 0 
-              ? `${totalReviewsCount} review${totalReviewsCount > 1 ? 's' : ''} from verified customers`
-              : 'No reviews yet - be the first to share your experience!'
+              ? (translations?.reviewsFromVerified?.replace('{count}', totalReviewsCount.toString()) || `${totalReviewsCount} review${totalReviewsCount > 1 ? 's' : ''} from verified customers`)
+              : (translations?.noReviewsYet || 'No reviews yet - be the first to share your experience!')
             }
             {totalReviewsCount > reviews.length && (
               <span className="text-sm text-gray-500 ml-2">
-                (Showing {reviews.length} of {totalReviewsCount})
+                ({translations?.showing || 'Showing'} {reviews.length} {translations?.of || 'of'} {totalReviewsCount})
               </span>
             )}
           </p>
@@ -301,7 +303,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             className="flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             <Plus className="h-5 w-5" />
-            <span>Add Review</span>
+            <span>{translations?.addReview || 'Add Review'}</span>
           </button>
         )}
 
@@ -309,7 +311,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         {!currentUser && (
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
             <p className="text-gray-600 text-sm">
-              <span className="font-medium">Want to leave a review?</span> Please sign in to share your experience.
+              <span className="font-medium">{translations?.wantToLeaveReview || 'Want to leave a review?'}</span> {translations?.pleaseSignIn || 'Please sign in to share your experience.'}
             </p>
           </div>
         )}
@@ -320,7 +322,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
               <Shield className="h-5 w-5 text-green-600" />
               <p className="text-green-800 text-sm font-medium">
-                Thank you for your review!
+                {translations?.thankYouForReview || 'Thank you for your review!'}
               </p>
             </div>
           </div>
@@ -349,7 +351,8 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                     ))}
                   </div>
                   <p className="text-gray-600">
-                    Based on {totalReviewsCount} review{totalReviewsCount > 1 ? 's' : ''}
+                    {translations?.basedOnReviews?.replace('{count}', totalReviewsCount.toString()) || 
+                     `Based on ${totalReviewsCount} review${totalReviewsCount > 1 ? 's' : ''}`}
                   </p>
                 </div>
               </div>
@@ -399,7 +402,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                       {review.verified && (
                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 rtl:space-x-reverse">
                           <Shield className="h-3 w-3" />
-                          <span>Verified</span>
+                          <span>{translations?.verified || 'Verified'}</span>
                         </span>
                       )}
                     </div>
@@ -418,7 +421,9 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                       <span className="text-sm text-gray-600">
                         {review.createdAt.toLocaleDateString()}
                         {review.updatedAt > review.createdAt && (
-                          <span className="text-xs text-gray-500 ml-2 rtl:ml-0 rtl:mr-2">(edited)</span>
+                          <span className="text-xs text-gray-500 ml-2 rtl:ml-0 rtl:mr-2">
+                            {translations?.edited || '(edited)'}
+                          </span>
                         )}
                       </span>
                     </div>
@@ -432,7 +437,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                     <button
                       onClick={() => openReplyModal(review)}
                       className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                      title="Reply to Review"
+                      title={translations?.replyToReview || 'Reply to Review'}
                     >
                       <Reply className="h-4 w-4" />
                     </button>
@@ -443,7 +448,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                     <button
                       onClick={() => openEditModal(review)}
                       className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-colors duration-200"
-                      title="Edit Review"
+                      title={translations?.editReview || 'Edit Review'}
                     >
                       <Edit className="h-4 w-4" />
                     </button>
@@ -454,7 +459,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                     <button
                       onClick={() => openDeleteConfirm(review)}
                       className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                      title="Delete Review"
+                      title={translations?.deleteReview || 'Delete Review'}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -536,12 +541,12 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                 {loading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Loading...</span>
+                    <span>{translations?.loading || 'Loading...'}</span>
                   </>
                 ) : (
                   <>
                     <ChevronDown className="h-5 w-5" />
-                    <span>Load More Reviews</span>
+                    <span>{translations?.loadMoreReviews || 'Load More Reviews'}</span>
                   </>
                 )}
               </button>
@@ -553,21 +558,24 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             <div className="text-center py-8">
               <div className="inline-flex items-center space-x-2 rtl:space-x-reverse text-gray-500">
                 <div className="h-px bg-gray-300 w-8"></div>
-                <span className="text-sm">You've reached the end</span>
+                <span className="text-sm">{translations?.youveReachedEnd || 'You\'ve reached the end'}</span>
                 <div className="h-px bg-gray-300 w-8"></div>
               </div>
             </div>
           )}
         </div>
       ) : (
-        /* Empty State */
+        /* Empty State */}
         <div className="text-center py-16">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <MessageSquare className="h-12 w-12 text-gray-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-3">No reviews yet</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-3">
+            {translations?.noReviewsYet || 'No reviews yet'}
+          </h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Be the first to share your experience with {company.name}. Your review will help others make informed decisions.
+            {translations?.shareExperience?.replace('{company}', company.name) || 
+             `Be the first to share your experience with ${company.name}. Your review will help others make informed decisions.`}
           </p>
           {currentUser && !hasUserReviewed && (
             <button
@@ -575,7 +583,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
               className="inline-flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-5 w-5" />
-              <span>Write First Review</span>
+              <span>{translations?.writeFirstReview || 'Write First Review'}</span>
             </button>
           )}
         </div>
@@ -585,7 +593,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       {loading && reviews.length === 0 && (
         <div className="text-center py-16">
           <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading reviews...</p>
+          <p className="text-gray-500">{translations?.loadingReviews || 'Loading reviews...'}</p>
         </div>
       )}
 
@@ -636,10 +644,10 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                   <AlertCircle className="h-8 w-8 text-red-500" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  Delete Review
+                  {translations?.deleteReview || 'Delete Review'}
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Are you sure you want to delete this review? This action cannot be undone.
+                  {translations?.confirmDeleteReview || 'Are you sure you want to delete this review? This action cannot be undone.'}
                 </p>
                 <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
                   <button
@@ -650,12 +658,12 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                     {actionLoading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Deleting...</span>
+                        <span>{translations?.deletingReview || 'Deleting...'}</span>
                       </>
                     ) : (
                       <>
                         <Trash2 className="h-4 w-4" />
-                        <span>Delete Review</span>
+                        <span>{translations?.deleteReviewButton || 'Delete Review'}</span>
                       </>
                     )}
                   </button>
@@ -668,7 +676,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                     disabled={actionLoading}
                     className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-400 transition-all duration-200 disabled:opacity-50"
                   >
-                    Cancel
+                    {translations?.cancel || 'Cancel'}
                   </button>
                 </div>
               </div>

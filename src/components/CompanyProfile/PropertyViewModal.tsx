@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, X, MapPin, Ruler, Building2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Property } from '../../types/property';
 
 interface PropertyViewModalProps {
@@ -11,6 +12,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
   property,
   onClose
 }) => {
+  const { translations } = useLanguage();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Navigate to previous image
@@ -83,6 +85,38 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
     }
   };
 
+  // Get status translation
+  const getStatusTranslation = (status: string) => {
+    switch (status) {
+      case 'available':
+        return translations?.available || 'Available';
+      case 'sold':
+        return translations?.sold || 'Sold';
+      case 'reserved':
+        return translations?.reserved || 'Reserved';
+      default:
+        return status;
+    }
+  };
+
+  // Get property type translation
+  const getPropertyTypeTranslation = (type: string) => {
+    switch (type) {
+      case 'apartment':
+        return translations?.apartment || 'Apartment';
+      case 'villa':
+        return translations?.villa || 'Villa';
+      case 'commercial':
+        return translations?.commercial || 'Commercial';
+      case 'land':
+        return translations?.land || 'Land';
+      case 'office':
+        return translations?.office || 'Office';
+      default:
+        return type;
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"
@@ -97,7 +131,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">{property.name}</h3>
-              <p className="text-sm text-gray-600">Property Details</p>
+              <p className="text-sm text-gray-600">{translations?.propertyDetails || 'Property Details'}</p>
             </div>
           </div>
           <button
@@ -118,7 +152,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                   <div className="relative rounded-xl overflow-hidden bg-gray-100" style={{ aspectRatio: '16/10' }}>
                     <img
                       src={property.images[currentImageIndex]}
-                      alt={`${property.name} - Image ${currentImageIndex + 1}`}
+                      alt={`${property.name} - ${translations?.image || 'Image'} ${currentImageIndex + 1}`}
                       className="w-full h-full object-cover"
                     />
                     
@@ -150,7 +184,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                     {/* Status Badge */}
                     <div className="absolute top-4 left-4">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(property.status)}`}>
-                        {property.status}
+                        {getStatusTranslation(property.status)}
                       </span>
                     </div>
                   </div>
@@ -170,7 +204,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                         >
                           <img
                             src={imageUrl}
-                            alt={`Thumbnail ${index + 1}`}
+                            alt={`${translations?.thumbnail || 'Thumbnail'} ${index + 1}`}
                             className="w-full h-full object-cover"
                           />
                         </button>
@@ -186,7 +220,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                 >
                   <div className="text-center">
                     <Building2 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No images available</p>
+                    <p className="text-gray-500">{translations?.noImagesAvailable || 'No images available'}</p>
                   </div>
                 </div>
               )}
@@ -199,7 +233,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">{property.name}</h2>
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
                   <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium capitalize">
-                    {property.propertyType}
+                    {getPropertyTypeTranslation(property.propertyType)}
                   </span>
                 </div>
               </div>
@@ -209,7 +243,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                 <div className="bg-gray-50 rounded-xl p-4">
                   <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
                     <Ruler className="h-5 w-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-600">Area</span>
+                    <span className="text-sm font-medium text-gray-600">{translations?.area || 'Area'}</span>
                   </div>
                   <p className="text-xl font-bold text-gray-900">{property.area} m²</p>
                 </div>
@@ -217,7 +251,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                 <div className="bg-gray-50 rounded-xl p-4">
                   <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
                     <MapPin className="h-5 w-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-600">Location</span>
+                    <span className="text-sm font-medium text-gray-600">{translations?.location || 'Location'}</span>
                   </div>
                   <p className="text-lg font-semibold text-gray-900">{property.location}</p>
                   {property.locationAr && (
@@ -228,7 +262,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                 <div className="bg-gray-50 rounded-xl p-4">
                   <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
                     <Building2 className="h-5 w-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-600">Project</span>
+                    <span className="text-sm font-medium text-gray-600">{translations?.project || 'Project'}</span>
                   </div>
                   <p className="text-lg font-semibold text-gray-900">{property.projectName}</p>
                   {property.projectNameAr && (
@@ -239,7 +273,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                 {property.price && (
                   <div className="bg-green-50 rounded-xl p-4">
                     <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
-                      <span className="text-sm font-medium text-green-800">Price</span>
+                      <span className="text-sm font-medium text-green-800">{translations?.price || 'Price'}</span>
                     </div>
                     <p className="text-xl font-bold text-green-600">{formatPrice(property.price)}</p>
                   </div>
@@ -248,7 +282,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
 
               {/* Description */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">{translations?.description || 'Description'}</h3>
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-gray-700 leading-relaxed mb-4">{property.description}</p>
                   {property.descriptionAr && (
@@ -264,20 +298,20 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
 
               {/* Property Metadata */}
               <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Property Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">{translations?.propertyInfo || 'Property Information'}</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Property Type:</span>
-                    <span className="font-medium text-gray-900 capitalize">{property.propertyType}</span>
+                    <span className="text-gray-600">{translations?.propertyType || 'Property Type'}:</span>
+                    <span className="font-medium text-gray-900 capitalize">{getPropertyTypeTranslation(property.propertyType)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Status:</span>
+                    <span className="text-gray-600">{translations?.status || 'Status'}:</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(property.status)}`}>
-                      {property.status}
+                      {getStatusTranslation(property.status)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Listed on:</span>
+                    <span className="text-gray-600">{translations?.listedOn || 'Listed on'}:</span>
                     <div className="flex items-center space-x-1 rtl:space-x-reverse">
                       <Calendar className="h-4 w-4 text-gray-500" />
                       <span className="font-medium text-gray-900">
@@ -287,7 +321,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
                   </div>
                   {property.updatedAt > property.createdAt && (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Last updated:</span>
+                      <span className="text-gray-600">{translations?.lastUpdated || 'Last updated'}:</span>
                       <span className="font-medium text-gray-900">
                         {property.updatedAt.toLocaleDateString()}
                       </span>
@@ -306,7 +340,7 @@ const PropertyViewModal: React.FC<PropertyViewModalProps> = ({
               onClick={onClose}
               className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
             >
-              Close
+              {translations?.close || 'Close'}
             </button>
           </div>
         </div>

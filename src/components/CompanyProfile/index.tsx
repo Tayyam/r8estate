@@ -97,7 +97,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
 
     } catch (error) {
       console.error('Error loading company data:', error);
-      setError('Failed to load company data');
+      setError(translations?.failedToLoadCompany || 'Failed to load company data');
     } finally {
       setLoading(false);
     }
@@ -182,12 +182,14 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">Company Not Found</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">
+            {translations?.companyNotFound || 'Company Not Found'}
+          </h2>
           <button
             onClick={onNavigateBack}
             className="text-blue-600 hover:text-blue-800"
           >
-            Go Back
+            {translations?.goBack || 'Go Back'}
           </button>
         </div>
       </div>

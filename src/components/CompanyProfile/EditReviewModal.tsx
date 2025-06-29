@@ -53,7 +53,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
           </button>
         ))}
         <span className="ml-3 text-sm text-gray-600 font-medium">
-          {rating > 0 ? `${rating} / 5` : 'Select rating'}
+          {rating > 0 ? `${rating} / 5` : (translations?.selectRating || 'Select rating')}
         </span>
       </div>
     );
@@ -64,24 +64,24 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
     e.preventDefault();
     
     if (!currentUser) {
-      onError('You must be logged in to edit a review');
+      onError(translations?.mustBeLoggedIn || 'You must be logged in to edit a review');
       return;
     }
 
     // Check permissions
     const canEdit = currentUser.uid === review.userId || currentUser.role === 'admin';
     if (!canEdit) {
-      onError('You can only edit your own reviews');
+      onError(translations?.canOnlyEditOwnReviews || 'You can only edit your own reviews');
       return;
     }
 
     if (formData.rating === 0) {
-      onError('Please select a rating');
+      onError(translations?.pleaseSelectRating || 'Please select a rating');
       return;
     }
 
     if (!formData.title.trim() || !formData.content.trim()) {
-      onError('Please fill in all fields');
+      onError(translations?.pleaseFillAllFields || 'Please fill in all fields');
       return;
     }
 
@@ -101,7 +101,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error('Error updating review:', error);
-      onError('Failed to update review. Please try again.');
+      onError(translations?.failedToUpdateReview || 'Failed to update review. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -133,10 +133,10 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                Edit Review
+                {translations?.editReview || 'Edit Review'}
               </h3>
               <p className="text-sm text-gray-600">
-                Update your review
+                {translations?.updateYourReview || 'Update your review'}
               </p>
             </div>
           </div>
@@ -161,7 +161,8 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
                   {review.userName}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Original review: {review.createdAt.toLocaleDateString()}
+                  {translations?.originalReview?.replace('{date}', review.createdAt.toLocaleDateString()) || 
+                   `Original review: ${review.createdAt.toLocaleDateString()}`}
                 </p>
               </div>
             </div>
@@ -170,7 +171,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
           {/* Rating */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Rating *
+              {translations?.rating || 'Rating'} *
             </label>
             <div className="bg-gray-50 rounded-xl p-4">
               <StarRating 
@@ -178,7 +179,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
                 onRatingChange={(rating) => handleInputChange('rating', rating)} 
               />
               <p className="text-xs text-gray-500 mt-2">
-                Click the stars to rate your experience
+                {translations?.clickStarsToRate || 'Click the stars to rate your experience'}
               </p>
             </div>
           </div>
@@ -186,38 +187,40 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Review Title *
+              {translations?.reviewTitle || 'Review Title'} *
             </label>
             <input
               type="text"
               required
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              placeholder="Summarize your experience..."
+              placeholder={translations?.summarizeExperience || 'Summarize your experience...'}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all duration-200"
               maxLength={100}
             />
             <p className="text-xs text-gray-500 mt-1">
-              {formData.title.length}/100 characters
+              {translations?.charactersLimit?.replace('{current}', formData.title.length.toString()).replace('{max}', '100') || 
+               `${formData.title.length}/100 characters`}
             </p>
           </div>
 
           {/* Content */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Your Review *
+              {translations?.yourReview || 'Your Review'} *
             </label>
             <textarea
               required
               rows={5}
               value={formData.content}
               onChange={(e) => handleInputChange('content', e.target.value)}
-              placeholder="Tell others about your experience with this company..."
+              placeholder={translations?.tellOthersExperience || 'Tell others about your experience with this company...'}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all duration-200 resize-none"
               maxLength={1000}
             />
             <p className="text-xs text-gray-500 mt-1">
-              {formData.content.length}/1000 characters
+              {translations?.charactersLimit?.replace('{current}', formData.content.length.toString()).replace('{max}', '1000') || 
+               `${formData.content.length}/1000 characters`}
             </p>
           </div>
 
@@ -231,12 +234,12 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Updating...</span>
+                  <span>{translations?.updating || 'Updating...'}</span>
                 </>
               ) : (
                 <>
                   <Edit className="h-5 w-5" />
-                  <span>Update Review</span>
+                  <span>{translations?.updateReview || 'Update Review'}</span>
                 </>
               )}
             </button>
@@ -246,7 +249,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
               disabled={loading}
               className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-400 transition-all duration-200 disabled:opacity-50"
             >
-              Cancel
+              {translations?.cancel || 'Cancel'}
             </button>
           </div>
         </form>

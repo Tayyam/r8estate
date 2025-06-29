@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface NotificationMessagesProps {
   error: string;
@@ -6,6 +7,8 @@ interface NotificationMessagesProps {
 }
 
 const NotificationMessages: React.FC<NotificationMessagesProps> = ({ error, success }) => {
+  const { translations } = useLanguage();
+
   return (
     <>
       {error && (
