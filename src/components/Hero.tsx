@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Star, Building2, Users, MessageSquare, Calendar, ChevronRight } from 'lucide-react';
-import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, limit, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Review } from '../types/property';
-import { Company } from '../types/company';
 
 const Hero = () => {
   const { translations } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [recentReviews, setRecentReviews] = useState<(Review & { companyName: string })[]>([]);
+  const [recentReviews, setRecentReviews] = useState<(Review & { companyName: string, companyLogo?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Categories data
@@ -75,19 +74,22 @@ const Hero = () => {
         // Get company names for each review
         const reviewsWithCompanyNames = await Promise.all(
           reviewsData.map(async (review) => {
-            const companyDoc = await getDocs(
-              query(collection(db, 'companies'), where('id', '==', review.companyId))
-            );
+            // Get company document directly using the document ID
+            const companyDoc = await getDoc(doc(db, 'companies', review.companyId));
             
             let companyName = "Unknown Company";
-            if (!companyDoc.empty) {
-              const companyData = companyDoc.docs[0].data() as Company;
-              companyName = companyData.name;
+            let companyLogo = undefined;
+            
+            if (companyDoc.exists()) {
+              const companyData = companyDoc.data();
+              companyName = companyData.name || "Unknown Company";
+              companyLogo = companyData.logoUrl || undefined;
             }
             
             return {
               ...review,
-              companyName
+              companyName,
+              companyLogo
             };
           })
         );
@@ -325,17 +327,32 @@ const Hero = () => {
                     e.target.style.borderColor = '#e5e7eb';
                   }}
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900">{review.companyName}</h3>
-                    <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                          }`}
+                  <div className="flex items-center space-x-3 rtl:space-x-reverse mb-4">
+                    {/* Company Logo */}
+                    <div className="w-12 h-12 rounded-full bg-white shadow overflow-hidden flex items-center justify-center border border-gray-200">
+                      {review.companyLogo ? (
+                        <img 
+                          src={review.companyLogo} 
+                          alt={review.companyName}
+                          className="w-full h-full object-cover" 
                         />
-                      ))}
+                      ) : (
+                        <Building2 className="w-6 h-6 text-gray-400" />
+                      )}
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-bold text-gray-900">{review.companyName}</h3>
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
                   <h4 className="font-medium text-gray-800 mb-3">{review.title}</h4>
