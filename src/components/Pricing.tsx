@@ -13,15 +13,15 @@ const Pricing = () => {
       price: translations?.freePrice || '£0',
       priceEn: '£0',
       period: '',
-      description: 'For startups',
+      description: translations?.forStartups || 'For startups',
       icon: Users,
       color: '#6B7280',
       bgColor: 'rgba(107, 114, 128, 0.1)',
       features: [
-        'Basic company profile',
-        'View reviews',
-        'Basic statistics',
-        'Email support'
+        translations?.basicCompanyProfile || 'Basic company profile',
+        translations?.viewReviews || 'View reviews',
+        translations?.basicStatistics || 'Basic statistics',
+        translations?.emailSupport || 'Email support'
       ],
       popular: false
     },
@@ -30,20 +30,20 @@ const Pricing = () => {
       name: translations?.proPlan || 'Professional',
       price: translations?.proPrice || '£299',
       priceEn: '£299',
-      period: '/ monthly',
-      description: 'For growing companies',
+      period: translations?.monthlyPeriod || '/ monthly',
+      description: translations?.forGrowingCompanies || 'For growing companies',
       icon: Star,
       color: '#194866',
       bgColor: 'rgba(25, 72, 102, 0.1)',
       features: [
-        'All free plan features',
-        'Reply to reviews',
-        'Advanced analytics',
-        'Detailed insights',
-        'Priority support',
-        'Custom branding',
-        'Multi-user management',
-        'Monthly reports'
+        translations?.allFreePlanFeatures || 'All free plan features',
+        translations?.replyToReviews || 'Reply to reviews',
+        translations?.advancedAnalytics || 'Advanced analytics',
+        translations?.detailedInsights || 'Detailed insights',
+        translations?.prioritySupport || 'Priority support',
+        translations?.customBranding || 'Custom branding',
+        translations?.multiUserManagement || 'Multi-user management',
+        translations?.monthlyReports || 'Monthly reports'
       ],
       popular: true
     }
@@ -52,22 +52,22 @@ const Pricing = () => {
   const features = [
     {
       icon: BarChart3,
-      title: 'Advanced Analytics',
-      description: 'Get detailed insights into your company performance and customer reviews',
+      title: translations?.advancedAnalyticsTitle || 'Advanced Analytics',
+      description: translations?.advancedAnalyticsDesc || 'Get detailed insights into your company performance and customer reviews',
       color: '#3B82F6',
       bgColor: 'rgba(59, 130, 246, 0.1)'
     },
     {
       icon: MessageSquare,
-      title: 'Reply to Reviews',
-      description: 'Engage with your customers by responding to their reviews and building trust',
+      title: translations?.replyToReviewsTitle || 'Reply to Reviews',
+      description: translations?.replyToReviewsDesc || 'Engage with your customers by responding to their reviews and building trust',
       color: '#10B981',
       bgColor: 'rgba(16, 185, 129, 0.1)'
     },
     {
       icon: Shield,
-      title: 'Priority Support',
-      description: 'Get fast and dedicated support from our specialized team',
+      title: translations?.prioritySupportTitle || 'Priority Support',
+      description: translations?.prioritySupportDesc || 'Get fast and dedicated support from our specialized team',
       color: '#8B5CF6',
       bgColor: 'rgba(139, 92, 246, 0.1)'
     }
@@ -75,24 +75,24 @@ const Pricing = () => {
 
   const faqItems = [
     {
-      question: 'Can I change my plan at any time?',
-      answer: 'Yes, you can upgrade or downgrade your plan at any time. Changes will be applied immediately and billing will be adjusted accordingly.'
+      question: translations?.faqQuestion1 || 'Can I change my plan at any time?',
+      answer: translations?.faqAnswer1 || 'Yes, you can upgrade or downgrade your plan at any time. Changes will be applied immediately and billing will be adjusted accordingly.'
     },
     {
-      question: 'What payment methods are available?',
-      answer: 'We accept all major credit cards, bank transfers, and mobile payments via Vodafone Cash and Orange Money.'
+      question: translations?.faqQuestion2 || 'What payment methods are available?',
+      answer: translations?.faqAnswer2 || 'We accept all major credit cards, bank transfers, and mobile payments via Vodafone Cash and Orange Money.'
     },
     {
-      question: 'Are there any additional fees?',
-      answer: 'No, all prices are inclusive and there are no hidden fees. What you see is what you pay.'
+      question: translations?.faqQuestion3 || 'Are there any additional fees?',
+      answer: translations?.faqAnswer3 || 'No, all prices are inclusive and there are no hidden fees. What you see is what you pay.'
     },
     {
-      question: 'Can I cancel my subscription at any time?',
-      answer: 'Yes, you can cancel your subscription at any time with no commitments. You\'ll retain access until the end of your current billing period.'
+      question: translations?.faqQuestion4 || 'Can I cancel my subscription at any time?',
+      answer: translations?.faqAnswer4 || 'Yes, you can cancel your subscription at any time with no commitments. You\'ll retain access until the end of your current billing period.'
     },
     {
-      question: 'Do you offer discounts for large companies?',
-      answer: 'Yes, we offer custom plans and discounts for large companies and institutions. Contact us to discuss your needs.'
+      question: translations?.faqQuestion5 || 'Do you offer discounts for large companies?',
+      answer: translations?.faqAnswer5 || 'Yes, we offer custom plans and discounts for large companies and institutions. Contact us to discuss your needs.'
     }
   ];
 
@@ -216,7 +216,7 @@ const Pricing = () => {
                     }}
                   >
                     {plan.popular && <Zap className="h-5 w-5" />}
-                    <span>{plan.id === 'free' ? (translations?.getStarted || 'Get Started Free') : (translations?.subscribeNow || 'Subscribe Now')}</span>
+                    <span>{plan.id === 'free' ? (translations?.getStartedFree || 'Get Started Free') : (translations?.subscribeNow || 'Subscribe Now')}</span>
                   </button>
                 </div>
               );
@@ -230,10 +230,10 @@ const Pricing = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: '#194866' }}>
-              Professional Plan Features
+              {translations?.professionalPlanFeatures || 'Professional Plan Features'}
             </h2>
             <p className="text-xl text-gray-600">
-              Discover how the Professional plan can help your company grow
+              {translations?.professionalPlanSubtitle || 'Discover how the Professional plan can help your company grow'}
             </p>
             <div className="w-16 h-1 mx-auto rounded-full mt-4" style={{ backgroundColor: '#194866' }}></div>
           </div>
@@ -279,7 +279,7 @@ const Pricing = () => {
               {translations?.faq || 'Frequently Asked Questions'}
             </h2>
             <p className="text-xl text-gray-600">
-              Answers to the most common questions about our plans
+              {translations?.faqSubtitle || 'Answers to the most common questions about our plans'}
             </p>
             <div className="w-16 h-1 mx-auto rounded-full mt-4" style={{ backgroundColor: '#EE183F' }}></div>
           </div>
@@ -344,7 +344,7 @@ const Pricing = () => {
                 e.target.style.backgroundColor = 'white';
               }}
             >
-              Get Started Free
+              {translations?.getStartedFree || 'Get Started Free'}
             </button>
             <button 
               onClick={() => handleSubscribe('pro')}
@@ -358,7 +358,7 @@ const Pricing = () => {
                 e.target.style.color = 'white';
               }}
             >
-              Subscribe to Professional
+              {translations?.subscribeToProfessional || 'Subscribe to Professional'}
             </button>
           </div>
         </div>
