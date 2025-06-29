@@ -27,10 +27,10 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
             <AlertCircle className="h-10 w-10 text-red-500" />
           </div>
           <h2 className="text-2xl font-bold mb-4 text-gray-900">
-            Access Denied
+            {translations?.accessDenied || 'Access Denied'}
           </h2>
           <p className="text-gray-600">
-            You don't have permission to access this page.
+            {translations?.noPermissionAccess || 'You don\'t have permission to access this page.'}
           </p>
         </div>
       </div>
@@ -40,19 +40,19 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
   const tabs = [
     {
       id: 'users',
-      name: 'User Management',
+      name: translations?.userManagement || 'User Management',
       icon: Users,
       component: UserManagement
     },
     {
       id: 'companies',
-      name: 'Companies',
+      name: translations?.companies || 'Companies',
       icon: Building2,
       component: (props: any) => <Companies {...props} onNavigateToProfile={onNavigateToProfile} />
     },
     {
       id: 'categories',
-      name: 'Categories',
+      name: translations?.categories || 'Categories',
       icon: Tag,
       component: Categories
     }
@@ -70,10 +70,10 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
               <SettingsIcon className="h-8 w-8" />
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4" style={{ color: '#194866' }}>
-              Admin Settings
+              {translations?.adminSettings || 'Admin Settings'}
             </h1>
             <p className="text-base sm:text-lg text-gray-600">
-              Manage users and system configuration
+              {translations?.manageUsersSystem || 'Manage users and system configuration'}
             </p>
           </div>
         </div>

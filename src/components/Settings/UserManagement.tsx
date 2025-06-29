@@ -50,7 +50,7 @@ const UserManagement = () => {
       setUsers(filteredUsers);
     } catch (error) {
       console.error('Error loading users:', error);
-      setError('Failed to load users');
+      setError(translations?.failedToLoadUsers || 'Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ const UserManagement = () => {
       
       if (data.success) {
         setUsers(users.filter(user => user.uid !== selectedUser.uid));
-        setSuccess('User deleted successfully');
+        setSuccess(translations?.userDeletedSuccess || 'User deleted successfully');
         setShowDeleteModal(false);
         setSelectedUser(null);
         setTimeout(() => setSuccess(''), 3000);
@@ -92,7 +92,7 @@ const UserManagement = () => {
       }
     } catch (error: any) {
       console.error('Error deleting user:', error);
-      setError(error.message || 'Failed to delete user');
+      setError(error.message || (translations?.failedToDeleteUser || 'Failed to delete user'));
       setTimeout(() => setError(''), 3000);
     } finally {
       setActionLoading(false);
@@ -105,7 +105,7 @@ const UserManagement = () => {
     if (!selectedUser || !newPassword) return;
 
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(translations?.passwordMinLength || 'Password must be at least 6 characters');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -122,7 +122,7 @@ const UserManagement = () => {
       const data = result.data as any;
       
       if (data.success) {
-        setSuccess('Password changed successfully');
+        setSuccess(translations?.passwordChangedSuccess || 'Password changed successfully');
         setShowChangePasswordModal(false);
         setSelectedUser(null);
         setNewPassword('');
@@ -132,7 +132,7 @@ const UserManagement = () => {
       }
     } catch (error: any) {
       console.error('Error changing password:', error);
-      setError(error.message || 'Failed to change password');
+      setError(error.message || (translations?.failedToChangePassword || 'Failed to change password'));
       setTimeout(() => setError(''), 3000);
     } finally {
       setActionLoading(false);
@@ -143,7 +143,7 @@ const UserManagement = () => {
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserData.displayName || !newUserData.email || !newUserData.password) {
-      setError('Please fill in all fields');
+      setError(translations?.fillAllFields || 'Please fill in all fields');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -162,7 +162,7 @@ const UserManagement = () => {
       const data = result.data as any;
       
       if (data.success) {
-        setSuccess('Admin user created successfully');
+        setSuccess(translations?.adminCreatedSuccess || 'Admin user created successfully');
         setNewUserData({ displayName: '', email: '', password: '' });
         setShowAddAdmin(false);
         loadUsers(); // Reload users list
@@ -172,7 +172,7 @@ const UserManagement = () => {
       }
     } catch (error: any) {
       console.error('Error creating admin:', error);
-      setError(error.message || 'Failed to create admin user');
+      setError(error.message || (translations?.failedToCreateAdmin || 'Failed to create admin user'));
       setTimeout(() => setError(''), 3000);
     } finally {
       setActionLoading(false);
@@ -232,13 +232,13 @@ const UserManagement = () => {
             <Users className="h-6 w-6" style={{ color: '#194866' }} />
             <div>
               <h2 className="text-xl sm:text-2xl font-bold" style={{ color: '#194866' }}>
-                User Management
+                {translations?.userManagement || 'User Management'}
               </h2>
               <p className="text-sm text-gray-600 mt-1">
                 {loading ? (
-                  'Loading users...'
+                  translations?.loadingUsers || 'Loading users...'
                 ) : (
-                  `Total users: ${users.length}`
+                  translations?.totalUsers?.replace('{count}', users.length.toString()) || `Total users: ${users.length}`
                 )}
               </p>
             </div>
@@ -257,7 +257,7 @@ const UserManagement = () => {
               }}
             >
               <Plus className="h-4 w-4" />
-              <span>Add Admin</span>
+              <span>{translations?.addAdmin || 'Add Admin'}</span>
             </button>
           </div>
         </div>
@@ -285,7 +285,7 @@ const UserManagement = () => {
             <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder={translations?.searchUsers || 'Search users...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
@@ -305,7 +305,7 @@ const UserManagement = () => {
           </div>
           {!loading && (
             <div className="text-sm text-gray-600">
-              Showing {filteredUsers.length} of {users.length} users
+              {translations?.showingUsers?.replace('{current}', filteredUsers.length.toString()).replace('{total}', users.length.toString()) || `Showing ${filteredUsers.length} of ${users.length} users`}
             </div>
           )}
         </div>
@@ -320,7 +320,7 @@ const UserManagement = () => {
         ) : filteredUsers.length === 0 ? (
           <div className="text-center py-12">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No users found</p>
+            <p className="text-gray-500">{translations?.noUsersFound || 'No users found'}</p>
           </div>
         ) : (
           <>
@@ -330,16 +330,16 @@ const UserManagement = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-8 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      User
+                      {translations?.user || 'User'}
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      Role
+                      {translations?.role || 'Role'}
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      Created
+                      {translations?.createdDate || 'Created'}
                     </th>
                     <th className="px-6 py-4 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      {translations?.actions || 'Actions'}
                     </th>
                   </tr>
                 </thead>
@@ -387,7 +387,7 @@ const UserManagement = () => {
                               }}
                             >
                               <RoleIcon className="w-3 h-3 mr-1" />
-                              {user.role}
+                              {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
                             </div>
                           </div>
                         </td>
@@ -409,10 +409,10 @@ const UserManagement = () => {
                                 onClick={() => openChangePasswordModal(user)}
                                 disabled={actionLoading}
                                 className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
-                                title="Change Password"
+                                title={translations?.changePassword || 'Change Password'}
                               >
                                 <Key className="w-3 h-3 mr-1" />
-                                Password
+                                {translations?.passwordAction || 'Password'}
                               </button>
 
                               {/* Delete Button */}
@@ -420,10 +420,10 @@ const UserManagement = () => {
                                 onClick={() => openDeleteModal(user)}
                                 disabled={actionLoading}
                                 className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
-                                title="Delete User"
+                                title={translations?.deleteUser || 'Delete User'}
                               >
                                 <Trash2 className="w-3 h-3 mr-1" />
-                                Delete
+                                {translations?.deleteAction || 'Delete'}
                               </button>
                             </div>
                           )}
@@ -478,7 +478,7 @@ const UserManagement = () => {
                           }}
                         >
                           <RoleIcon className="w-3 h-3 mr-1" />
-                          {user.role}
+                          {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
                         </div>
                         <div className="flex items-center text-xs text-gray-500">
                           <Calendar className="w-3 h-3 mr-1" />
@@ -495,7 +495,7 @@ const UserManagement = () => {
                             className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
                           >
                             <Key className="w-4 h-4 mr-1" />
-                            Password
+                            {translations?.passwordAction || 'Password'}
                           </button>
                           <button
                             onClick={() => openDeleteModal(user)}
@@ -503,7 +503,7 @@ const UserManagement = () => {
                             className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
                           >
                             <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
+                            {translations?.deleteAction || 'Delete'}
                           </button>
                         </div>
                       )}
@@ -521,18 +521,19 @@ const UserManagement = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-screen overflow-y-auto">
             <h3 className="text-lg sm:text-xl font-bold mb-6" style={{ color: '#194866' }}>
-              Add New Admin
+              {translations?.addNewAdmin || 'Add New Admin'}
             </h3>
             <form onSubmit={handleAddAdmin} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name
+                  {translations?.fullName || 'Full Name'}
                 </label>
                 <input
                   type="text"
                   required
                   value={newUserData.displayName}
                   onChange={(e) => setNewUserData({ ...newUserData, displayName: e.target.value })}
+                  placeholder={translations?.enterFullName || 'Enter full name'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
                   style={{ 
                     focusBorderColor: '#194866',
@@ -542,13 +543,14 @@ const UserManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
+                  {translations?.email || 'Email'}
                 </label>
                 <input
                   type="email"
                   required
                   value={newUserData.email}
                   onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                  placeholder={translations?.enterEmail || 'Enter email'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
                   style={{ 
                     focusBorderColor: '#194866',
@@ -558,13 +560,14 @@ const UserManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
+                  {translations?.password || 'Password'}
                 </label>
                 <input
                   type="password"
                   required
                   value={newUserData.password}
                   onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                  placeholder={translations?.enterPassword || 'Enter password'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
                   style={{ 
                     focusBorderColor: '#194866',
@@ -581,7 +584,7 @@ const UserManagement = () => {
                   {actionLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    'Create Admin'
+                    translations?.createAdmin || 'Create Admin'
                   )}
                 </button>
                 <button
@@ -589,7 +592,7 @@ const UserManagement = () => {
                   onClick={closeModals}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
                 >
-                  Cancel
+                  {translations?.cancel || 'Cancel'}
                 </button>
               </div>
             </form>
@@ -606,10 +609,11 @@ const UserManagement = () => {
                 <AlertCircle className="h-8 w-8 text-red-500" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">
-                Delete User
+                {translations?.deleteUserTitle || 'Delete User'}
               </h3>
               <p className="text-gray-600 mb-6 text-sm sm:text-base">
-                Are you sure you want to delete {selectedUser.displayName}? This action cannot be undone and will permanently remove all user data.
+                {translations?.confirmDeleteUser?.replace('{name}', selectedUser.displayName) || 
+                 `Are you sure you want to delete ${selectedUser.displayName}? This action cannot be undone and will permanently remove all user data.`}
               </p>
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
                 <button
@@ -620,7 +624,7 @@ const UserManagement = () => {
                   {actionLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    'Delete User'
+                    translations?.deleteUserButton || 'Delete User'
                   )}
                 </button>
                 <button
@@ -628,7 +632,7 @@ const UserManagement = () => {
                   onClick={closeModals}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
                 >
-                  Cancel
+                  {translations?.cancel || 'Cancel'}
                 </button>
               </div>
             </div>
@@ -645,16 +649,17 @@ const UserManagement = () => {
                 <Key className="h-8 w-8 text-blue-500" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                Change Password
+                {translations?.changePasswordTitle || 'Change Password'}
               </h3>
               <p className="text-gray-600 mt-2 text-sm sm:text-base">
-                Change password for {selectedUser.displayName}
+                {translations?.changePasswordDesc?.replace('{name}', selectedUser.displayName) || 
+                 `Change password for ${selectedUser.displayName}`}
               </p>
             </div>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  New Password
+                  {translations?.newPasswordLabel || 'New Password'}
                 </label>
                 <input
                   type="password"
@@ -662,7 +667,7 @@ const UserManagement = () => {
                   minLength={6}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password (min 6 characters)"
+                  placeholder={translations?.newPasswordPlaceholder || 'Enter new password (min 6 characters)'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
                   style={{ 
                     focusBorderColor: '#194866',
@@ -679,7 +684,7 @@ const UserManagement = () => {
                   {actionLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    'Change Password'
+                    translations?.changePasswordButton || 'Change Password'
                   )}
                 </button>
                 <button
@@ -687,7 +692,7 @@ const UserManagement = () => {
                   onClick={closeModals}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
                 >
-                  Cancel
+                  {translations?.cancel || 'Cancel'}
                 </button>
               </div>
             </form>

@@ -9,6 +9,10 @@ import { arAdmin } from './ar-admin';
 import { arAbout } from './ar-about';
 import { arPricing } from './ar-pricing';
 import { arPersonalProfile } from './ar-personal-profile';
+import { arAdminSettings } from './ar-admin-settings';
+import { arUserManagement } from './ar-user-management';
+import { arCompanies } from './ar-companies';
+import { arCategories as arCategoriesManagement } from './ar-categories';
 import { arStats } from './ar-stats';
 import { arFooter } from './ar-footer';
 
@@ -23,6 +27,10 @@ export const ar = {
   ...arAbout,
   ...arPricing,
   ...arPersonalProfile,
+  ...arAdminSettings,
+  ...arUserManagement,
+  ...arCompanies,
+  ...arCategoriesManagement,
   ...arStats,
   ...arFooter,
 };

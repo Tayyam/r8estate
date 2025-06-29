@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Tag, AlertCircle, CheckCircle, Search } from 'lucide-react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Category } from '../../types/company';
 
 const Categories = () => {
+  const { translations } = useLanguage();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -37,7 +39,7 @@ const Categories = () => {
       setCategories(categoriesData);
     } catch (error) {
       console.error('Error loading categories:', error);
-      setError('Failed to load categories');
+      setError(translations?.failedToLoadCategories || 'Failed to load categories');
     } finally {
       setLoading(false);
     }
@@ -58,7 +60,7 @@ const Categories = () => {
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name) {
-      setError('Category name is required');
+      setError(translations?.categoryNameRequired || 'Category name is required');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -75,14 +77,14 @@ const Categories = () => {
         updatedAt: new Date()
       });
 
-      setSuccess('Category added successfully');
+      setSuccess(translations?.categoryCreatedSuccess || 'Category added successfully');
       setFormData({ name: '', nameAr: '', description: '' });
       setShowAddModal(false);
       loadCategories();
       setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
       console.error('Error adding category:', error);
-      setError('Failed to add category');
+      setError(translations?.failedToCreateCategory || 'Failed to add category');
       setTimeout(() => setError(''), 3000);
     } finally {
       setActionLoading(false);
@@ -105,7 +107,7 @@ const Categories = () => {
         updatedAt: new Date()
       });
 
-      setSuccess('Category updated successfully');
+      setSuccess(translations?.categoryUpdatedSuccess || 'Category updated successfully');
       setFormData({ name: '', nameAr: '', description: '' });
       setShowEditModal(false);
       setSelectedCategory(null);
@@ -113,7 +115,7 @@ const Categories = () => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
       console.error('Error updating category:', error);
-      setError('Failed to update category');
+      setError(translations?.failedToUpdateCategory || 'Failed to update category');
       setTimeout(() => setError(''), 3000);
     } finally {
       setActionLoading(false);
@@ -131,13 +133,13 @@ const Categories = () => {
       await deleteDoc(doc(db, 'categories', selectedCategory.id));
 
       setCategories(categories.filter(cat => cat.id !== selectedCategory.id));
-      setSuccess('Category deleted successfully');
+      setSuccess(translations?.categoryDeletedSuccess || 'Category deleted successfully');
       setShowDeleteModal(false);
       setSelectedCategory(null);
       setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
       console.error('Error deleting category:', error);
-      setError('Failed to delete category');
+      setError(translations?.failedToDeleteCategory || 'Failed to delete category');
       setTimeout(() => setError(''), 3000);
     } finally {
       setActionLoading(false);
@@ -180,13 +182,13 @@ const Categories = () => {
             <Tag className="h-6 w-6" style={{ color: '#194866' }} />
             <div>
               <h2 className="text-xl sm:text-2xl font-bold" style={{ color: '#194866' }}>
-                Category Management
+                {translations?.categoryManagement || 'Category Management'}
               </h2>
               <p className="text-sm text-gray-600 mt-1">
                 {loading ? (
-                  'Loading categories...'
+                  translations?.loadingCategories || 'Loading categories...'
                 ) : (
-                  `Total categories: ${categories.length}`
+                  translations?.totalCategories?.replace('{count}', categories.length.toString()) || `Total categories: ${categories.length}`
                 )}
               </p>
             </div>
@@ -204,7 +206,7 @@ const Categories = () => {
               }}
             >
               <Plus className="h-4 w-4" />
-              <span>Add Category</span>
+              <span>{translations?.addCategory || 'Add Category'}</span>
             </button>
           </div>
         </div>
@@ -232,7 +234,7 @@ const Categories = () => {
             <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
-              placeholder="Search categories..."
+              placeholder={translations?.searchCategories || 'Search categories...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
@@ -252,7 +254,8 @@ const Categories = () => {
           </div>
           {!loading && (
             <div className="text-sm text-gray-600">
-              Showing {filteredCategories.length} of {categories.length} categories
+              {translations?.showingCategories?.replace('{current}', filteredCategories.length.toString()).replace('{total}', categories.length.toString()) || 
+               `Showing ${filteredCategories.length} of ${categories.length} categories`}
             </div>
           )}
         </div>
@@ -267,7 +270,7 @@ const Categories = () => {
         ) : filteredCategories.length === 0 ? (
           <div className="text-center py-12">
             <Tag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No categories found</p>
+            <p className="text-gray-500">{translations?.noCategoriesFound || 'No categories found'}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -287,21 +290,21 @@ const Categories = () => {
                     <button
                       onClick={() => openEditModal(category)}
                       className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                      title="Edit Category"
+                      title={translations?.editCategory || 'Edit Category'}
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => openDeleteModal(category)}
                       className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                      title="Delete Category"
+                      title={translations?.deleteCategory || 'Delete Category'}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
                 <div className="text-xs text-gray-500">
-                  Created: {category.createdAt.toLocaleDateString()}
+                  {translations?.createdDate || 'Created'}: {category.createdAt.toLocaleDateString()}
                 </div>
               </div>
             ))}
@@ -314,18 +317,19 @@ const Categories = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-screen overflow-y-auto">
             <h3 className="text-lg sm:text-xl font-bold mb-6" style={{ color: '#194866' }}>
-              Add New Category
+              {translations?.addNewCategory || 'Add New Category'}
             </h3>
             <form onSubmit={handleAddCategory} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category Name (English) *
+                  {translations?.englishNameLabel || 'Category Name (English) *'}
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder={translations?.enterCategoryNameEn || 'Enter category name in English'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
                   style={{ 
                     focusBorderColor: '#194866',
@@ -335,12 +339,13 @@ const Categories = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category Name (Arabic)
+                  {translations?.arabicNameLabel || 'Category Name (Arabic)'}
                 </label>
                 <input
                   type="text"
                   value={formData.nameAr}
                   onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                  placeholder={translations?.enterCategoryNameAr || 'Enter category name in Arabic'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
                   style={{ 
                     focusBorderColor: '#194866',
@@ -350,12 +355,13 @@ const Categories = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  {translations?.descriptionLabel || 'Description'}
                 </label>
                 <textarea
                   rows={3}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder={translations?.enterCategoryDescription || 'Enter category description'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
                   style={{ 
                     focusBorderColor: '#194866',
@@ -373,7 +379,7 @@ const Categories = () => {
                   {actionLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    'Add Category'
+                    translations?.addCategory || 'Add Category'
                   )}
                 </button>
                 <button
@@ -381,7 +387,7 @@ const Categories = () => {
                   onClick={closeModals}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
                 >
-                  Cancel
+                  {translations?.cancel || 'Cancel'}
                 </button>
               </div>
             </form>
@@ -394,12 +400,12 @@ const Categories = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-screen overflow-y-auto">
             <h3 className="text-lg sm:text-xl font-bold mb-6" style={{ color: '#194866' }}>
-              Edit Category
+              {translations?.editCategory || 'Edit Category'}
             </h3>
             <form onSubmit={handleEditCategory} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category Name (English) *
+                  {translations?.englishNameLabel || 'Category Name (English) *'}
                 </label>
                 <input
                   type="text"
@@ -415,7 +421,7 @@ const Categories = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category Name (Arabic)
+                  {translations?.arabicNameLabel || 'Category Name (Arabic)'}
                 </label>
                 <input
                   type="text"
@@ -430,7 +436,7 @@ const Categories = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  {translations?.descriptionLabel || 'Description'}
                 </label>
                 <textarea
                   rows={3}
@@ -452,7 +458,7 @@ const Categories = () => {
                   {actionLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    'Update Category'
+                    translations?.updateCategory || 'Update Category'
                   )}
                 </button>
                 <button
@@ -460,7 +466,7 @@ const Categories = () => {
                   onClick={closeModals}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
                 >
-                  Cancel
+                  {translations?.cancel || 'Cancel'}
                 </button>
               </div>
             </form>
@@ -477,10 +483,11 @@ const Categories = () => {
                 <AlertCircle className="h-8 w-8 text-red-500" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">
-                Delete Category
+                {translations?.deleteCategoryTitle || 'Delete Category'}
               </h3>
               <p className="text-gray-600 mb-6 text-sm sm:text-base">
-                Are you sure you want to delete "{selectedCategory.name}"? This action cannot be undone.
+                {translations?.confirmDeleteCategory?.replace('{name}', selectedCategory.name) || 
+                 `Are you sure you want to delete "${selectedCategory.name}"? This action cannot be undone.`}
               </p>
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
                 <button
@@ -491,7 +498,7 @@ const Categories = () => {
                   {actionLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    'Delete Category'
+                    translations?.deleteCategoryButton || 'Delete Category'
                   )}
                 </button>
                 <button
@@ -499,7 +506,7 @@ const Categories = () => {
                   onClick={closeModals}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
                 >
-                  Cancel
+                  {translations?.cancel || 'Cancel'}
                 </button>
               </div>
             </div>
