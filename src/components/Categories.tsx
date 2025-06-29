@@ -76,7 +76,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
       setCompanies(companiesData);
     } catch (error) {
       console.error('Error loading companies:', error);
-      setError('Failed to load companies');
+      setError(translations?.failedToLoadCompanies || 'Failed to load companies');
     }
   };
 
@@ -91,7 +91,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
         await loadCompanies(categoriesData);
       } catch (error) {
         console.error('Error loading data:', error);
-        setError('Failed to load data');
+        setError(translations?.failedToLoadData || 'Failed to load data');
       } finally {
         setLoading(false);
       }
@@ -166,7 +166,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading companies...</p>
+          <p className="text-gray-600">{translations?.loadingCompanies || 'Loading companies...'}</p>
         </div>
       </div>
     );
@@ -179,13 +179,13 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Building2 className="h-8 w-8 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Data</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{translations?.errorLoadingData || 'Error Loading Data'}</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
           >
-            Retry
+            {translations?.retry || 'Retry'}
           </button>
         </div>
       </div>
@@ -213,7 +213,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
                     <Search className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
-                      placeholder={translations?.searchCategories || 'Search companies...'}
+                      placeholder={translations?.searchCompanies || 'Search companies...'}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
@@ -361,7 +361,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span>Verified</span>
+                          <span>{translations?.verified || 'Verified'}</span>
                         </div>
                       </div>
                     )}
@@ -447,9 +447,9 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Search className="h-10 w-10 text-gray-400" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No Companies Found</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{translations?.noCompaniesFound || 'No Companies Found'}</h3>
               <p className="text-gray-600 mb-6">
-                Try adjusting your search criteria or browse all categories
+                {translations?.adjustSearchCriteria || 'Try adjusting your search criteria or browse all categories'}
               </p>
               <button
                 onClick={() => {
@@ -459,7 +459,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
                 }}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                Clear Filters
+                {translations?.clearFilters || 'Clear Filters'}
               </button>
             </div>
           )}
