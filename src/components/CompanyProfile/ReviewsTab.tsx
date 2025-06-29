@@ -565,8 +565,8 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
           )}
         </div>
       ) : (
-        {/* Empty State */}
         <div className="text-center py-16">
+          {/* Empty State */}
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <MessageSquare className="h-12 w-12 text-gray-400" />
           </div>
