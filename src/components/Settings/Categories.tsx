@@ -20,7 +20,8 @@ const Categories = () => {
   const [formData, setFormData] = useState({
     name: '',
     nameAr: '',
-    description: ''
+    description: '',
+    descriptionAr: ''
   });
 
   // Load categories from Firestore
@@ -53,7 +54,8 @@ const Categories = () => {
   const filteredCategories = categories.filter(category => 
     category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (category.nameAr && category.nameAr.includes(searchQuery)) ||
-    (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (category.descriptionAr && category.descriptionAr.includes(searchQuery))
   );
 
   // Add new category
@@ -73,12 +75,13 @@ const Categories = () => {
         name: formData.name,
         nameAr: formData.nameAr || '',
         description: formData.description || '',
+        descriptionAr: formData.descriptionAr || '',
         createdAt: new Date(),
         updatedAt: new Date()
       });
 
       setSuccess(translations?.categoryCreatedSuccess || 'Category added successfully');
-      setFormData({ name: '', nameAr: '', description: '' });
+      setFormData({ name: '', nameAr: '', description: '', descriptionAr: '' });
       setShowAddModal(false);
       loadCategories();
       setTimeout(() => setSuccess(''), 3000);
@@ -104,11 +107,12 @@ const Categories = () => {
         name: formData.name,
         nameAr: formData.nameAr || '',
         description: formData.description || '',
+        descriptionAr: formData.descriptionAr || '',
         updatedAt: new Date()
       });
 
       setSuccess(translations?.categoryUpdatedSuccess || 'Category updated successfully');
-      setFormData({ name: '', nameAr: '', description: '' });
+      setFormData({ name: '', nameAr: '', description: '', descriptionAr: '' });
       setShowEditModal(false);
       setSelectedCategory(null);
       loadCategories();
@@ -152,7 +156,8 @@ const Categories = () => {
     setFormData({
       name: category.name,
       nameAr: category.nameAr || '',
-      description: category.description || ''
+      description: category.description || '',
+      descriptionAr: category.descriptionAr || ''
     });
     setShowEditModal(true);
   };
@@ -169,7 +174,7 @@ const Categories = () => {
     setShowEditModal(false);
     setShowDeleteModal(false);
     setSelectedCategory(null);
-    setFormData({ name: '', nameAr: '', description: '' });
+    setFormData({ name: '', nameAr: '', description: '', descriptionAr: '' });
     setError('');
   };
 
@@ -285,6 +290,9 @@ const Categories = () => {
                     {category.description && (
                       <p className="text-sm text-gray-600 leading-relaxed">{category.description}</p>
                     )}
+                    {category.descriptionAr && (
+                      <p className="text-sm text-gray-600 leading-relaxed mt-1">{category.descriptionAr}</p>
+                    )}
                   </div>
                   <div className="flex items-center space-x-1 ml-3">
                     <button
@@ -337,6 +345,7 @@ const Categories = () => {
                   }}
                 />
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {translations?.arabicNameLabel || 'Category Name (Arabic)'}
@@ -353,15 +362,16 @@ const Categories = () => {
                   }}
                 />
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {translations?.descriptionLabel || 'Description'}
+                  {translations?.descriptionLabel || 'Description (English)'}
                 </label>
                 <textarea
                   rows={3}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder={translations?.enterCategoryDescription || 'Enter category description'}
+                  placeholder={translations?.enterCategoryDescription || 'Enter category description in English'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
                   style={{ 
                     focusBorderColor: '#194866',
@@ -369,6 +379,24 @@ const Categories = () => {
                   }}
                 />
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translations?.descriptionLabelAr || 'Description (Arabic)'}
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.descriptionAr}
+                  onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  placeholder={translations?.enterCategoryDescriptionAr || 'Enter category description in Arabic'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                  style={{ 
+                    focusBorderColor: '#194866',
+                    focusRingColor: '#194866'
+                  }}
+                />
+              </div>
+              
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
                 <button
                   type="submit"
@@ -419,6 +447,7 @@ const Categories = () => {
                   }}
                 />
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {translations?.arabicNameLabel || 'Category Name (Arabic)'}
@@ -434,9 +463,10 @@ const Categories = () => {
                   }}
                 />
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {translations?.descriptionLabel || 'Description'}
+                  {translations?.descriptionLabel || 'Description (English)'}
                 </label>
                 <textarea
                   rows={3}
@@ -449,6 +479,23 @@ const Categories = () => {
                   }}
                 />
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translations?.descriptionLabelAr || 'Description (Arabic)'}
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.descriptionAr}
+                  onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                  style={{ 
+                    focusBorderColor: '#194866',
+                    focusRingColor: '#194866'
+                  }}
+                />
+              </div>
+              
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
                 <button
                   type="submit"
