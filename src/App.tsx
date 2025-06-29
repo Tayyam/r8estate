@@ -85,7 +85,7 @@ function App() {
             <main>
               {renderCurrentPage()}
             </main>
-            {shouldShowHeaderFooter && <Footer />}
+            {shouldShowHeaderFooter && <Footer onNavigate={setCurrentPage} />}
             <NotificationContainer />
           </div>
         </NotificationProvider>
