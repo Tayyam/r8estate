@@ -18,6 +18,7 @@ import { arStats } from './ar-stats';
 import { arFooter } from './ar-footer';
 import { arContact } from './ar-contact';
 import { arTerms } from './ar-terms';
+import { arPrivacy } from './ar-privacy';
 
 export const ar = {
   ...arCommon,
@@ -39,4 +40,5 @@ export const ar = {
   ...arFooter,
   ...arContact,
   ...arTerms,
+  ...arPrivacy,
 };

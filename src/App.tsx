@@ -9,6 +9,7 @@ import About from './components/About';
 import Pricing from './components/Pricing';
 import Contact from './components/Contact';
 import Terms from './components/Terms';
+import Privacy from './components/Privacy';
 import Settings from './components/Settings';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -53,6 +54,8 @@ function App() {
         return <Contact onNavigate={setCurrentPage} />;
       case 'terms':
         return <Terms onNavigate={setCurrentPage} />;
+      case 'privacy':
+        return <Privacy onNavigate={setCurrentPage} />;
       case 'settings':
         return <Settings onNavigateToProfile={(companyId) => {
           setSelectedCompanyId(companyId);
