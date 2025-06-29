@@ -2,7 +2,11 @@ import React from 'react';
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const Footer = () => {
+interface FooterProps {
+  onNavigate?: (page: string) => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const { translations, language } = useLanguage();
   
   const socialLinks = [
@@ -13,7 +17,9 @@ const Footer = () => {
   ];
 
   const handleLinkClick = (page: string) => {
-    console.log(`Navigate to: ${page}`);
+    if (onNavigate) {
+      onNavigate(page);
+    }
   };
 
   return (
