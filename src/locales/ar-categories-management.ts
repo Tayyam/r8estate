@@ -60,4 +60,36 @@ export const arCategoriesManagement = {
   
   // Time and Date
   createdDate: 'تاريخ الإنشاء: {date}',
+  
+  // Bulk Upload
+  bulkUpload: 'رفع جماعي',
+  bulkUploadCategories: 'رفع فئات متعددة',
+  downloadTemplate: 'تحميل النموذج',
+  selectExcelFile: 'اختر ملف Excel',
+  uploadCategories: 'رفع الفئات',
+  uploading: 'جاري الرفع...',
+  processingFile: 'جاري معالجة الملف...',
+  validatingData: 'جاري التحقق من البيانات...',
+  addingCategories: 'جاري إضافة الفئات...',
+  
+  // Bulk Upload Instructions
+  uploadInstructions: 'تعليمات الرفع',
+  useTemplateInstruction: 'استخدم نموذج Excel للتنسيق الصحيح',
+  englishNameRequired: 'الاسم الإنجليزي مطلوب لجميع الفئات',
+  duplicatesHandledInstruction: 'يتم تحديد التكرارات بواسطة الاسم الإنجليزي',
+  
+  // Bulk Upload Results
+  categoriesAddedSuccess: 'تم إضافة {count} فئة بنجاح',
+  someEntriesFailed: 'فشل في إضافة {count} فئة. تحقق من وحدة التحكم للتفاصيل.',
+  noValidCategories: 'لم يتم العثور على فئات صالحة في الملف',
+  noDataInFile: 'لا توجد بيانات في الملف',
+  excelParseError: 'خطأ في معالجة ملف Excel. يرجى التحقق من التنسيق.',
+  fileReadError: 'خطأ في قراءة الملف',
+  uploadFailed: 'فشل في رفع الفئات',
+  templateDownloadedSuccess: 'تم تنزيل النموذج بنجاح',
+  failedToGenerateTemplate: 'فشل في إنشاء النموذج',
+  
+  // File Upload
+  clickToUpload: 'انقر للرفع',
+  acceptedFormats: 'XLS, XLSX (الحد الأقصى 2MB)'
 };

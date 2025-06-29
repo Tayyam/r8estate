@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Tag, AlertCircle, CheckCircle, Search } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Edit, Trash2, Tag, AlertCircle, CheckCircle, Search, Upload, Download, File } from 'lucide-react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Category } from '../../types/company';
+import * as XLSX from 'xlsx';
 
 const Categories = () => {
   const { translations } = useLanguage();
@@ -16,6 +17,7 @@ const Categories = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -23,6 +25,9 @@ const Categories = () => {
     description: '',
     descriptionAr: ''
   });
+  const [bulkUploadFile, setBulkUploadFile] = useState<File | null>(null);
+  const [parseProgress, setParseProgress] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load categories from Firestore
   const loadCategories = async () => {
@@ -173,9 +178,191 @@ const Categories = () => {
     setShowAddModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
+    setShowBulkUploadModal(false);
     setSelectedCategory(null);
     setFormData({ name: '', nameAr: '', description: '', descriptionAr: '' });
+    setBulkUploadFile(null);
+    setParseProgress('');
     setError('');
+  };
+
+  // Generate Excel template for bulk upload
+  const generateTemplate = () => {
+    try {
+      // Create template data
+      const templateData = [
+        {
+          'Name (Required)': 'Example Category',
+          'Name Arabic (Optional)': 'فئة مثال',
+          'Description (Optional)': 'Description of the category',
+          'Description Arabic (Optional)': 'وصف الفئة بالعربية'
+        },
+        // Empty row for user to fill
+        {
+          'Name (Required)': '',
+          'Name Arabic (Optional)': '',
+          'Description (Optional)': '',
+          'Description Arabic (Optional)': ''
+        }
+      ];
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(templateData);
+      
+      // Set column widths
+      const wscols = [
+        { wch: 25 }, // Name
+        { wch: 25 }, // Name Arabic
+        { wch: 50 }, // Description
+        { wch: 50 }  // Description Arabic
+      ];
+      ws['!cols'] = wscols;
+      
+      XLSX.utils.book_append_sheet(wb, ws, 'Categories');
+      
+      // Generate file
+      const fileName = `category_template_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      setSuccess(translations?.templateDownloadedSuccess || 'Template downloaded successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error generating template:', error);
+      setError(translations?.failedToGenerateTemplate || 'Failed to generate template');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  // Parse Excel file for bulk upload
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setBulkUploadFile(files[0]);
+    }
+  };
+
+  // Process Excel file and add categories
+  const handleBulkUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!bulkUploadFile) {
+      setError(translations?.selectExcelFile || 'Please select an Excel file');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setError('');
+      setParseProgress(translations?.processingFile || 'Processing file...');
+      
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          // Get the first sheet
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          
+          setParseProgress(translations?.validatingData || 'Validating data...');
+          
+          // Validate data
+          if (jsonData.length === 0) {
+            setError(translations?.noDataInFile || 'No data found in the file');
+            setActionLoading(false);
+            setTimeout(() => setError(''), 3000);
+            return;
+          }
+          
+          // Process categories
+          setParseProgress(translations?.addingCategories || 'Adding categories...');
+          
+          const addedCategories = [];
+          const errors = [];
+          
+          for (const [index, row] of (jsonData as any[]).entries()) {
+            const categoryName = row['Name (Required)']?.toString().trim();
+            
+            // Skip if no name provided
+            if (!categoryName) {
+              errors.push(`Row ${index + 2}: Category name is required`);
+              continue;
+            }
+
+            // Create category object
+            const categoryData = {
+              name: categoryName,
+              nameAr: row['Name Arabic (Optional)']?.toString().trim() || '',
+              description: row['Description (Optional)']?.toString().trim() || '',
+              descriptionAr: row['Description Arabic (Optional)']?.toString().trim() || '',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            
+            try {
+              // Add to Firestore
+              await addDoc(collection(db, 'categories'), categoryData);
+              addedCategories.push(categoryName);
+            } catch (error) {
+              errors.push(`Row ${index + 2}: Error adding "${categoryName}" - ${(error as Error).message}`);
+            }
+          }
+          
+          // Show results
+          if (addedCategories.length > 0) {
+            setSuccess(translations?.categoriesAddedSuccess?.replace('{count}', addedCategories.length.toString()) || 
+                       `Successfully added ${addedCategories.length} categories`);
+            
+            // If there were errors, show them
+            if (errors.length > 0) {
+              setError(translations?.someEntriesFailed?.replace('{count}', errors.length.toString()) || 
+                       `${errors.length} entries failed. Check console for details.`);
+              console.error('Bulk upload errors:', errors);
+            }
+            
+            // Reload categories
+            loadCategories();
+            
+            // Reset state
+            setBulkUploadFile(null);
+            setParseProgress('');
+            setShowBulkUploadModal(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            
+            setTimeout(() => setSuccess(''), 5000);
+            setTimeout(() => setError(''), 5000);
+          } else {
+            setError(translations?.noValidCategories || 'No valid categories found in the file');
+            setTimeout(() => setError(''), 3000);
+          }
+        } catch (error) {
+          console.error('Error processing Excel file:', error);
+          setError(translations?.excelParseError || 'Error processing Excel file. Please check the format.');
+          setTimeout(() => setError(''), 3000);
+        } finally {
+          setActionLoading(false);
+          setParseProgress('');
+        }
+      };
+      
+      reader.onerror = () => {
+        setError(translations?.fileReadError || 'Error reading file');
+        setActionLoading(false);
+        setTimeout(() => setError(''), 3000);
+      };
+      
+      reader.readAsArrayBuffer(bulkUploadFile);
+      
+    } catch (error) {
+      console.error('Error uploading categories:', error);
+      setError(translations?.uploadFailed || 'Failed to upload categories');
+      setActionLoading(false);
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   return (
@@ -198,7 +385,14 @@ const Categories = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+            <button
+              onClick={() => setShowBulkUploadModal(true)}
+              className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg text-sm hover:bg-indigo-700"
+            >
+              <Upload className="h-4 w-4" />
+              <span>{translations?.bulkUpload || 'Bulk Upload'}</span>
+            </button>
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg text-sm"
@@ -557,6 +751,113 @@ const Categories = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Upload Modal */}
+      {showBulkUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-xl w-full">
+            <h3 className="text-lg sm:text-xl font-bold mb-4" style={{ color: '#194866' }}>
+              {translations?.bulkUploadCategories || 'Bulk Upload Categories'}
+            </h3>
+            
+            <div className="bg-blue-50 rounded-xl p-4 mb-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-1">
+                  <File className="h-5 w-5 text-blue-500" />
+                </div>
+                <div className="ml-3">
+                  <h4 className="text-sm font-medium text-blue-800">{translations?.uploadInstructions || 'Upload Instructions'}</h4>
+                  <ul className="mt-2 text-sm text-blue-700 list-disc pl-5">
+                    <li className="mt-1">{translations?.useTemplateInstruction || 'Use our Excel template for proper formatting'}</li>
+                    <li className="mt-1">{translations?.englishNameRequired || 'English name is required for all categories'}</li>
+                    <li className="mt-1">{translations?.duplicatesHandledInstruction || 'Duplicates are determined by English name'}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <button
+                onClick={generateTemplate}
+                className="flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200 w-full justify-center"
+              >
+                <Download className="h-5 w-5" />
+                <span>{translations?.downloadTemplate || 'Download Template'}</span>
+              </button>
+            </div>
+            
+            <form onSubmit={handleBulkUpload} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translations?.selectExcelFile || 'Select Excel File'}
+                </label>
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200 border-gray-300 hover:border-gray-400">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-10 h-10 text-gray-400 mb-3" />
+                      {bulkUploadFile ? (
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-gray-900">{bulkUploadFile.name}</p>
+                          <p className="text-xs text-gray-500 mt-1">{Math.round(bulkUploadFile.size / 1024)} KB</p>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="mb-2 text-sm font-medium text-gray-700">{translations?.clickToUpload || 'Click to upload'}</p>
+                          <p className="text-xs text-gray-500">{translations?.acceptedFormats || 'XLS, XLSX (Max 2MB)'}</p>
+                        </>
+                      )}
+                    </div>
+                    <input 
+                      ref={fileInputRef}
+                      type="file" 
+                      accept=".xlsx, .xls" 
+                      className="hidden" 
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                </div>
+              </div>
+              
+              {parseProgress && (
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center space-x-3 rtl:space-x-reverse">
+                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-gray-700">{parseProgress}</p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
+                <button
+                  type="submit"
+                  disabled={actionLoading || !bulkUploadFile}
+                  className="flex-1 bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center space-x-2 rtl:space-x-reverse"
+                >
+                  {actionLoading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>{translations?.uploading || 'Uploading...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-5 w-5" />
+                      <span>{translations?.uploadCategories || 'Upload Categories'}</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  disabled={actionLoading}
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200 disabled:opacity-50"
+                >
+                  {translations?.cancel || 'Cancel'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
