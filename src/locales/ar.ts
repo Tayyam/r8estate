@@ -8,6 +8,7 @@ import { arReviews } from './ar-reviews';
 import { arAdmin } from './ar-admin';
 import { arAbout } from './ar-about';
 import { arPricing } from './ar-pricing';
+import { arPersonalProfile } from './ar-personal-profile';
 import { arStats } from './ar-stats';
 import { arFooter } from './ar-footer';
 
@@ -21,6 +22,7 @@ export const ar = {
   ...arAdmin,
   ...arAbout,
   ...arPricing,
+  ...arPersonalProfile,
   ...arStats,
   ...arFooter,
 };

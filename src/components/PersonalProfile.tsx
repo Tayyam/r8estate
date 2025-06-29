@@ -115,7 +115,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Please upload an image file.');
+      setError(translations?.invalidFileType || 'Invalid file type. Please upload an image file.');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -123,7 +123,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      setError('File size too large. Please upload an image under 5MB.');
+      setError(translations?.fileTooLarge || 'File size too large. Please upload an image under 5MB.');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -151,11 +151,11 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
         });
       }
 
-      setSuccess('Profile photo updated successfully');
+      setSuccess(translations?.photoUpdatedSuccess || 'Profile photo updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
       console.error('Error updating photo:', error);
-      setError('Failed to update profile photo');
+      setError(translations?.failedToUpdatePhoto || 'Failed to update profile photo');
       setTimeout(() => setError(''), 3000);
     } finally {
       setPhotoLoading(false);
@@ -167,13 +167,13 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
     e.preventDefault();
     
     if (!firebaseUser || !currentUser) {
-      setError('No user logged in');
+      setError(translations?.noUserLoggedIn || 'No user logged in');
       setTimeout(() => setError(''), 3000);
       return;
     }
 
     if (!formData.displayName.trim()) {
-      setError('Display name is required');
+      setError(translations?.displayNameRequired || 'Display name is required');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -193,11 +193,11 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
         updatedAt: new Date()
       });
 
-      setSuccess('Profile updated successfully');
+      setSuccess(translations?.profileUpdatedSuccess || 'Profile updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      setError('Failed to update profile');
+      setError(translations?.failedToUpdateProfile || 'Failed to update profile');
       setTimeout(() => setError(''), 3000);
     } finally {
       setLoading(false);
@@ -209,25 +209,25 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
     e.preventDefault();
     
     if (!firebaseUser) {
-      setError('No user logged in');
+      setError(translations?.noUserLoggedIn || 'No user logged in');
       setTimeout(() => setError(''), 3000);
       return;
     }
 
     if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
-      setError('Please fill in all password fields');
+      setError(translations?.fillAllPasswordFields || 'Please fill in all password fields');
       setTimeout(() => setError(''), 3000);
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      setError('New passwords do not match');
+      setError(translations?.passwordsDoNotMatch || 'New passwords do not match');
       setTimeout(() => setError(''), 3000);
       return;
     }
 
     if (formData.newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
+      setError(translations?.newPasswordTooShort || 'New password must be at least 6 characters');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -255,16 +255,16 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
       }));
       
       setShowChangePassword(false);
-      setSuccess('Password updated successfully');
+      setSuccess(translations?.passwordUpdatedSuccess || 'Password updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
       console.error('Error updating password:', error);
       if (error.code === 'auth/wrong-password') {
-        setError('Current password is incorrect');
+        setError(translations?.currentPasswordIncorrect || 'Current password is incorrect');
       } else if (error.code === 'auth/weak-password') {
-        setError('New password is too weak');
+        setError(translations?.newPasswordTooWeak || 'New password is too weak');
       } else {
-        setError('Failed to update password');
+        setError(translations?.failedToUpdatePassword || 'Failed to update password');
       }
       setTimeout(() => setError(''), 3000);
     } finally {
@@ -276,11 +276,11 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
   const getRoleDisplayName = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'Administrator';
+        return translations?.administrator || 'Administrator';
       case 'user':
-        return 'User';
+        return translations?.user || 'User';
       case 'company':
-        return 'Company';
+        return translations?.company || 'Company';
       default:
         return role;
     }
@@ -293,13 +293,17 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="h-10 w-10 text-red-500" />
           </div>
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">Access Denied</h2>
-          <p className="text-gray-600 mb-6">This page is only available for users and administrators.</p>
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">
+            {translations?.accessDenied || 'Access Denied'}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {translations?.accessDeniedDesc || 'This page is only available for users and administrators.'}
+          </p>
           <button
             onClick={() => onNavigate('home')}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
           >
-            Go to Home
+            {translations?.goToHome || 'Go to Home'}
           </button>
         </div>
       </div>
@@ -317,7 +321,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
               className="flex items-center space-x-2 rtl:space-x-reverse text-gray-600 hover:text-gray-800 transition-colors duration-200 rounded-lg hover:bg-gray-100 p-2"
             >
               <ArrowLeft className="h-5 w-5" />
-              <span>Back to Home</span>
+              <span>{translations?.backToHome || 'Back to Home'}</span>
             </button>
           </div>
           
@@ -326,10 +330,10 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
               <User className="h-8 w-8" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: '#194866' }}>
-              Personal Profile
+              {translations?.personalProfile || 'Personal Profile'}
             </h1>
             <p className="text-lg text-gray-600">
-              Manage your personal information and account settings
+              {translations?.personalProfileSubtitle || 'Manage your personal information and account settings'}
             </p>
           </div>
         </div>
@@ -362,7 +366,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-3 rtl:space-x-reverse">
               <Camera className="h-6 w-6" style={{ color: '#194866' }} />
-              <span>Profile Photo</span>
+              <span>{translations?.profilePhoto || 'Profile Photo'}</span>
             </h2>
             
             <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 rtl:space-x-reverse">
@@ -388,11 +392,12 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
               
               <div className="text-center sm:text-left">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Update Your Photo
+                  {translations?.updateYourPhoto || 'Update Your Photo'}
                 </h3>
                 <p className="text-gray-600 mb-4 text-sm">
-                  Choose a clear photo that represents you professionally. 
-                  <br />Max size: 5MB. Formats: JPG, PNG, GIF, WebP
+                  {translations?.photoInstructions || 'Choose a clear photo that represents you professionally.'}
+                  <br />
+                  {translations?.photoInstructionsDetails || 'Max size: 5MB. Formats: JPG, PNG, GIF, WebP'}
                 </p>
                 
                 <input
@@ -421,7 +426,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                 >
                   <Camera className="h-4 w-4" />
                   <span>
-                    {photoLoading ? 'Uploading...' : 'Change Photo'}
+                    {photoLoading ? (translations?.uploadingPhoto || 'Uploading...') : (translations?.changePhoto || 'Change Photo')}
                   </span>
                 </button>
               </div>
@@ -432,7 +437,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-3 rtl:space-x-reverse">
               <User className="h-6 w-6" style={{ color: '#194866' }} />
-              <span>Basic Information</span>
+              <span>{translations?.basicInformation || 'Basic Information'}</span>
             </h2>
             
             <form onSubmit={handleProfileUpdate} className="space-y-6">
@@ -440,7 +445,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                 {/* Display Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name *
+                    {translations?.fullNameLabel || 'Full Name *'}
                   </label>
                   <input
                     type="text"
@@ -460,14 +465,14 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                       e.target.style.borderColor = '#d1d5db';
                       e.target.style.boxShadow = 'none';
                     }}
-                    placeholder="Enter your full name"
+                    placeholder={translations?.fullNamePlaceholder || 'Enter your full name'}
                   />
                 </div>
 
                 {/* Email (Read-only) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
+                    {translations?.emailAddress || 'Email Address'}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -479,14 +484,14 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Email cannot be changed. Contact support if needed.
+                    {translations?.emailCannotChange || 'Email cannot be changed. Contact support if needed.'}
                   </p>
                 </div>
 
                 {/* Role (Read-only) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Account Type
+                    {translations?.accountType || 'Account Type'}
                   </label>
                   <input
                     type="text"
@@ -499,7 +504,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                 {/* Email Verification Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Verification
+                    {translations?.emailVerification || 'Email Verification'}
                   </label>
                   <div className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 rounded-xl ${
                     currentUser.isEmailVerified 
@@ -508,7 +513,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                   }`}>
                     <CheckCircle className={`h-5 w-5 ${currentUser.isEmailVerified ? 'text-green-500' : 'text-yellow-500'}`} />
                     <span className="font-medium">
-                      {currentUser.isEmailVerified ? 'Verified' : 'Not Verified'}
+                      {currentUser.isEmailVerified ? (translations?.verified || 'Verified') : (translations?.notVerified || 'Not Verified')}
                     </span>
                   </div>
                 </div>
@@ -536,7 +541,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                   ) : (
                     <Save className="h-5 w-5" />
                   )}
-                  <span>{loading ? 'Updating...' : 'Update Profile'}</span>
+                  <span>{loading ? (translations?.updating || 'Updating...') : (translations?.updateProfile || 'Update Profile')}</span>
                 </button>
               </div>
             </form>
@@ -546,17 +551,17 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-3 rtl:space-x-reverse">
               <Key className="h-6 w-6" style={{ color: '#194866' }} />
-              <span>Password & Security</span>
+              <span>{translations?.passwordSecurity || 'Password & Security'}</span>
             </h2>
             
             {!showChangePassword ? (
               <div className="text-center py-8">
                 <Lock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Change Your Password
+                  {translations?.changeYourPassword || 'Change Your Password'}
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Keep your account secure by updating your password regularly
+                  {translations?.passwordSecurityDesc || 'Keep your account secure by updating your password regularly'}
                 </p>
                 <button
                   onClick={() => setShowChangePassword(true)}
@@ -570,7 +575,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                   }}
                 >
                   <Lock className="h-5 w-5" />
-                  <span>Change Password</span>
+                  <span>{translations?.changePassword || 'Change Password'}</span>
                 </button>
               </div>
             ) : (
@@ -579,7 +584,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                   {/* Current Password */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Current Password *
+                      {translations?.currentPassword || 'Current Password *'}
                     </label>
                     <div className="relative">
                       <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -601,7 +606,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                           e.target.style.borderColor = '#d1d5db';
                           e.target.style.boxShadow = 'none';
                         }}
-                        placeholder="Enter your current password"
+                        placeholder={translations?.currentPasswordPlaceholder || 'Enter your current password'}
                       />
                       <button
                         type="button"
@@ -620,7 +625,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                   {/* New Password */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      New Password *
+                      {translations?.newPassword || 'New Password *'}
                     </label>
                     <div className="relative">
                       <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -642,7 +647,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                           e.target.style.borderColor = '#d1d5db';
                           e.target.style.boxShadow = 'none';
                         }}
-                        placeholder="Enter new password (min 6 characters)"
+                        placeholder={translations?.newPasswordPlaceholder || 'Enter new password (min 6 characters)'}
                         minLength={6}
                       />
                       <button
@@ -662,7 +667,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                   {/* Confirm New Password */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirm New Password *
+                      {translations?.confirmNewPassword || 'Confirm New Password *'}
                     </label>
                     <div className="relative">
                       <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -684,7 +689,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                           e.target.style.borderColor = '#d1d5db';
                           e.target.style.boxShadow = 'none';
                         }}
-                        placeholder="Confirm your new password"
+                        placeholder={translations?.confirmNewPasswordPlaceholder || 'Confirm your new password'}
                       />
                     </div>
                   </div>
@@ -712,7 +717,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                     ) : (
                       <Save className="h-5 w-5" />
                     )}
-                    <span>{loading ? 'Updating...' : 'Update Password'}</span>
+                    <span>{loading ? (translations?.updating || 'Updating...') : (translations?.updatePassword || 'Update Password')}</span>
                   </button>
                   
                   <button
@@ -728,7 +733,7 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                     }}
                     className="flex-1 px-6 py-3 bg-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-400 transition-all duration-200"
                   >
-                    Cancel
+                    {translations?.cancel || 'Cancel'}
                   </button>
                 </div>
               </form>
