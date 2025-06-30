@@ -23,7 +23,6 @@ export const arNavigation = {
   companyProfile: 'ملف الشركة',
   personalProfile: 'الملف الشخصي',
   adminSettings: 'إعدادات المشرف',
-  myReviews: 'تقييماتي',
   
   // User Account Types
   adminAccount: 'حساب مدير',
