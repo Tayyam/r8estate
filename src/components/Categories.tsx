@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MapPin, ChevronRight, Building2, Users, ShieldCheck, Tag, ArrowLeft } from 'lucide-react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { Search, Filter, MapPin, ChevronRight, Building2, Users, ChevronDown, ChevronUp, Star, ArrowLeft, ArrowRight } from 'lucide-react';
+import { collection, getDocs, query, orderBy, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Category } from '../types/company';
@@ -10,18 +10,42 @@ interface CategoriesProps {
   initialCategoryFilter?: string;
 }
 
+// Interface for top company
+interface TopCompany {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  rating: number;
+  reviews: number;
+}
+
+// Interface for enhanced category with stats
+interface EnhancedCategory extends Category {
+  stats: {
+    companies: number;
+    reviews: number;
+    avgRating: number;
+  };
+  topCompanies: TopCompany[];
+}
+
+const CATEGORIES_PER_PAGE = 5;
+
 const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCategoryFilter }) => {
   const { translations, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<EnhancedCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Load categories from Firestore
+  // Load categories and their stats from Firestore
   const loadCategories = async () => {
     try {
       setLoading(true);
-      const categoriesQuery = query(collection(db, 'categories'), orderBy('name'));
+      // 1. Get all categories
+      const categoriesQuery = query(collection(db, 'categories'));
       const categoriesSnapshot = await getDocs(categoriesQuery);
       const categoriesData = categoriesSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -30,7 +54,64 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
         updatedAt: doc.data().updatedAt?.toDate() || new Date()
       })) as Category[];
       
-      setCategories(categoriesData);
+      // 2. For each category, get stats and top companies
+      const enhancedCategories = await Promise.all(
+        categoriesData.map(async (category) => {
+          // Get companies in this category
+          const companiesQuery = query(
+            collection(db, 'companies'),
+            where('categoryId', '==', category.id)
+          );
+          const companiesSnapshot = await getDocs(companiesQuery);
+          const companies = companiesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            rating: doc.data().totalRating || doc.data().rating || 0,
+            reviews: doc.data().totalReviews || 0
+          }));
+          
+          // Calculate stats
+          const totalCompanies = companies.length;
+          const totalReviews = companies.reduce((sum, company) => sum + (company.reviews || 0), 0);
+          const totalRating = companies.reduce((sum, company) => sum + ((company.rating || 0) * (company.reviews || 1)), 0);
+          const avgRating = totalReviews > 0 ? totalRating / totalReviews : 0;
+          
+          // Get top 5 companies sorted by number of reviews
+          const topCompanies = [...companies]
+            .sort((a, b) => (b.reviews || 0) - (a.reviews || 0))
+            .slice(0, 5)
+            .map(company => ({
+              id: company.id,
+              name: company.name,
+              logoUrl: company.logoUrl,
+              rating: company.rating || 0,
+              reviews: company.reviews || 0
+            }));
+          
+          return {
+            ...category,
+            stats: {
+              companies: totalCompanies,
+              reviews: totalReviews,
+              avgRating: parseFloat(avgRating.toFixed(1))
+            },
+            topCompanies
+          };
+        })
+      );
+      
+      // 3. Sort categories by average rating and then by company count
+      const sortedCategories = enhancedCategories.sort((a, b) => {
+        // First by rating
+        if (b.stats.avgRating !== a.stats.avgRating) {
+          return b.stats.avgRating - a.stats.avgRating;
+        }
+        // Then by company count
+        return b.stats.companies - a.stats.companies;
+      });
+      
+      setCategories(sortedCategories);
+      setTotalPages(Math.ceil(sortedCategories.length / CATEGORIES_PER_PAGE));
     } catch (error) {
       console.error('Error loading categories:', error);
       setError(translations?.failedToLoadCategories || 'Failed to load categories');
@@ -52,6 +133,21 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
     (category.descriptionAr && category.descriptionAr.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  // Calculate total pages
+  useEffect(() => {
+    setTotalPages(Math.ceil(filteredCategories.length / CATEGORIES_PER_PAGE));
+    // Reset to first page if current page is now invalid
+    if (currentPage > Math.ceil(filteredCategories.length / CATEGORIES_PER_PAGE)) {
+      setCurrentPage(1);
+    }
+  }, [filteredCategories.length]);
+
+  // Paginate categories
+  const paginatedCategories = filteredCategories.slice(
+    (currentPage - 1) * CATEGORIES_PER_PAGE,
+    currentPage * CATEGORIES_PER_PAGE
+  );
+
   // Handle category selection
   const handleCategoryClick = (categoryId: string) => {
     if (onNavigateToProfile) {
@@ -63,6 +159,13 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
     }
   };
 
+  // Handle company click
+  const handleCompanyClick = (companyId: string) => {
+    if (onNavigateToProfile) {
+      onNavigateToProfile(companyId);
+    }
+  };
+
   // Get category color based on index
   const getCategoryColor = (index: number) => {
     const colors = [
@@ -70,25 +173,27 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
       { bg: 'rgba(238, 24, 63, 0.1)', text: '#EE183F', border: '#EE183F', gradientFrom: '#EE183F', gradientTo: '#F54B6B' },
       { bg: 'rgba(16, 185, 129, 0.1)', text: '#10B981', border: '#10B981', gradientFrom: '#10B981', gradientTo: '#34D399' },
       { bg: 'rgba(139, 92, 246, 0.1)', text: '#8B5CF6', border: '#8B5CF6', gradientFrom: '#8B5CF6', gradientTo: '#A78BFA' },
-      { bg: 'rgba(245, 158, 11, 0.1)', text: '#F59E0B', border: '#F59E0B', gradientFrom: '#F59E0B', gradientTo: '#FBBF24' },
-      { bg: 'rgba(6, 182, 212, 0.1)', text: '#06B6D4', border: '#06B6D4', gradientFrom: '#06B6D4', gradientTo: '#22D3EE' }
+      { bg: 'rgba(245, 158, 11, 0.1)', text: '#F59E0B', border: '#F59E0B', gradientFrom: '#F59E0B', gradientTo: '#FBBF24' }
     ];
     
     return colors[index % colors.length];
   };
 
-  // Generate example stats for categories (in a real app, this would come from the database)
-  const getCategoryStats = (categoryId: string, index: number) => {
-    // These would be real statistics in a production app
-    const baseCompanies = 15 + (index * 5);
-    const baseReviews = 120 + (index * 30);
-    const baseRating = 3.5 + (Math.random() * 1.5);
-    
-    return {
-      companies: baseCompanies,
-      reviews: baseReviews,
-      avgRating: parseFloat(baseRating.toFixed(1))
-    };
+  // Handle pagination
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+      // Scroll to top of the category section
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+      // Scroll to top of the category section
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   if (loading) {
@@ -142,7 +247,10 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
                 type="text"
                 placeholder={translations?.searchCategories || 'Search categories...'}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1); // Reset to first page when searching
+                }}
                 className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
                 style={{ 
                   focusBorderColor: '#EE183F',
@@ -165,40 +273,44 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
       {/* Categories Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Categories Count */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {filteredCategories.length} {translations?.categories || 'Categories'}
-            </h2>
-            <p className="text-gray-600 mt-1">
-              {translations?.selectCategoryBelow || 'Select a category below to explore companies'}
-            </p>
+          {/* Categories Count and Pagination Info */}
+          <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {filteredCategories.length} {translations?.categories || 'Categories'}
+              </h2>
+              <p className="text-gray-600 mt-1">
+                {translations?.selectCategoryBelow || 'Select a category below to explore companies'}
+              </p>
+            </div>
+            
+            {/* Pagination Info */}
+            {filteredCategories.length > 0 && totalPages > 1 && (
+              <div className="text-sm text-gray-500 mt-2 sm:mt-0">
+                {translations?.pageInfo?.replace('{current}', currentPage.toString()).replace('{total}', totalPages.toString()) || 
+                 `Page ${currentPage} of ${totalPages}`}
+              </div>
+            )}
           </div>
 
           {/* Categories List */}
           {filteredCategories.length > 0 ? (
-            <div className="space-y-8">
-              {filteredCategories.map((category, index) => {
+            <div className="space-y-12">
+              {paginatedCategories.map((category, index) => {
                 const color = getCategoryColor(index);
-                const stats = getCategoryStats(category.id, index);
                 
                 return (
                   <div 
                     key={category.id}
-                    className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border-2 border-transparent cursor-pointer"
-                    onClick={() => handleCategoryClick(category.id)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = color.border;
-                      e.currentTarget.style.transform = 'scale(1.02)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'transparent';
-                      e.currentTarget.style.transform = 'scale(1)';
-                    }}
+                    className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border-2 border-transparent"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-3">
                       {/* Category Info */}
-                      <div className="md:col-span-2 p-8" style={{ background: `linear-gradient(135deg, ${color.gradientFrom} 0%, ${color.gradientTo} 100%)` }}>
+                      <div 
+                        className="p-8 cursor-pointer" 
+                        style={{ background: `linear-gradient(135deg, ${color.gradientFrom} 0%, ${color.gradientTo} 100%)` }}
+                        onClick={() => handleCategoryClick(category.id)}
+                      >
                         <div className="h-full flex flex-col justify-between">
                           <div>
                             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
@@ -209,7 +321,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
                                   className="w-10 h-10" 
                                 />
                               ) : (
-                                <Tag className="w-10 h-10 text-white" />
+                                <Building2 className="w-10 h-10 text-white" />
                               )}
                             </div>
                             <h3 className="text-3xl font-bold text-white mb-4">
@@ -222,8 +334,24 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
                             )}
                           </div>
                           
+                          {/* Stats */}
+                          <div className="grid grid-cols-3 gap-2 text-white/90 mt-4">
+                            <div className="text-center p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                              <div className="text-xl font-bold text-white">{category.stats.companies}</div>
+                              <div className="text-xs">{translations?.registeredCompanies || 'Companies'}</div>
+                            </div>
+                            <div className="text-center p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                              <div className="text-xl font-bold text-white">{category.stats.reviews}</div>
+                              <div className="text-xs">{translations?.totalReviews || 'Reviews'}</div>
+                            </div>
+                            <div className="text-center p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                              <div className="text-xl font-bold text-white">{category.stats.avgRating}</div>
+                              <div className="text-xs">{translations?.averageRating || 'Avg Rating'}</div>
+                            </div>
+                          </div>
+                          
                           <button 
-                            className="inline-flex items-center space-x-2 rtl:space-x-reverse bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-all duration-200 self-start"
+                            className="mt-6 inline-flex items-center space-x-2 rtl:space-x-reverse bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-all duration-200 self-start"
                           >
                             <span>{translations?.viewAllCompanies || 'View All Companies'}</span>
                             <ChevronRight className="w-5 h-5" />
@@ -231,64 +359,67 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
                         </div>
                       </div>
                       
-                      {/* Category Details */}
-                      <div className="md:col-span-3 p-8">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
-                          {/* Companies Stat */}
-                          <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-all duration-200">
-                            <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: color.bg }}>
-                                <Building2 className="w-6 h-6" style={{ color: color.text }} />
-                              </div>
-                              <div>
-                                <div className="text-2xl font-bold text-gray-900">{stats.companies}</div>
-                                <div className="text-sm text-gray-600">{translations?.registeredCompanies || 'Companies'}</div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Reviews Stat */}
-                          <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-all duration-200">
-                            <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: color.bg }}>
-                                <MessageSquare className="w-6 h-6" style={{ color: color.text }} />
-                              </div>
-                              <div>
-                                <div className="text-2xl font-bold text-gray-900">{stats.reviews}</div>
-                                <div className="text-sm text-gray-600">{translations?.totalReviews || 'Reviews'}</div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Rating Stat */}
-                          <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-all duration-200">
-                            <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: color.bg }}>
-                                <Star className="w-6 h-6" style={{ color: color.text }} />
-                              </div>
-                              <div>
-                                <div className="text-2xl font-bold text-gray-900">{stats.avgRating}</div>
-                                <div className="text-sm text-gray-600">{translations?.averageRating || 'Avg Rating'}</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                      {/* Top Companies */}
+                      <div className="lg:col-span-2 p-8">
+                        <h4 className="text-lg font-bold text-gray-900 mb-4">
+                          {translations?.topCompanies || 'Top Companies'} ({language === 'ar' ? (category.nameAr || category.name) : category.name})
+                        </h4>
                         
-                        {/* Popular Features/Services */}
-                        <div>
-                          <h4 className="text-lg font-bold text-gray-900 mb-4">{translations?.popularServicesTitle || 'Popular Services'}</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {generateFeaturesList(category.id, index).map((feature, i) => (
+                        {category.topCompanies.length > 0 ? (
+                          <div className="space-y-4">
+                            {category.topCompanies.map((company) => (
                               <div 
-                                key={i} 
-                                className="px-3 py-1.5 rounded-full text-sm font-medium"
-                                style={{ backgroundColor: color.bg, color: color.text }}
+                                key={company.id}
+                                className="flex items-center border border-gray-100 p-4 rounded-xl hover:bg-gray-50 cursor-pointer transition-all duration-200"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCompanyClick(company.id);
+                                }}
                               >
-                                {feature}
+                                {/* Company Logo */}
+                                <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden mr-4 rtl:ml-4 rtl:mr-0 flex-shrink-0">
+                                  {company.logoUrl ? (
+                                    <img
+                                      src={company.logoUrl}
+                                      alt={company.name}
+                                      className="w-full h-full object-contain p-2"
+                                    />
+                                  ) : (
+                                    <Building2 className="w-8 h-8 text-gray-400" />
+                                  )}
+                                </div>
+                                
+                                {/* Company Info */}
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-medium text-gray-900 truncate">{company.name}</h5>
+                                  <div className="flex items-center mt-1">
+                                    <div className="flex">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star 
+                                          key={i}
+                                          className={`w-4 h-4 ${i < Math.round(company.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-sm text-gray-500 ml-2">
+                                      ({company.reviews} {translations?.reviews || 'reviews'})
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                {/* View Details */}
+                                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                               </div>
                             ))}
                           </div>
-                        </div>
+                        ) : (
+                          <div className="text-center py-8 bg-gray-50 rounded-xl">
+                            <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                            <p className="text-gray-500">
+                              {translations?.noCompaniesInCategory || 'No companies in this category yet'}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -297,7 +428,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
             </div>
           ) : (
             <div className="text-center py-16 bg-white rounded-2xl shadow-md">
-              <Tag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <Building2 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-gray-900 mb-2">
                 {translations?.noCategoriesFound || 'No Categories Found'}
               </h3>
@@ -312,96 +443,36 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
               </button>
             </div>
           )}
+
+          {/* Pagination Controls */}
+          {filteredCategories.length > 0 && totalPages > 1 && (
+            <div className="flex justify-center mt-12">
+              <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                <button
+                  onClick={goToPrevPage}
+                  disabled={currentPage === 1}
+                  className="w-10 h-10 bg-white border border-gray-300 rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  <ArrowLeft className="w-5 h-5 text-gray-700" />
+                </button>
+                
+                <div className="text-sm">
+                  <span className="font-medium">{currentPage}</span> / {totalPages}
+                </div>
+                
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                  className="w-10 h-10 bg-white border border-gray-300 rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  <ArrowRight className="w-5 h-5 text-gray-700" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </div>
-  );
-};
-
-// Helper function to generate services/features for each category (in a real app, this would come from the database)
-function generateFeaturesList(categoryId: string, index: number): string[] {
-  const features: { [key: string]: string[] } = {
-    // Developer services
-    developer: [
-      'Residential Properties', 
-      'Commercial Properties', 
-      'Mixed-Use Developments', 
-      'Property Management', 
-      'Investment Opportunities'
-    ],
-    // Broker services
-    broker: [
-      'Property Sales', 
-      'Property Rentals', 
-      'Property Valuation', 
-      'Market Analysis', 
-      'Contract Negotiation'
-    ],
-    // Consultant services
-    consultant: [
-      'Feasibility Studies', 
-      'Investment Advisory', 
-      'Property Valuation', 
-      'Market Research', 
-      'Development Consultation'
-    ],
-    // Property Management services
-    propertyManagement: [
-      'Tenant Management', 
-      'Maintenance Services', 
-      'Financial Management', 
-      'Property Inspection', 
-      'Lease Administration'
-    ],
-    // Default services
-    default: [
-      'Property Listings',
-      'Client Consultations',
-      'Market Analysis',
-      'Investment Guidance',
-      'Property Tours'
-    ]
-  };
-  
-  // Select 5 random services based on index to give variety
-  const allServices = features[categoryId] || features.default;
-  const randomStart = index % (allServices.length - 5 + 1);
-  return allServices.slice(randomStart, randomStart + 5);
-}
-
-// Helper component for star ratings
-const Star = (props: React.SVGProps<SVGSVGElement>) => {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 24 24" 
-      fill="currentColor" 
-      {...props}
-    >
-      <path 
-        fillRule="evenodd" 
-        d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" 
-        clipRule="evenodd" 
-      />
-    </svg>
-  );
-};
-
-// Helper component for message square
-const MessageSquare = (props: React.SVGProps<SVGSVGElement>) => {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      {...props}
-    >
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-    </svg>
   );
 };
 
