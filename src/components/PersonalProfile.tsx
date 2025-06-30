@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { User, Mail, Lock, Camera, Save, ArrowLeft, Eye, EyeOff, CheckCircle, AlertCircle, Key } from 'lucide-react';
+import { User, Mail, Lock, Camera, Save, ArrowLeft, Eye, EyeOff, CheckCircle, AlertCircle, Key, Star } from 'lucide-react';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -286,6 +286,11 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
     }
   };
 
+  // Navigate to My Reviews page
+  const handleNavigateToMyReviews = () => {
+    onNavigate('my-reviews');
+  };
+
   if (!currentUser || currentUser.role === 'company') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -545,6 +550,33 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                 </button>
               </div>
             </form>
+          </div>
+
+          {/* My Reviews Section */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-3 rtl:space-x-reverse">
+              <Star className="h-6 w-6" style={{ color: '#194866' }} />
+              <span>{translations?.myReviews || 'My Reviews'}</span>
+            </h2>
+            <div className="text-center py-6">
+              <p className="text-gray-600 mb-6">
+                {translations?.manageYourReviews || 'View and manage all reviews you have posted across different companies'}
+              </p>
+              <button
+                onClick={handleNavigateToMyReviews}
+                className="flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 mx-auto text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                style={{ backgroundColor: '#194866' }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#0f3147';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#194866';
+                }}
+              >
+                <Star className="h-5 w-5" />
+                <span>{translations?.viewMyReviews || 'View My Reviews'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Password Section */}

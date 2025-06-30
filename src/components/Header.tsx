@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, ChevronDown, User, UserPlus, Menu, X, LogOut, Settings as SettingsIcon, Building2 } from 'lucide-react';
+import { Globe, ChevronDown, User, UserPlus, Menu, X, LogOut, Settings as SettingsIcon, Building2, Star } from 'lucide-react';
 import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -148,6 +148,15 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
   const handlePersonalProfile = () => {
     if (setCurrentPage) {
       setCurrentPage('personal-profile');
+      setIsUserMenuOpen(false);
+      setIsMobileMenuOpen(false);
+    }
+  };
+
+  // Handle my reviews navigation
+  const handleMyReviews = () => {
+    if (setCurrentPage) {
+      setCurrentPage('my-reviews');
       setIsUserMenuOpen(false);
       setIsMobileMenuOpen(false);
     }
@@ -370,13 +379,24 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
 
                     {/* Personal Profile Link - Only for regular users and admins */}
                     {currentUser.role !== 'company' && (
-                      <button
-                        onClick={handlePersonalProfile}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
-                      >
-                        <User className="w-4 h-4" />
-                        <span>{translations?.personalProfile || 'Personal Profile'}</span>
-                      </button>
+                      <>
+                        <button
+                          onClick={handlePersonalProfile}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>{translations?.personalProfile || 'Personal Profile'}</span>
+                        </button>
+                        
+                        {/* My Reviews Link - Only for regular users and admins */}
+                        <button
+                          onClick={handleMyReviews}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
+                        >
+                          <Star className="w-4 h-4" />
+                          <span>{translations?.myReviews || 'My Reviews'}</span>
+                        </button>
+                      </>
                     )}
 
                     {/* Settings link for admin users */}
@@ -559,13 +579,24 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
 
                     {/* Personal Profile for mobile - Only for regular users and admins */}
                     {currentUser.role !== 'company' && (
-                      <button
-                        onClick={handlePersonalProfile}
-                        className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
-                      >
-                        <User className="w-4 h-4" />
-                        <span>{translations?.personalProfile || 'Personal Profile'}</span>
-                      </button>
+                      <>
+                        <button
+                          onClick={handlePersonalProfile}
+                          className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>{translations?.personalProfile || 'Personal Profile'}</span>
+                        </button>
+                        
+                        {/* My Reviews for mobile - Only for regular users and admins */}
+                        <button
+                          onClick={handleMyReviews}
+                          className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
+                        >
+                          <Star className="w-4 h-4" />
+                          <span>{translations?.myReviews || 'My Reviews'}</span>
+                        </button>
+                      </>
                     )}
                     
                     {/* Settings link for admin users in mobile */}
