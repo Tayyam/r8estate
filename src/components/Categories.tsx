@@ -196,6 +196,17 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
     }
   };
 
+  // Handle "View All Companies" button click
+  const handleViewAllCompanies = (categoryId: string) => {
+    if (onNavigateToProfile) {
+      // Navigate to search results page with category filter
+      const event = new CustomEvent('navigateToSearch', {
+        detail: { query: '', category: categoryId }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -352,6 +363,10 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
                           
                           <button 
                             className="mt-6 inline-flex items-center space-x-2 rtl:space-x-reverse bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-all duration-200 self-start"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewAllCompanies(category.id);
+                            }}
                           >
                             <span>{translations?.viewAllCompanies || 'View All Companies'}</span>
                             <ChevronRight className="w-5 h-5" />

@@ -39,7 +39,7 @@ function App() {
 
     window.addEventListener('navigateToCompanyProfile', handleCompanyProfileNavigation as EventListener);
     
-    // Listen for navigation to companies with category filter
+    // Listen for navigation to categories with filter
     const handleCategoriesWithFilter = (event: CustomEvent) => {
       const { categoryId } = event.detail;
       setSelectedCategoryId(categoryId);
@@ -48,9 +48,19 @@ function App() {
 
     window.addEventListener('navigateToCompaniesWithCategory', handleCategoriesWithFilter as EventListener);
     
+    // Listen for search navigation
+    const handleSearchNavigation = (event: CustomEvent) => {
+      const { query, category } = event.detail;
+      setSearchParams({ query, category });
+      setCurrentPage('search-results');
+    };
+
+    window.addEventListener('navigateToSearch', handleSearchNavigation as EventListener);
+    
     return () => {
       window.removeEventListener('navigateToCompanyProfile', handleCompanyProfileNavigation as EventListener);
       window.removeEventListener('navigateToCompaniesWithCategory', handleCategoriesWithFilter as EventListener);
+      window.removeEventListener('navigateToSearch', handleSearchNavigation as EventListener);
     };
   }, []);
 

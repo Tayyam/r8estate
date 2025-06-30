@@ -331,13 +331,11 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
     if (onSearch) {
       onSearch(searchQuery, selectedCategory);
     } else if (onNavigate) {
-      // Fallback to old navigation if onSearch is not provided
-      onNavigate('categories');
-      
-      // If a specific category is selected, pass it along
-      if (selectedCategory !== 'all' && onCategorySelect) {
-        onCategorySelect(selectedCategory);
-      }
+      // Dispatch event to navigate with search params
+      const event = new CustomEvent('navigateToSearch', {
+        detail: { query: searchQuery, category: selectedCategory }
+      });
+      window.dispatchEvent(event);
     }
   };
 
@@ -350,13 +348,11 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
   // Handle category click
   const handleCategoryClick = (categoryId: string) => {
     if (onNavigate) {
-      // Navigate to categories page
-      onNavigate('categories');
-      
-      // Pass the selected category
-      if (onCategorySelect && categoryId !== 'all') {
-        onCategorySelect(categoryId);
-      }
+      // Dispatch event to navigate with search params
+      const event = new CustomEvent('navigateToSearch', {
+        detail: { query: '', category: categoryId }
+      });
+      window.dispatchEvent(event);
     }
   };
 
