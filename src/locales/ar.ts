@@ -20,6 +20,7 @@ import { arContact } from './ar-contact';
 import { arTerms } from './ar-terms';
 import { arPrivacy } from './ar-privacy';
 import { arMyReviews } from './ar-my-reviews';
+import { arSearch } from './ar-search';
 
 export const ar = {
   ...arCommon,
@@ -43,4 +44,5 @@ export const ar = {
   ...arTerms,
   ...arPrivacy,
   ...arMyReviews,
+  ...arSearch,
 };

@@ -16,9 +16,10 @@ import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 interface HeroProps {
   onNavigate?: (page: string) => void;
   onCategorySelect?: (categoryId: string) => void;
+  onSearch?: (query: string, category: string) => void;
 }
 
-const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
+const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) => {
   const { translations, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -89,7 +90,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
         // First try to get companies with ratings
         let companiesQuery = query(
           collection(db, 'companies'),
-          orderBy('totalRating', 'desc'), // Order by rating descending
+          orderBy('rating', 'desc'), // Order by rating descending
           limit(3) // Limit to 3 companies
         );
         
@@ -119,7 +120,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
           createdAt: doc.data().createdAt?.toDate() || new Date(),
           updatedAt: doc.data().updatedAt?.toDate() || new Date(),
           // Ensure totalRating has a value
-          totalRating: doc.data().totalRating || 0,
+          totalRating: doc.data().totalRating || doc.data().rating || 0,
           totalReviews: doc.data().totalReviews || 0
         }));
         
@@ -232,8 +233,10 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
   }, []);
 
   const handleSearch = () => {
-    if (onNavigate) {
-      // Navigate to categories page
+    if (onSearch) {
+      onSearch(searchQuery, selectedCategory);
+    } else if (onNavigate) {
+      // Fallback to old navigation if onSearch is not provided
       onNavigate('categories');
       
       // If a specific category is selected, pass it along

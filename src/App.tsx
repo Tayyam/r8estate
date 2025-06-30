@@ -16,6 +16,7 @@ import Register from './components/Auth/Register';
 import CompanyProfile from './components/CompanyProfile';
 import PersonalProfile from './components/PersonalProfile';
 import MyReviews from './components/MyReviews';
+import SearchResults from './components/SearchResults';
 import Footer from './components/Footer';
 import NotificationContainer from './components/UI/NotificationContainer';
 
@@ -23,6 +24,10 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useState({
+    query: '',
+    category: 'all'
+  });
 
   // Listen for company profile navigation from Header
   useEffect(() => {
@@ -48,6 +53,16 @@ function App() {
             setCurrentPage('company-profile');
           }}
           initialCategoryFilter={selectedCategoryId}
+        />;
+      case 'search-results':
+        return <SearchResults 
+          onNavigate={setCurrentPage} 
+          onNavigateToProfile={(companyId) => {
+            setSelectedCompanyId(companyId);
+            setCurrentPage('company-profile');
+          }}
+          initialSearchQuery={searchParams.query}
+          initialCategoryFilter={searchParams.category}
         />;
       case 'about':
         return <About />;
@@ -83,6 +98,10 @@ function App() {
           onNavigate={setCurrentPage} 
           onCategorySelect={(categoryId) => {
             setSelectedCategoryId(categoryId);
+          }}
+          onSearch={(query, category) => {
+            setSearchParams({ query, category });
+            setCurrentPage('search-results');
           }}
         />;
     }
