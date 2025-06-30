@@ -74,6 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Register new user
   const register = async (email: string, password: string, displayName: string, role: UserRole = 'user') => {
     try {
+      // Create the user with email/password
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       
       // Update Firebase profile
@@ -93,6 +94,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Send email verification
       await sendEmailVerification(user);
+      
+      // No need to manually sign in since createUserWithEmailAndPassword
+      // already signs the user in. Just update the current user state.
+      const newUserData: User = {
+        uid: user.uid,
+        ...userData
+      };
+      
+      setCurrentUser(newUserData);
+      setFirebaseUser(user);
       
     } catch (error: any) {
       console.error('Registration error:', error);
