@@ -25,3 +25,12 @@ export interface CompanyProfile {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Type definition for votes
+export interface ReviewVote {
+  id?: string;
+  userId: string;
+  reviewId: string;
+  helpful: boolean;
+  createdAt: Date;
+}

@@ -3,8 +3,10 @@ import { Search, Star, Filter, MapPin, Calendar, Eye, Building2, Users, MessageS
 import { collection, getDocs, query, orderBy, where, limit, startAfter, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext'; // Added import
 import { Review } from '../types/property';
 import { Category, egyptianGovernorates } from '../types/company';
+import GoogleOneTap from './GoogleOneTap'; // Added import for GoogleOneTap component
 // Import Swiper components
 import { Swiper, SwiperSlide } from 'swiper/react';
 // Import Swiper styles
@@ -21,6 +23,7 @@ interface HeroProps {
 
 const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) => {
   const { translations, language } = useLanguage();
+  const { currentUser } = useAuth(); // Added to check if user is logged in
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [recentReviews, setRecentReviews] = useState<(Review & { companyName: string, companyLogo?: string })[]>([]);
@@ -398,6 +401,9 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Only show GoogleOneTap if user is not logged in */}
+      {!currentUser && <GoogleOneTap />}
+      
       {/* Hero Section */}
       <section style={{ backgroundColor: '#EFF5FF' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -796,7 +802,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
                     {review.content}
                   </p>
                   <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>{review.userName}</span>
+                    <span>{review.isAnonymous ? (translations?.anonymous || 'Anonymous') : review.userName}</span>
                     <div className="flex items-center space-x-2 rtl:space-x-reverse">
                       <Calendar className="w-4 h-4" />
                       <span>{formatDate(review.createdAt)}</span>
