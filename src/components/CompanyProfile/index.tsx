@@ -43,23 +43,20 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
     currentUser.role === 'admin' || 
     (currentUser.role === 'company' && company?.email === currentUser.email)
   );
-
+  
   // Check if user can leave a review (logged in, not company owner)
   const userCanReview = currentUser && !canEdit;
   
   // Check if user has already reviewed this company
   const hasUserReviewed = currentUser && reviews.some(review => review.userId === currentUser.uid);
 
-  // When loading completes, check if user can review and set the active tab appropriately
+  // When loading completes, set the active tab appropriately
   useEffect(() => {
     if (!loading) {
-      if (userCanReview && !hasUserReviewed) {
-        setActiveTab('write-review');
-      } else {
-        setActiveTab('overview');
-      }
+      // Always keep the write-review tab as default
+      setActiveTab('write-review');
     }
-  }, [loading, userCanReview, hasUserReviewed]);
+  }, [loading]);
 
   // Load company data
   const loadCompanyData = async () => {
@@ -174,7 +171,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         setCompany(updatedCompanyData);
       }
     }
-    setActiveTab('reviews');
   };
 
   // Show success message
@@ -221,6 +217,15 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'write-review':
+        return (
+          <WriteReviewTab
+            company={company}
+            onReviewAdded={handleReviewAdded}
+            onSuccess={handleSuccess}
+            onError={handleError}
+          />
+        );
       case 'overview':
         return (
           <OverviewTab
@@ -248,15 +253,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         return (
           <ReviewsTab 
             reviews={reviews} 
-            company={company}
-            onReviewAdded={handleReviewAdded}
-            onSuccess={handleSuccess}
-            onError={handleError}
-          />
-        );
-      case 'write-review':
-        return (
-          <WriteReviewTab
             company={company}
             onReviewAdded={handleReviewAdded}
             onSuccess={handleSuccess}

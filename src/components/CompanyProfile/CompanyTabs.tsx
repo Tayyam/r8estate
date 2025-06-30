@@ -23,20 +23,13 @@ const CompanyTabs: React.FC<CompanyTabsProps> = ({
 }) => {
   const { translations } = useLanguage();
 
-  // Base tabs that are always shown
-  const baseTabs = [
+  // Always include "Write a Review" tab first, followed by the base tabs
+  const tabs = [
+    { id: 'write-review', name: hasUserReviewed ? (translations?.editReview || 'Edit Review') : (translations?.writeReview || 'Write a Review'), icon: Star },
     { id: 'overview', name: translations?.overview || 'Overview', icon: Building2 },
     { id: 'properties', name: translations?.propertiesTab || 'Properties', icon: Eye },
     { id: 'reviews', name: translations?.reviewsTab || 'Reviews', icon: MessageSquare }
   ];
-  
-  // Add "Write a Review" tab if user can review and hasn't already reviewed
-  const tabs = userCanReview && !hasUserReviewed 
-    ? [
-        ...baseTabs,
-        { id: 'write-review', name: translations?.writeReview || 'Write a Review', icon: Star }
-      ]
-    : baseTabs;
 
   return (
     <div className="bg-white border-b border-gray-200">

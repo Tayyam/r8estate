@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Star, MessageSquare, User, AlertCircle } from 'lucide-react';
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { Star, MessageSquare, User, AlertCircle, Edit } from 'lucide-react';
+import { collection, addDoc, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
+import { Review } from '../../types/property';
 
 interface WriteReviewTabProps {
   company: CompanyProfileType;
@@ -27,6 +28,7 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const [loading, setLoading] = useState(false);
+  const [userReview, setUserReview] = useState<Review | null>(null);
   const [formData, setFormData] = useState({
     rating: 0,
     title: '',
@@ -46,6 +48,56 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
     { key: 'friendliness', label: translations?.friendliness || 'Friendliness' },
     { key: 'responsiveness', label: translations?.responsiveness || 'Responsiveness' }
   ];
+
+  // Check if user has already reviewed this company
+  useEffect(() => {
+    const checkExistingReview = async () => {
+      if (!currentUser) return;
+      
+      try {
+        const reviewsQuery = query(
+          collection(db, 'reviews'),
+          where('companyId', '==', company.id),
+          where('userId', '==', currentUser.uid)
+        );
+        const reviewsSnapshot = await getDocs(reviewsQuery);
+        
+        if (!reviewsSnapshot.empty) {
+          const reviewData = reviewsSnapshot.docs[0].data();
+          const review = {
+            id: reviewsSnapshot.docs[0].id,
+            ...reviewData,
+            createdAt: reviewData.createdAt?.toDate() || new Date(),
+            updatedAt: reviewData.updatedAt?.toDate() || new Date(),
+            companyReply: reviewData.companyReply ? {
+              ...reviewData.companyReply,
+              repliedAt: reviewData.companyReply.repliedAt?.toDate() || new Date()
+            } : undefined
+          } as Review;
+          
+          setUserReview(review);
+          
+          // Set form data for editing
+          setFormData({
+            rating: review.rating,
+            title: review.title,
+            content: review.content,
+            isAnonymous: review.isAnonymous || false,
+            ratingDetails: review.ratingDetails || {
+              communication: 0,
+              valueForMoney: 0,
+              friendliness: 0,
+              responsiveness: 0
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error checking existing review:', error);
+      }
+    };
+    
+    checkExistingReview();
+  }, [currentUser, company.id]);
 
   // Calculate average rating from all categories
   const calculateAverageRating = () => {
@@ -123,8 +175,8 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
     }
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Handle add review submission
+  const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!currentUser) {
@@ -171,9 +223,100 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
 
       onSuccess(translations?.reviewAddedSuccess || 'Review added successfully!');
       onReviewAdded();
+      
+      // Reload the review to get the edit mode working
+      const checkExistingReview = async () => {
+        const reviewsQuery = query(
+          collection(db, 'reviews'),
+          where('companyId', '==', company.id),
+          where('userId', '==', currentUser.uid)
+        );
+        const reviewsSnapshot = await getDocs(reviewsQuery);
+        
+        if (!reviewsSnapshot.empty) {
+          const reviewData = reviewsSnapshot.docs[0].data();
+          const review = {
+            id: reviewsSnapshot.docs[0].id,
+            ...reviewData,
+            createdAt: reviewData.createdAt?.toDate() || new Date(),
+            updatedAt: reviewData.updatedAt?.toDate() || new Date(),
+            companyReply: reviewData.companyReply ? {
+              ...reviewData.companyReply,
+              repliedAt: reviewData.companyReply.repliedAt?.toDate() || new Date()
+            } : undefined
+          } as Review;
+          
+          setUserReview(review);
+        }
+      };
+      
+      checkExistingReview();
+      
     } catch (error: any) {
       console.error('Error adding review:', error);
       onError(translations?.failedToAddReview || 'Failed to add review. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle edit review submission
+  const handleEditReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!currentUser || !userReview) {
+      onError(translations?.mustBeLoggedIn || 'You must be logged in to edit a review');
+      return;
+    }
+
+    // Check if any of the category ratings are 0
+    const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
+    if (communication === 0 || valueForMoney === 0 || friendliness === 0 || responsiveness === 0) {
+      onError(translations?.pleaseRateAllCategories || 'Please rate all categories');
+      return;
+    }
+
+    if (!formData.title.trim() || !formData.content.trim()) {
+      onError(translations?.pleaseFillAllFields || 'Please fill in all fields');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Calculate average rating
+      const overallRating = calculateAverageRating();
+
+      // Update review in Firestore
+      const reviewRef = doc(db, 'reviews', userReview.id);
+      await updateDoc(reviewRef, {
+        rating: overallRating,
+        ratingDetails: formData.ratingDetails,
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        isAnonymous: formData.isAnonymous,
+        updatedAt: new Date()
+      });
+
+      // Update company's rating
+      await updateCompanyRating();
+      
+      // Update local state
+      setUserReview({
+        ...userReview,
+        rating: overallRating,
+        ratingDetails: formData.ratingDetails,
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        isAnonymous: formData.isAnonymous,
+        updatedAt: new Date()
+      });
+
+      onSuccess(translations?.reviewUpdatedSuccess || 'Review updated successfully!');
+      onReviewAdded();
+    } catch (error: any) {
+      console.error('Error updating review:', error);
+      onError(translations?.failedToUpdateReview || 'Failed to update review. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -195,6 +338,7 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
     }));
   };
 
+  // If user is not logged in
   if (!currentUser) {
     return (
       <div className="bg-white rounded-2xl shadow-md p-8 text-center">
@@ -208,22 +352,29 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
       </div>
     );
   }
+  
+  // If the user has already written a review
+  const isEditing = userReview !== null;
 
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
       {/* Header */}
       <div className="border-b border-gray-200 pb-6 mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {translations?.writeReview || 'Write a Review'}
+          {isEditing 
+            ? (translations?.editReview || 'Edit Review') 
+            : (translations?.writeReview || 'Write a Review')}
         </h2>
         <p className="text-gray-600">
-          {translations?.shareExperienceWith?.replace('{company}', company.name) || 
-           `Share your experience with ${company.name}`}
+          {isEditing
+            ? (translations?.updateYourReview || 'Update your review of this company')
+            : (translations?.shareExperienceWith?.replace('{company}', company.name) || 
+               `Share your experience with ${company.name}`)}
         </p>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={isEditing ? handleEditReview : handleAddReview} className="space-y-8">
         {/* User Info Display */}
         <div className="bg-gray-50 rounded-xl p-6">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
@@ -243,8 +394,11 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
                 {currentUser?.displayName || currentUser?.email}
               </p>
               <p className="text-sm text-gray-600">
-                {translations?.reviewingAs?.replace('{role}', currentUser?.role || 'user') || 
-                 `Reviewing as: ${currentUser?.role || 'user'}`}
+                {isEditing 
+                  ? (translations?.originalReview?.replace('{date}', userReview.createdAt.toLocaleDateString()) || 
+                     `Original review: ${userReview.createdAt.toLocaleDateString()}`)
+                  : (translations?.reviewingAs?.replace('{role}', currentUser?.role || 'user') || 
+                     `Reviewing as: ${currentUser?.role || 'user'}`)}
               </p>
             </div>
           </div>
@@ -376,22 +530,26 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
             type="submit"
             disabled={loading || !calculateAverageRating() || !formData.title.trim() || !formData.content.trim()}
             className="w-full sm:w-auto text-white py-4 px-8 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-lg hover:shadow-xl"
-            style={{ backgroundColor: '#194866' }}
+            style={{ backgroundColor: isEditing ? '#f97316' : '#194866' }}
             onMouseEnter={(e) => {
               if (!loading && calculateAverageRating() !== 0 && formData.title.trim() && formData.content.trim()) {
-                e.target.style.backgroundColor = '#0f3147';
+                e.target.style.backgroundColor = isEditing ? '#ea580c' : '#0f3147';
               }
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#194866';
+              e.target.style.backgroundColor = isEditing ? '#f97316' : '#194866';
             }}
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
-                <MessageSquare className="h-5 w-5" />
-                <span>{translations?.submitReview || 'Submit Review'}</span>
+                {isEditing ? <Edit className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />}
+                <span>
+                  {isEditing 
+                    ? (translations?.updateReview || 'Update Review')
+                    : (translations?.submitReview || 'Submit Review')}
+                </span>
               </>
             )}
           </button>
