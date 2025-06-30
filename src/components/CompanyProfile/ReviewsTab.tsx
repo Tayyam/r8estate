@@ -150,8 +150,11 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         ? currentReviews.reduce((sum, review) => sum + review.rating, 0) / currentReviews.length 
         : 0;
       
+      const roundedRating = Math.round(newAverageRating * 10) / 10;
+      
       await updateDoc(companyRef, {
-        totalRating: Math.round(newAverageRating * 10) / 10,
+        totalRating: roundedRating,
+        rating: roundedRating, // Also update the rating field
         totalReviews: currentReviews.length,
         updatedAt: new Date()
       });

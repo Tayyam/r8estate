@@ -77,9 +77,12 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
         ? allReviews.reduce((sum: number, review: any) => sum + review.rating, 0) / allReviews.length 
         : 0;
       
+      const roundedRating = Math.round(averageRating * 10) / 10; // Round to 1 decimal place
+      
       const companyRef = doc(db, 'companies', company.id);
       await updateDoc(companyRef, {
-        totalRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal place
+        totalRating: roundedRating,
+        rating: roundedRating, // Also update the rating field
         totalReviews: allReviews.length,
         updatedAt: new Date()
       });
