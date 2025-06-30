@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Star, Edit, Trash2, AlertCircle, Building2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { collection, query, where, orderBy, limit, getDocs, startAfter, doc, getDoc, deleteDoc, DocumentData } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, startAfter, doc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -101,9 +101,8 @@ const MyReviews: React.FC<MyReviewsProps> = ({ onNavigate }) => {
 
           // Get company information
           try {
-            const companyDocRef = doc(db, 'companies', reviewData.companyId);
-            const companyDoc = await getDoc(companyDocRef);
-            if (companyDoc.exists()) {
+            const companyDoc = await db.doc(`companies/${reviewData.companyId}`).get();
+            if (companyDoc.exists) {
               const companyData = companyDoc.data();
               return {
                 ...reviewData,
