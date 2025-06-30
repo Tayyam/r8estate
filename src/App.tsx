@@ -39,8 +39,18 @@ function App() {
 
     window.addEventListener('navigateToCompanyProfile', handleCompanyProfileNavigation as EventListener);
     
+    // Listen for navigation to companies with category filter
+    const handleCategoriesWithFilter = (event: CustomEvent) => {
+      const { categoryId } = event.detail;
+      setSelectedCategoryId(categoryId);
+      setCurrentPage('companies-by-category'); // New page for filtered companies
+    };
+
+    window.addEventListener('navigateToCompaniesWithCategory', handleCategoriesWithFilter as EventListener);
+    
     return () => {
       window.removeEventListener('navigateToCompanyProfile', handleCompanyProfileNavigation as EventListener);
+      window.removeEventListener('navigateToCompaniesWithCategory', handleCategoriesWithFilter as EventListener);
     };
   }, []);
 
@@ -53,6 +63,17 @@ function App() {
             setCurrentPage('company-profile');
           }}
           initialCategoryFilter={selectedCategoryId}
+        />;
+      case 'companies-by-category':
+        // This is a new case to handle when a user clicks on a category
+        // It will use the existing Companies component from before our changes
+        // We'd need to implement this component if needed
+        return <CategoriesWithCompanies 
+          categoryId={selectedCategoryId}
+          onNavigateToProfile={(companyId) => {
+            setSelectedCompanyId(companyId);
+            setCurrentPage('company-profile');
+          }}
         />;
       case 'search-results':
         return <SearchResults 
@@ -128,5 +149,28 @@ function App() {
     </LanguageProvider>
   );
 }
+
+// Placeholder for the companies by category component
+// In a real implementation, we would create this as a separate file
+const CategoriesWithCompanies = ({ categoryId, onNavigateToProfile }: { categoryId: string | null, onNavigateToProfile: (id: string) => void }) => {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+      <div className="text-center bg-white rounded-xl p-8 shadow-md">
+        <h2 className="text-2xl font-bold mb-4" style={{ color: '#194866' }}>
+          Companies in this Category
+        </h2>
+        <p className="text-gray-600 mb-6">
+          This is a placeholder for the companies list filtered by category ID: {categoryId}
+        </p>
+        <button
+          onClick={() => window.history.back()}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg"
+        >
+          Go Back
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default App;

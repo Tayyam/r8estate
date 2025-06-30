@@ -1,19 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Star, Filter, MapPin, Calendar, Eye, Building2 } from 'lucide-react';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { Search, Filter, MapPin, ChevronRight, Building2, Users, ShieldCheck, Tag, ArrowLeft } from 'lucide-react';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Company } from '../types/company';
-import { Category, egyptianGovernorates } from '../types/company';
-
-interface CompanyWithCategory extends Company {
-  categoryName: string;
-  categoryNameAr?: string;
-  locationName: string;
-  locationNameAr?: string;
-  totalRating: number;
-  totalReviews: number;
-}
+import { Category } from '../types/company';
 
 interface CategoriesProps {
   onNavigateToProfile?: (companyId: string) => void;
@@ -21,25 +11,16 @@ interface CategoriesProps {
 }
 
 const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCategoryFilter }) => {
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedLocation, setSelectedLocation] = useState('all');
-  const [companies, setCompanies] = useState<CompanyWithCategory[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Set initial category filter if provided
-  useEffect(() => {
-    if (initialCategoryFilter) {
-      setSelectedCategory(initialCategoryFilter);
-    }
-  }, [initialCategoryFilter]);
-
   // Load categories from Firestore
   const loadCategories = async () => {
     try {
+      setLoading(true);
       const categoriesQuery = query(collection(db, 'categories'), orderBy('name'));
       const categoriesSnapshot = await getDocs(categoriesQuery);
       const categoriesData = categoriesSnapshot.docs.map(doc => ({
@@ -50,123 +31,64 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
       })) as Category[];
       
       setCategories(categoriesData);
-      return categoriesData;
     } catch (error) {
       console.error('Error loading categories:', error);
-      return [];
-    }
-  };
-
-  // Load companies from Firestore
-  const loadCompanies = async (categoriesData: Category[]) => {
-    try {
-      const companiesQuery = query(collection(db, 'companies'), orderBy('createdAt', 'desc'));
-      const companiesSnapshot = await getDocs(companiesQuery);
-      const companiesData = companiesSnapshot.docs.map(doc => {
-        const data = doc.data();
-        const category = categoriesData.find(cat => cat.id === data.categoryId);
-        const location = egyptianGovernorates.find(gov => gov.id === data.location);
-        
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          categoryName: category?.name || 'Unknown Category',
-          categoryNameAr: category?.nameAr || category?.name || 'فئة غير معروفة',
-          locationName: location?.name || data.location,
-          locationNameAr: location?.nameAr || location?.name || data.location,
-          totalRating: data.totalRating || 0,
-          totalReviews: data.totalReviews || 0
-        };
-      }) as CompanyWithCategory[];
-      
-      setCompanies(companiesData);
-    } catch (error) {
-      console.error('Error loading companies:', error);
-      setError(translations?.failedToLoadCompanies || 'Failed to load companies');
+      setError(translations?.failedToLoadCategories || 'Failed to load categories');
+    } finally {
+      setLoading(false);
     }
   };
 
   // Load data on component mount
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setError('');
-      
-      try {
-        const categoriesData = await loadCategories();
-        await loadCompanies(categoriesData);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setError(translations?.failedToLoadData || 'Failed to load data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
+    loadCategories();
   }, []);
 
-  // Create filter options from real data
-  const filterOptions = [
-    { id: 'all', name: translations?.allCategories || 'All Categories' },
-    ...categories.map(category => ({
-      id: category.id,
-      name: translations ? (category.nameAr || category.name) : category.name
-    }))
-  ];
+  // Filter categories based on search query
+  const filteredCategories = categories.filter(category => 
+    category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (category.nameAr && category.nameAr.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (category.descriptionAr && category.descriptionAr.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
-  const locationOptions = [
-    { id: 'all', name: translations?.allLocations || 'All Locations' },
-    ...egyptianGovernorates.map(gov => ({
-      id: gov.id,
-      name: translations ? gov.nameAr : gov.name
-    }))
-  ];
-
-  const handleSearch = () => {
-    console.log('Search:', searchQuery, 'Category:', selectedCategory, 'Location:', selectedLocation);
-  };
-
-  const handleCompanyClick = (companyId: string) => {
+  // Handle category selection
+  const handleCategoryClick = (categoryId: string) => {
     if (onNavigateToProfile) {
-      onNavigateToProfile(companyId);
+      // Dispatch event to navigate with the selected category filter
+      const event = new CustomEvent('navigateToCompaniesWithCategory', {
+        detail: { categoryId }
+      });
+      window.dispatchEvent(event);
     }
   };
 
-  const handleViewDetails = (e: React.MouseEvent, companyId: string) => {
-    e.stopPropagation();
-    handleCompanyClick(companyId);
+  // Get category color based on index
+  const getCategoryColor = (index: number) => {
+    const colors = [
+      { bg: 'rgba(25, 72, 102, 0.1)', text: '#194866', border: '#194866', gradientFrom: '#194866', gradientTo: '#1E6091' },
+      { bg: 'rgba(238, 24, 63, 0.1)', text: '#EE183F', border: '#EE183F', gradientFrom: '#EE183F', gradientTo: '#F54B6B' },
+      { bg: 'rgba(16, 185, 129, 0.1)', text: '#10B981', border: '#10B981', gradientFrom: '#10B981', gradientTo: '#34D399' },
+      { bg: 'rgba(139, 92, 246, 0.1)', text: '#8B5CF6', border: '#8B5CF6', gradientFrom: '#8B5CF6', gradientTo: '#A78BFA' },
+      { bg: 'rgba(245, 158, 11, 0.1)', text: '#F59E0B', border: '#F59E0B', gradientFrom: '#F59E0B', gradientTo: '#FBBF24' },
+      { bg: 'rgba(6, 182, 212, 0.1)', text: '#06B6D4', border: '#06B6D4', gradientFrom: '#06B6D4', gradientTo: '#22D3EE' }
+    ];
+    
+    return colors[index % colors.length];
   };
 
-  // Filter companies based on search, category, and location
-  const filteredCompanies = companies.filter(company => {
-    const matchesSearch = company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         company.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         company.locationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (company.locationNameAr && company.locationNameAr.includes(searchQuery));
+  // Generate example stats for categories (in a real app, this would come from the database)
+  const getCategoryStats = (categoryId: string, index: number) => {
+    // These would be real statistics in a production app
+    const baseCompanies = 15 + (index * 5);
+    const baseReviews = 120 + (index * 30);
+    const baseRating = 3.5 + (Math.random() * 1.5);
     
-    const matchesCategory = selectedCategory === 'all' || company.categoryId === selectedCategory;
-    
-    const matchesLocation = selectedLocation === 'all' || company.location === selectedLocation;
-    
-    return matchesSearch && matchesCategory && matchesLocation;
-  });
-
-  // Get category color based on category name
-  const getCategoryColor = (categoryName: string) => {
-    const colors = {
-      'Developer': '#194866',
-      'Broker': '#EE183F',
-      'Consultant': '#10B981',
-      'Property Management': '#8B5CF6',
-      'مطور عقاري': '#194866',
-      'وسيط عقاري': '#EE183F',
-      'مستشار عقاري': '#10B981',
-      'إدارة الممتلكات': '#8B5CF6'
+    return {
+      companies: baseCompanies,
+      reviews: baseReviews,
+      avgRating: parseFloat(baseRating.toFixed(1))
     };
-    return colors[categoryName as keyof typeof colors] || '#6B7280';
   };
 
   if (loading) {
@@ -174,7 +96,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">{translations?.loadingCompanies || 'Loading companies...'}</p>
+          <p className="text-gray-600">{translations?.loadingCategories || 'Loading categories...'}</p>
         </div>
       </div>
     );
@@ -210,270 +132,276 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
               {translations?.browseAllCategories || 'Browse All Categories'}
             </h1>
             <p className="text-lg md:text-xl text-gray-600 mb-8">
-              {translations?.discoverBestCompanies || 'Discover the best real estate companies in Egypt by specialty'}
+              {translations?.discoverCategoriesDesc || 'Explore real estate categories and find the specialized services you need'}
             </p>
 
-            {/* Search and Filter */}
-            <div className="bg-gray-50 rounded-2xl p-6 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-5">
-                  <div className="relative">
-                    <Search className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      placeholder={translations?.searchCompanies || 'Search companies...'}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
-                      style={{ 
-                        focusBorderColor: '#EE183F',
-                        focusRingColor: '#EE183F'
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#EE183F';
-                        e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#d1d5db';
-                        e.target.style.boxShadow = 'none';
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="md:col-span-3">
-                  <div className="relative">
-                    <Filter className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none cursor-pointer"
-                      style={{ 
-                        focusBorderColor: '#EE183F',
-                        focusRingColor: '#EE183F'
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#EE183F';
-                        e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#d1d5db';
-                        e.target.style.boxShadow = 'none';
-                      }}
-                    >
-                      {filterOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="md:col-span-2">
-                  <div className="relative">
-                    <MapPin className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <select
-                      value={selectedLocation}
-                      onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none cursor-pointer"
-                      style={{ 
-                        focusBorderColor: '#EE183F',
-                        focusRingColor: '#EE183F'
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#EE183F';
-                        e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#d1d5db';
-                        e.target.style.boxShadow = 'none';
-                      }}
-                    >
-                      {locationOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="md:col-span-2">
-                  <button
-                    onClick={handleSearch}
-                    className="w-full text-white px-6 py-4 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
-                    style={{ backgroundColor: '#EE183F' }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#c71535';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = '#EE183F';
-                    }}
-                  >
-                    {translations?.search || 'Search'}
-                  </button>
-                </div>
-              </div>
+            {/* Search */}
+            <div className="relative max-w-lg mx-auto">
+              <Search className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder={translations?.searchCategories || 'Search categories...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
+                style={{ 
+                  focusBorderColor: '#EE183F',
+                  focusRingColor: '#EE183F'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#EE183F';
+                  e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Companies Grid */}
+      {/* Categories Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Results Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {filteredCompanies.length} {translations?.companies || 'Companies'}
-              </h2>
-              <p className="text-gray-600 mt-1">
-                {selectedCategory === 'all' 
-                  ? (translations?.allCategories || 'All Categories')
-                  : filterOptions.find(opt => opt.id === selectedCategory)?.name
-                }
-                {selectedLocation !== 'all' && (
-                  <span> - {locationOptions.find(opt => opt.id === selectedLocation)?.name}</span>
-                )}
-              </p>
-            </div>
+          {/* Categories Count */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {filteredCategories.length} {translations?.categories || 'Categories'}
+            </h2>
+            <p className="text-gray-600 mt-1">
+              {translations?.selectCategoryBelow || 'Select a category below to explore companies'}
+            </p>
           </div>
 
-          {/* Companies Grid */}
-          {filteredCompanies.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredCompanies.map((company) => (
-                <div
-                  key={company.id}
-                  className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden cursor-pointer group"
-                  onClick={() => handleCompanyClick(company.id)}
-                >
-                  {/* Company Image */}
-                  <div className="relative h-48">
-                    {company.logoUrl ? (
-                      <img
-                        src={company.logoUrl}
-                        alt={company.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                        <Building2 className="h-16 w-16 text-gray-400" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                    
-                    {/* Verified Badge */}
-                    {company.verified && (
-                      <div className="absolute top-4 left-4 rtl:right-4 rtl:left-auto">
-                        <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center space-x-1 rtl:space-x-reverse">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          <span>{translations?.verified || 'Verified'}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Rating Badge */}
-                    {company.totalRating > 0 && (
-                      <div className="absolute top-4 right-4 rtl:left-4 rtl:right-auto">
-                        <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse">
-                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="text-sm font-bold text-gray-900">{company.totalRating.toFixed(1)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Company Content */}
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-gray-700 transition-colors">
-                          {company.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-gray-500 mb-3">
-                          <MapPin className="w-4 h-4" />
-                          <span>{translations ? company.locationNameAr : company.locationName}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {company.description && (
-                      <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
-                        {company.description.substring(0, 120)}
-                        {company.description.length > 120 && '...'}
-                      </p>
-                    )}
-
-                    {/* Stats Row */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                        {company.totalReviews > 0 && (
-                          <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                            <Eye className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">{company.totalReviews}</span>
-                            <span className="text-sm text-gray-500">{translations?.reviews || 'reviews'}</span>
+          {/* Categories List */}
+          {filteredCategories.length > 0 ? (
+            <div className="space-y-8">
+              {filteredCategories.map((category, index) => {
+                const color = getCategoryColor(index);
+                const stats = getCategoryStats(category.id, index);
+                
+                return (
+                  <div 
+                    key={category.id}
+                    className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border-2 border-transparent cursor-pointer"
+                    onClick={() => handleCategoryClick(category.id)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = color.border;
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'transparent';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-5">
+                      {/* Category Info */}
+                      <div className="md:col-span-2 p-8" style={{ background: `linear-gradient(135deg, ${color.gradientFrom} 0%, ${color.gradientTo} 100%)` }}>
+                        <div className="h-full flex flex-col justify-between">
+                          <div>
+                            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
+                              {category.iconUrl ? (
+                                <img 
+                                  src={category.iconUrl} 
+                                  alt={category.name}
+                                  className="w-10 h-10" 
+                                />
+                              ) : (
+                                <Tag className="w-10 h-10 text-white" />
+                              )}
+                            </div>
+                            <h3 className="text-3xl font-bold text-white mb-4">
+                              {language === 'ar' ? (category.nameAr || category.name) : category.name}
+                            </h3>
+                            {(category.description || category.descriptionAr) && (
+                              <p className="text-white/90 mb-6 line-clamp-3">
+                                {language === 'ar' ? (category.descriptionAr || category.description) : category.description}
+                              </p>
+                            )}
                           </div>
-                        )}
+                          
+                          <button 
+                            className="inline-flex items-center space-x-2 rtl:space-x-reverse bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-all duration-200 self-start"
+                          >
+                            <span>{translations?.viewAllCompanies || 'View All Companies'}</span>
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Category Details */}
+                      <div className="md:col-span-3 p-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
+                          {/* Companies Stat */}
+                          <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-all duration-200">
+                            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: color.bg }}>
+                                <Building2 className="w-6 h-6" style={{ color: color.text }} />
+                              </div>
+                              <div>
+                                <div className="text-2xl font-bold text-gray-900">{stats.companies}</div>
+                                <div className="text-sm text-gray-600">{translations?.registeredCompanies || 'Companies'}</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Reviews Stat */}
+                          <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-all duration-200">
+                            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: color.bg }}>
+                                <MessageSquare className="w-6 h-6" style={{ color: color.text }} />
+                              </div>
+                              <div>
+                                <div className="text-2xl font-bold text-gray-900">{stats.reviews}</div>
+                                <div className="text-sm text-gray-600">{translations?.totalReviews || 'Reviews'}</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Rating Stat */}
+                          <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-all duration-200">
+                            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: color.bg }}>
+                                <Star className="w-6 h-6" style={{ color: color.text }} />
+                              </div>
+                              <div>
+                                <div className="text-2xl font-bold text-gray-900">{stats.avgRating}</div>
+                                <div className="text-sm text-gray-600">{translations?.averageRating || 'Avg Rating'}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Popular Features/Services */}
+                        <div>
+                          <h4 className="text-lg font-bold text-gray-900 mb-4">{translations?.popularServicesTitle || 'Popular Services'}</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {generateFeaturesList(category.id, index).map((feature, i) => (
+                              <div 
+                                key={i} 
+                                className="px-3 py-1.5 rounded-full text-sm font-medium"
+                                style={{ backgroundColor: color.bg, color: color.text }}
+                              >
+                                {feature}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Category Badge */}
-                    <div className="flex items-center justify-between">
-                      <span 
-                        className="px-3 py-1 rounded-full text-sm font-medium text-white"
-                        style={{ backgroundColor: getCategoryColor(company.categoryName) }}
-                      >
-                        {translations ? company.categoryNameAr : company.categoryName}
-                      </span>
-                      
-                      <button
-                        onClick={(e) => handleViewDetails(e, company.id)}
-                        className="text-sm font-medium flex items-center space-x-1 rtl:space-x-reverse transition-colors duration-200 hover:scale-105"
-                        style={{ color: '#194866' }}
-                        onMouseEnter={(e) => {
-                          e.target.style.color = '#EE183F';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.color = '#194866';
-                        }}
-                      >
-                        <span>{translations?.viewDetails || 'View Details'}</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            /* No Results */
-            <div className="text-center py-12">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Search className="h-10 w-10 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{translations?.noCompaniesFound || 'No Companies Found'}</h3>
+            <div className="text-center py-16 bg-white rounded-2xl shadow-md">
+              <Tag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {translations?.noCategoriesFound || 'No Categories Found'}
+              </h3>
               <p className="text-gray-600 mb-6">
-                {translations?.adjustSearchCriteria || 'Try adjusting your search criteria or browse all categories'}
+                {translations?.adjustSearchCriteriaCategories || 'Try adjusting your search criteria'}
               </p>
               <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCategory('all');
-                  setSelectedLocation('all');
-                }}
+                onClick={() => setSearchQuery('')}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
-                {translations?.clearFilters || 'Clear Filters'}
+                {translations?.clearSearch || 'Clear Search'}
               </button>
             </div>
           )}
         </div>
       </section>
     </div>
+  );
+};
+
+// Helper function to generate services/features for each category (in a real app, this would come from the database)
+function generateFeaturesList(categoryId: string, index: number): string[] {
+  const features: { [key: string]: string[] } = {
+    // Developer services
+    developer: [
+      'Residential Properties', 
+      'Commercial Properties', 
+      'Mixed-Use Developments', 
+      'Property Management', 
+      'Investment Opportunities'
+    ],
+    // Broker services
+    broker: [
+      'Property Sales', 
+      'Property Rentals', 
+      'Property Valuation', 
+      'Market Analysis', 
+      'Contract Negotiation'
+    ],
+    // Consultant services
+    consultant: [
+      'Feasibility Studies', 
+      'Investment Advisory', 
+      'Property Valuation', 
+      'Market Research', 
+      'Development Consultation'
+    ],
+    // Property Management services
+    propertyManagement: [
+      'Tenant Management', 
+      'Maintenance Services', 
+      'Financial Management', 
+      'Property Inspection', 
+      'Lease Administration'
+    ],
+    // Default services
+    default: [
+      'Property Listings',
+      'Client Consultations',
+      'Market Analysis',
+      'Investment Guidance',
+      'Property Tours'
+    ]
+  };
+  
+  // Select 5 random services based on index to give variety
+  const allServices = features[categoryId] || features.default;
+  const randomStart = index % (allServices.length - 5 + 1);
+  return allServices.slice(randomStart, randomStart + 5);
+}
+
+// Helper component for star ratings
+const Star = (props: React.SVGProps<SVGSVGElement>) => {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 24 24" 
+      fill="currentColor" 
+      {...props}
+    >
+      <path 
+        fillRule="evenodd" 
+        d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" 
+        clipRule="evenodd" 
+      />
+    </svg>
+  );
+};
+
+// Helper component for message square
+const MessageSquare = (props: React.SVGProps<SVGSVGElement>) => {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      {...props}
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
   );
 };
 
