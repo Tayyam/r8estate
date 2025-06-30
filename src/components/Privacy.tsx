@@ -21,7 +21,7 @@ const Privacy: React.FC<PrivacyProps> = ({ onNavigate }) => {
       section6Title: translations?.yourRights || '6. حقوقك',
       section7Title: translations?.dataRetention || '7. الاحتفاظ بالبيانات',
       section8Title: translations?.policyChanges || '8. التغييرات على السياسة',
-      section9Title: translations?.contactUs || '9. اتصل بنا',
+      section9Title: translations?.contactUs || ' اتصل بنا',
       commitmentTitle: translations?.ourCommitment || 'التزامنا بخصوصيتك',
       commitmentText: translations?.commitmentText || 'نحن ملتزمون بحماية خصوصيتك وأمان بياناتك الشخصية. هذه السياسة توضح كيفية جمع واستخدام وحماية معلوماتك.'
     },
