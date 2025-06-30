@@ -46,6 +46,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   
   // UI States
   const [showFilters, setShowFilters] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   // Load categories
   useEffect(() => {
@@ -72,17 +75,65 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   // Load companies based on search query
   useEffect(() => {
     const loadCompanies = async () => {
-      if (!searchQuery && selectedCategory === 'all' && selectedLocation === 'all' && selectedRating === 'all') {
-        // If no filters are applied, load all companies
+      if (!initialSearchQuery && initialCategoryFilter === 'all') {
+        // If no initial filters are applied, load all companies
         loadAllCompanies();
       } else {
-        // Otherwise, apply filters
+        // Otherwise, apply initial filters
         searchCompanies();
       }
     };
 
     loadCompanies();
   }, [initialSearchQuery, initialCategoryFilter]);
+
+  // Fetch search suggestions
+  const fetchSearchSuggestions = async (query: string) => {
+    if (!query.trim()) {
+      setSearchSuggestions([]);
+      return;
+    }
+
+    try {
+      setSuggestionsLoading(true);
+      
+      // Query companies that match the search term
+      const lowercaseQuery = query.toLowerCase();
+      const companiesRef = collection(db, 'companies');
+      const companiesSnapshot = await getDocs(companiesRef);
+      
+      // Client-side filtering since Firestore doesn't support text search
+      const matchingCompanies = companiesSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          totalRating: doc.data().totalRating || doc.data().rating || 0,
+          totalReviews: doc.data().totalReviews || 0
+        }))
+        .filter(company => 
+          company.name.toLowerCase().includes(lowercaseQuery)
+        )
+        .slice(0, 5); // Limit to 5 suggestions
+      
+      setSearchSuggestions(matchingCompanies);
+    } catch (error) {
+      console.error('Error fetching search suggestions:', error);
+      setSearchSuggestions([]);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  // Debounce search suggestions
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchSearchSuggestions(searchQuery);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
   // Load all companies with pagination
   const loadAllCompanies = async (loadMore = false) => {
@@ -273,6 +324,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     onNavigateToProfile(companyId);
   };
 
+  // Handle suggestion click
+  const handleSuggestionClick = (companyId: string) => {
+    setShowSuggestions(false);
+    handleCompanyClick(companyId);
+  };
+
   // Get category color based on category name
   const getCategoryColor = (categoryName: string) => {
     const colors = {
@@ -346,29 +403,87 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           {/* Search Bar */}
           <div className="mt-8">
             <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder={translations?.searchPlaceholder || 'Search companies...'}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
-                    style={{ 
-                      focusBorderColor: '#EE183F',
-                      focusRingColor: '#EE183F'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#EE183F';
-                      e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#d1d5db';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  />
-                </div>
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder={translations?.searchPlaceholder || 'Search companies...'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowSuggestions(true)}
+                  className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
+                  style={{ 
+                    focusBorderColor: '#EE183F',
+                    focusRingColor: '#EE183F'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#EE183F';
+                    e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#d1d5db';
+                    e.target.style.boxShadow = 'none';
+                    // Small delay to allow clicking on suggestions
+                    setTimeout(() => setShowSuggestions(false), 150);
+                  }}
+                />
+                
+                {/* Search Suggestions Dropdown */}
+                {showSuggestions && searchQuery.trim() !== '' && (
+                  <div 
+                    className="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
+                  >
+                    {suggestionsLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mr-2"></div>
+                        <span className="text-gray-500 text-sm">{translations?.loading || 'Loading...'}</span>
+                      </div>
+                    ) : searchSuggestions.length > 0 ? (
+                      <div>
+                        <div className="px-4 py-2 text-xs font-semibold text-gray-500 border-b border-gray-100">
+                          {translations?.companies || 'Companies'}
+                        </div>
+                        {searchSuggestions.map(company => (
+                          <div 
+                            key={company.id}
+                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center space-x-3 rtl:space-x-reverse"
+                            onClick={() => handleSuggestionClick(company.id)}
+                          >
+                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                              {company.logoUrl ? (
+                                <img 
+                                  src={company.logoUrl} 
+                                  alt={company.name}
+                                  className="w-full h-full object-cover" 
+                                />
+                              ) : (
+                                <Building2 className="w-5 h-5 text-gray-400" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 truncate">
+                                {company.name}
+                              </div>
+                              {company.totalRating > 0 && (
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                                    <span>{company.totalRating.toFixed(1)}</span>
+                                    <span>({company.totalReviews})</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-500">
+                        {translations?.noCompaniesFound || 'No companies found'}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <button

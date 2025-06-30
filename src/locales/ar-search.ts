@@ -47,6 +47,10 @@ export const arSearch = {
   verified: 'موثّق',
   reviews: 'تقييم',
   
+  // Search Suggestions
+  searchSuggestions: 'اقتراحات البحث',
+  noSuggestions: 'لا توجد اقتراحات',
+  
   // Error Messages
   searchError: 'حدث خطأ أثناء البحث',
   retry: 'إعادة المحاولة',
