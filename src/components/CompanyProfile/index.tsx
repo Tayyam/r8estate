@@ -12,11 +12,10 @@ import CompanyTabs from './CompanyTabs';
 import OverviewTab from './OverviewTab';
 import PropertiesTab from './PropertiesTab';
 import ReviewsTab from './ReviewsTab';
+import WriteReviewTab from './WriteReviewTab';
 import AddPropertyModal from './AddPropertyModal';
 import ImageUploadModal from './ImageUploadModal';
 import NotificationMessages from './NotificationMessages';
-import AddReviewModal from './AddReviewModal';
-import { MessageSquare, Plus } from 'lucide-react';
 
 interface CompanyProfileProps {
   companyId: string | null;
@@ -32,13 +31,12 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   const [categories, setCategories] = useState<Category[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('write-review'); // Default to write-review tab
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [uploadLoading, setUploadLoading] = useState(false);
   const [showAddProperty, setShowAddProperty] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
-  const [showAddReview, setShowAddReview] = useState(false);
 
   // Check if user can edit (admin or company owner)
   const canEdit = currentUser && (
@@ -46,8 +44,22 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
     (currentUser.role === 'company' && company?.email === currentUser.email)
   );
 
+  // Check if user can leave a review (logged in, not company owner)
+  const userCanReview = currentUser && !canEdit;
+  
   // Check if user has already reviewed this company
   const hasUserReviewed = currentUser && reviews.some(review => review.userId === currentUser.uid);
+
+  // When loading completes, check if user can review and set the active tab appropriately
+  useEffect(() => {
+    if (!loading) {
+      if (userCanReview && !hasUserReviewed) {
+        setActiveTab('write-review');
+      } else {
+        setActiveTab('overview');
+      }
+    }
+  }, [loading, userCanReview, hasUserReviewed]);
 
   // Load company data
   const loadCompanyData = async () => {
@@ -162,6 +174,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         setCompany(updatedCompanyData);
       }
     }
+    setActiveTab('reviews');
   };
 
   // Show success message
@@ -241,6 +254,15 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
             onError={handleError}
           />
         );
+      case 'write-review':
+        return (
+          <WriteReviewTab
+            company={company}
+            onReviewAdded={handleReviewAdded}
+            onSuccess={handleSuccess}
+            onError={handleError}
+          />
+        );
       default:
         return null;
     }
@@ -264,36 +286,13 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         onNavigateBack={onNavigateBack}
       />
 
-      {/* Persistent Add Review Button */}
-      {currentUser && !canEdit && (
-        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-16 z-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-end">
-            <button
-              onClick={() => setShowAddReview(true)}
-              disabled={hasUserReviewed}
-              className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg font-medium text-sm ${
-                hasUserReviewed 
-                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              } transition-all duration-200 shadow-sm`}
-            >
-              <Plus className="h-4 w-4" />
-              <span>
-                {hasUserReviewed 
-                  ? (translations?.alreadyReviewed || 'Already Reviewed')
-                  : (translations?.addReview || 'Add Review')
-                }
-              </span>
-            </button>
-          </div>
-        </div>
-      )}
-
       <CompanyTabs
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         properties={properties}
         reviews={reviews}
+        userCanReview={userCanReview}
+        hasUserReviewed={hasUserReviewed}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -322,15 +321,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
           setSuccess={handleSuccess}
           setError={handleError}
           loadCompanyData={loadCompanyData}
-        />
-      )}
-      
-      {showAddReview && (
-        <AddReviewModal
-          company={company}
-          onClose={() => setShowAddReview(false)}
-          onSuccess={handleReviewAdded}
-          onError={handleError}
         />
       )}
     </div>

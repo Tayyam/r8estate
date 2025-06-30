@@ -57,5 +57,9 @@ export const ar = {
   adminCanSeeIdentity: '(يمكن لمسؤولي المنصة فقط رؤية هويتك)',
   pleaseRateAllCategories: 'يرجى تقييم جميع الفئات',
   alreadyReviewed: 'تم التقييم مسبقاً',
-  anonymous: 'مجهول'
+  anonymous: 'مجهول',
+  writeReview: 'كتابة تقييم',
+  loginToReview: 'يرجى تسجيل الدخول لكتابة تقييم',
+  loginToReviewDesc: 'يجب عليك تسجيل الدخول لمشاركة تجربتك مع هذه الشركة',
+  anonymousUser: 'مستخدم مجهول'
 };

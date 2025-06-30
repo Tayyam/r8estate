@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Eye, MessageSquare } from 'lucide-react';
+import { Building2, Eye, MessageSquare, Star } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Property } from '../../types/property';
 import { Review } from '../../types/property';
@@ -9,26 +9,39 @@ interface CompanyTabsProps {
   setActiveTab: (tab: string) => void;
   properties: Property[];
   reviews: Review[];
+  userCanReview: boolean;
+  hasUserReviewed: boolean;
 }
 
 const CompanyTabs: React.FC<CompanyTabsProps> = ({
   activeTab,
   setActiveTab,
   properties,
-  reviews
+  reviews,
+  userCanReview,
+  hasUserReviewed
 }) => {
   const { translations } = useLanguage();
 
-  const tabs = [
+  // Base tabs that are always shown
+  const baseTabs = [
     { id: 'overview', name: translations?.overview || 'Overview', icon: Building2 },
     { id: 'properties', name: translations?.propertiesTab || 'Properties', icon: Eye },
     { id: 'reviews', name: translations?.reviewsTab || 'Reviews', icon: MessageSquare }
   ];
+  
+  // Add "Write a Review" tab if user can review and hasn't already reviewed
+  const tabs = userCanReview && !hasUserReviewed 
+    ? [
+        ...baseTabs,
+        { id: 'write-review', name: translations?.writeReview || 'Write a Review', icon: Star }
+      ]
+    : baseTabs;
 
   return (
     <div className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex space-x-8 rtl:space-x-reverse">
+        <div className="flex space-x-8 rtl:space-x-reverse overflow-x-auto">
           {tabs.map((tab) => {
             const IconComponent = tab.icon;
             const isActive = activeTab === tab.id;
