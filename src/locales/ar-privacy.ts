@@ -13,7 +13,7 @@ export const arPrivacy = {
   yourRights: '6. حقوقك',
   dataRetention: '7. الاحتفاظ بالبيانات',
   policyChanges: '8. التغييرات على السياسة',
-  contactUs: ' اتصل بنا',
+  contactUs: 'اتصل بنا',
   
   // Commitment Section
   ourCommitment: 'التزامنا بخصوصيتك',
