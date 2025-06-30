@@ -31,7 +31,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   const [categories, setCategories] = useState<Category[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('write-review'); // Default to write-review tab
+  const [activeTab, setActiveTab] = useState('overview'); // Default to overview tab
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [uploadLoading, setUploadLoading] = useState(false);
@@ -44,8 +44,8 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
     (currentUser.role === 'company' && company?.email === currentUser.email)
   );
   
-  // Check if user can leave a review (logged in, not company owner)
-  const userCanReview = currentUser && !canEdit;
+  // Check if user can leave a review (logged in, not company owner, not admin)
+  const userCanReview = currentUser && currentUser.role === 'user';
   
   // Check if user has already reviewed this company
   const hasUserReviewed = currentUser && reviews.some(review => review.userId === currentUser.uid);
@@ -53,10 +53,17 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   // When loading completes, set the active tab appropriately
   useEffect(() => {
     if (!loading) {
-      // Always keep the write-review tab as default
-      setActiveTab('write-review');
+      // For regular users who can review, default to write-review if it exists
+      if (userCanReview && !hasUserReviewed) {
+        setActiveTab('write-review');
+      } else if (userCanReview && hasUserReviewed) {
+        setActiveTab('write-review');
+      } else {
+        // For others, default to overview tab
+        setActiveTab('overview');
+      }
     }
-  }, [loading]);
+  }, [loading, userCanReview, hasUserReviewed]);
 
   // Load company data
   const loadCompanyData = async () => {
