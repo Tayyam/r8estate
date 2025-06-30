@@ -427,19 +427,20 @@ const Categories = () => {
               <div key={category.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    {/* Icon Display */}
-                    <div className="flex items-center mb-3">
-                      <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-gray-200 overflow-hidden mr-3">
-                        {category.iconUrl ? (
-                          <img 
-                            src={category.iconUrl} 
-                            alt={category.name} 
-                            className="w-8 h-8 object-contain"
-                          />
-                        ) : (
-                          <Tag className="w-6 h-6 text-gray-400" />
-                        )}
-                      </div>
+                   {/* Icon Display */}
+<div className="flex items-center mb-3">
+  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200 overflow-hidden mr-3">
+    {category.iconUrl ? (
+      <img 
+        src={category.iconUrl} 
+        alt={category.name} 
+        className="w-8 h-8 object-contain"
+      />
+    ) : (
+      <Tag className="w-6 h-6 text-gray-400" />
+    )}
+  </div>
+
                       
                       {/* Icon Actions */}
                       <div className="flex items-center space-x-2">
