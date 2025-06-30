@@ -27,7 +27,10 @@ export const arCategories = {
   registeredCompanies: 'شركة مسجلة',
   totalReviews: 'تقييم',
   averageRating: 'متوسط التقييم',
-  popularServicesTitle: 'الخدمات الشائعة',
+  
+  // Top Companies
+  topCompanies: 'أفضل الشركات',
+  noCompaniesInCategory: 'لا توجد شركات في هذه الفئة حتى الآن',
   
   // Company Cards
   verified: 'مُوثّق',
@@ -39,12 +42,8 @@ export const arCategories = {
   categoryTitle: 'الفئات',
   locationTitle: 'المواقع',
   
-  // Filter Options
-  filterByCategory: 'تصفية حسب الفئة',
-  filterByLocation: 'تصفية حسب الموقع',
-  filterByRating: 'تصفية حسب التقييم',
-  highestRated: 'الأعلى تقييماً',
-  mostReviewed: 'الأكثر تقييماً',
+  // Pagination
+  pageInfo: 'صفحة {current} من {total}',
   
   // Empty States
   noCompaniesFound: 'لم يتم العثور على شركات',
@@ -71,4 +70,10 @@ export const arCategories = {
   
   // Category Slider
   noCategoriesFound: 'لم يتم العثور على فئات',
+  
+  // Filter options
+  all: 'الكل',
+  filterByRating: 'تصفية حسب التقييم',
+  highestRated: 'الأعلى تقييماً',
+  mostReviewed: 'الأكثر تقييماً'
 };
