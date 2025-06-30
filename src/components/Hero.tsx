@@ -341,7 +341,11 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
 
   const handleShareExperience = () => {
     if (onNavigate) {
-      onNavigate('categories');
+      // Dispatch event to navigate to search page
+      const event = new CustomEvent('navigateToSearch', {
+        detail: { query: '', category: 'all' }
+      });
+      window.dispatchEvent(event);
     }
   };
 
