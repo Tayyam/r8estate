@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Star, MessageSquare, Edit, Trash2, Building2, AlertCircle, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
-import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, DocumentData } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, getDoc, updateDoc, DocumentData } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -95,7 +95,7 @@ const MyReviews: React.FC<MyReviewsProps> = ({ onNavigate }) => {
       // Get company names for each review
       const reviewsWithCompanyNames = await Promise.all(
         reviewsData.map(async (review) => {
-          const companyDoc = await doc(db, 'companies', review.companyId).get();
+          const companyDoc = await getDoc(doc(db, 'companies', review.companyId));
           
           let companyName = "Unknown Company";
           let companyLogo = undefined;
