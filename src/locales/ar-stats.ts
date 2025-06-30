@@ -3,7 +3,7 @@ export const arStats = {
   platformStats: 'إحصائيات المنصة',
   platformStatsDesc: 'أرقام تعكس ثقة العملاء في منصتنا',
   totalCompanies: 'شركة مسجلة',
-  totalReviews: 'تقييم حقيقي',
+  totalReviews: 'تقييم',
   avgPlatformRating: 'متوسط التقييم',
   monthlyVisitors: 'زائر شهريًا',
   
