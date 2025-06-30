@@ -15,6 +15,8 @@ import ReviewsTab from './ReviewsTab';
 import AddPropertyModal from './AddPropertyModal';
 import ImageUploadModal from './ImageUploadModal';
 import NotificationMessages from './NotificationMessages';
+import AddReviewModal from './AddReviewModal';
+import { MessageSquare, Plus } from 'lucide-react';
 
 interface CompanyProfileProps {
   companyId: string | null;
@@ -36,12 +38,16 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   const [uploadLoading, setUploadLoading] = useState(false);
   const [showAddProperty, setShowAddProperty] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
+  const [showAddReview, setShowAddReview] = useState(false);
 
   // Check if user can edit (admin or company owner)
   const canEdit = currentUser && (
     currentUser.role === 'admin' || 
     (currentUser.role === 'company' && company?.email === currentUser.email)
   );
+
+  // Check if user has already reviewed this company
+  const hasUserReviewed = currentUser && reviews.some(review => review.userId === currentUser.uid);
 
   // Load company data
   const loadCompanyData = async () => {
@@ -118,7 +124,11 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        companyReply: doc.data().companyReply ? {
+          ...doc.data().companyReply,
+          repliedAt: doc.data().companyReply.repliedAt?.toDate() || new Date()
+        } : undefined
       })) as Review[];
       setReviews(reviewsData);
 
@@ -254,6 +264,31 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         onNavigateBack={onNavigateBack}
       />
 
+      {/* Persistent Add Review Button */}
+      {currentUser && !canEdit && (
+        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-16 z-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-end">
+            <button
+              onClick={() => setShowAddReview(true)}
+              disabled={hasUserReviewed}
+              className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg font-medium text-sm ${
+                hasUserReviewed 
+                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              } transition-all duration-200 shadow-sm`}
+            >
+              <Plus className="h-4 w-4" />
+              <span>
+                {hasUserReviewed 
+                  ? (translations?.alreadyReviewed || 'Already Reviewed')
+                  : (translations?.addReview || 'Add Review')
+                }
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
       <CompanyTabs
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -287,6 +322,15 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
           setSuccess={handleSuccess}
           setError={handleError}
           loadCompanyData={loadCompanyData}
+        />
+      )}
+      
+      {showAddReview && (
+        <AddReviewModal
+          company={company}
+          onClose={() => setShowAddReview(false)}
+          onSuccess={handleReviewAdded}
+          onError={handleError}
         />
       )}
     </div>

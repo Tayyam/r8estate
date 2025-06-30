@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { doc, deleteDoc, updateDoc, increment, collection, query, where, getDocs, orderBy, limit, startAfter, DocumentData } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -278,6 +278,42 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     }
   };
 
+  // Render detailed ratings if available
+  const renderDetailedRatings = (review: Review) => {
+    if (!review.ratingDetails) return null;
+    
+    const ratingDetails = review.ratingDetails;
+    const categories = [
+      { key: 'communication', label: translations?.communication || 'Communication' },
+      { key: 'valueForMoney', label: translations?.valueForMoney || 'Value for Money' },
+      { key: 'friendliness', label: translations?.friendliness || 'Friendliness' },
+      { key: 'responsiveness', label: translations?.responsiveness || 'Responsiveness' }
+    ];
+    
+    return (
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {categories.map((category) => {
+          const rating = ratingDetails[category.key as keyof typeof ratingDetails] || 0;
+          if (rating === 0) return null;
+          
+          return (
+            <div key={category.key} className="flex items-center space-x-2 rtl:space-x-reverse text-xs text-gray-600">
+              <span>{category.label}:</span>
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star 
+                    key={i} 
+                    className={`w-3 h-3 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div>
       {/* Header Section */}
@@ -300,7 +336,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         </div>
         
         {/* Add Review Button */}
-        {currentUser && !hasUserReviewed && (
+        {currentUser && !canEditCompany && !hasUserReviewed && (
           <button
             onClick={() => setShowAddReview(true)}
             className="flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
@@ -323,7 +359,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         {currentUser && hasUserReviewed && (
           <div className="bg-green-50 border border-green-200 rounded-xl p-4">
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
-              <Shield className="h-5 w-5 text-green-600" />
+              <Check className="h-5 w-5 text-green-600" />
               <p className="text-green-800 text-sm font-medium">
                 {translations?.thankYouForReview || 'Thank you for your review!'}
               </p>
@@ -408,6 +444,11 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                           <span>{translations?.verified || 'Verified'}</span>
                         </span>
                       )}
+                      {review.isAnonymous && (
+                        <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+                          {translations?.anonymous || 'Anonymous'}
+                        </span>
+                      )}
                     </div>
                     
                     <div className="flex items-center space-x-3 rtl:space-x-reverse">
@@ -430,6 +471,9 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                         )}
                       </span>
                     </div>
+                    
+                    {/* Detailed Ratings */}
+                    {review.ratingDetails && renderDetailedRatings(review)}
                   </div>
                 </div>
 
@@ -580,7 +624,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             {translations?.shareExperience?.replace('{company}', company.name) || 
              `Be the first to share your experience with ${company.name}. Your review will help others make informed decisions.`}
           </p>
-          {currentUser && !hasUserReviewed && (
+          {currentUser && !hasUserReviewed && !canEditCompany && (
             <button
               onClick={() => setShowAddReview(true)}
               className="inline-flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"

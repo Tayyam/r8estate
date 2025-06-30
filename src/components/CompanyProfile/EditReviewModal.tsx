@@ -13,6 +13,11 @@ interface EditReviewModalProps {
   onError: (message: string) => void;
 }
 
+interface RatingCategory {
+  key: string;
+  label: string;
+}
+
 const EditReviewModal: React.FC<EditReviewModalProps> = ({
   review,
   onClose,
@@ -25,8 +30,29 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
   const [formData, setFormData] = useState({
     rating: review.rating,
     title: review.title,
-    content: review.content
+    content: review.content,
+    isAnonymous: review.isAnonymous || false,
+    ratingDetails: review.ratingDetails || {
+      communication: 0,
+      valueForMoney: 0,
+      friendliness: 0,
+      responsiveness: 0
+    }
   });
+
+  const ratingCategories: RatingCategory[] = [
+    { key: 'communication', label: translations?.communication || 'Communication' },
+    { key: 'valueForMoney', label: translations?.valueForMoney || 'Value for Money' },
+    { key: 'friendliness', label: translations?.friendliness || 'Friendliness' },
+    { key: 'responsiveness', label: translations?.responsiveness || 'Responsiveness' }
+  ];
+
+  // Calculate average rating from all categories
+  const calculateAverageRating = () => {
+    const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
+    const sum = communication + valueForMoney + friendliness + responsiveness;
+    return sum > 0 ? Math.round(sum / 4) : 0;
+  };
 
   // Star rating component
   const StarRating = ({ rating, onRatingChange }: { rating: number; onRatingChange: (rating: number) => void }) => {
@@ -44,7 +70,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
             className="p-1 rounded transition-all duration-200 hover:scale-110"
           >
             <Star
-              className={`w-8 h-8 transition-all duration-200 ${
+              className={`w-6 h-6 transition-all duration-200 ${
                 star <= (hoverRating || rating)
                   ? 'text-yellow-400 fill-current'
                   : 'text-gray-300 hover:text-yellow-200'
@@ -52,7 +78,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
             />
           </button>
         ))}
-        <span className="ml-3 text-sm text-gray-600 font-medium">
+        <span className="ml-2 text-sm text-gray-600 font-medium">
           {rating > 0 ? `${rating} / 5` : (translations?.selectRating || 'Select rating')}
         </span>
       </div>
@@ -75,8 +101,10 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
       return;
     }
 
-    if (formData.rating === 0) {
-      onError(translations?.pleaseSelectRating || 'Please select a rating');
+    // Check if any of the category ratings are 0
+    const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
+    if (communication === 0 || valueForMoney === 0 || friendliness === 0 || responsiveness === 0) {
+      onError(translations?.pleaseRateAllCategories || 'Please rate all categories');
       return;
     }
 
@@ -88,12 +116,17 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
     try {
       setLoading(true);
 
+      // Calculate average rating
+      const overallRating = calculateAverageRating();
+
       // Update review in Firestore
       const reviewRef = doc(db, 'reviews', review.id);
       await updateDoc(reviewRef, {
-        rating: formData.rating,
+        rating: overallRating,
+        ratingDetails: formData.ratingDetails,
         title: formData.title.trim(),
         content: formData.content.trim(),
+        isAnonymous: formData.isAnonymous,
         updatedAt: new Date()
       });
 
@@ -115,8 +148,19 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
   };
 
   // Handle input changes
-  const handleInputChange = (field: string, value: string | number) => {
+  const handleInputChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Handle rating changes for a specific category
+  const handleCategoryRatingChange = (category: string, value: number) => {
+    setFormData(prev => ({
+      ...prev,
+      ratingDetails: {
+        ...prev.ratingDetails,
+        [category]: value
+      }
+    }));
   };
 
   return (
@@ -124,7 +168,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-screen overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
@@ -166,21 +210,69 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
                 </p>
               </div>
             </div>
+            <div className="mt-4 flex items-center">
+              <input
+                type="checkbox"
+                id="anonymous"
+                checked={formData.isAnonymous}
+                onChange={(e) => handleInputChange('isAnonymous', e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="anonymous" className="ml-2 block text-sm text-gray-700">
+                {translations?.postAnonymously || 'Post anonymously'}
+                <span className="text-xs text-gray-500 block mt-1">
+                  {translations?.adminCanSeeIdentity || '(Only platform administrators can see your identity)'}
+                </span>
+              </label>
+            </div>
           </div>
 
-          {/* Rating */}
+          {/* Rating Categories */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              {translations?.rating || 'Rating'} *
+            <label className="block text-sm font-medium text-gray-700 mb-4">
+              {translations?.rateYourExperience || 'Rate Your Experience'} *
             </label>
-            <div className="bg-gray-50 rounded-xl p-4">
-              <StarRating 
-                rating={formData.rating} 
-                onRatingChange={(rating) => handleInputChange('rating', rating)} 
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                {translations?.clickStarsToRate || 'Click the stars to rate your experience'}
-              </p>
+            <div className="space-y-6">
+              {ratingCategories.map((category) => (
+                <div key={category.key} className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium text-gray-800">
+                      {category.label}
+                    </h4>
+                    <span className="text-sm text-gray-500">
+                      {formData.ratingDetails[category.key as keyof typeof formData.ratingDetails] > 0 
+                        ? `${formData.ratingDetails[category.key as keyof typeof formData.ratingDetails]}/5` 
+                        : ''}
+                    </span>
+                  </div>
+                  <StarRating 
+                    rating={formData.ratingDetails[category.key as keyof typeof formData.ratingDetails]} 
+                    onRatingChange={(rating) => handleCategoryRatingChange(category.key, rating)} 
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 py-4 border-t border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-gray-800">
+                  {translations?.overallRating || 'Overall Rating'}
+                </h4>
+                <div className="flex items-center space-x-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star 
+                      key={star} 
+                      className={`w-5 h-5 ${
+                        star <= calculateAverageRating() 
+                          ? 'text-yellow-400 fill-current' 
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    {calculateAverageRating() > 0 ? `${calculateAverageRating()}/5` : '-'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -228,7 +320,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
           <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
             <button
               type="submit"
-              disabled={loading || formData.rating === 0 || !formData.title.trim() || !formData.content.trim()}
+              disabled={loading || calculateAverageRating() === 0 || !formData.title.trim() || !formData.content.trim()}
               className="flex-1 bg-orange-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-orange-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 rtl:space-x-reverse"
             >
               {loading ? (

@@ -45,4 +45,17 @@ export const ar = {
   ...arPrivacy,
   ...arMyReviews,
   ...arSearch,
+  
+  // Review form specific translations
+  communication: 'التواصل',
+  valueForMoney: 'القيمة مقابل المال',
+  friendliness: 'اللطافة',
+  responsiveness: 'سرعة الاستجابة',
+  rateYourExperience: 'قيم تجربتك',
+  overallRating: 'التقييم العام',
+  postAnonymously: 'نشر بشكل مجهول',
+  adminCanSeeIdentity: '(يمكن لمسؤولي المنصة فقط رؤية هويتك)',
+  pleaseRateAllCategories: 'يرجى تقييم جميع الفئات',
+  alreadyReviewed: 'تم التقييم مسبقاً',
+  anonymous: 'مجهول'
 };

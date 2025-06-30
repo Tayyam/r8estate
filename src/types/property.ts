@@ -24,8 +24,15 @@ export interface Review {
   userName: string;
   userEmail: string;
   rating: number; // 1-5
+  ratingDetails?: {
+    communication: number;
+    valueForMoney: number;
+    friendliness: number;
+    responsiveness: number;
+  };
   title: string;
   content: string;
+  isAnonymous?: boolean;
   companyReply?: {
     content: string;
     repliedAt: Date;
