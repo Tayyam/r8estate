@@ -29,6 +29,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
   const [categoryLoading, setCategoryLoading] = useState(true);
   const [companiesLoading, setCompaniesLoading] = useState(true);
   const [slidesPerView, setSlidesPerView] = useState(4);
+  const [companiesError, setCompaniesError] = useState<string | null>(null);
 
   // Update slides per view based on screen size
   useEffect(() => {
@@ -82,22 +83,44 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
   useEffect(() => {
     const fetchTopRatedCompanies = async () => {
       setCompaniesLoading(true);
+      setCompaniesError(null);
+      
       try {
-        // Create a query to get companies ordered by rating
-        const companiesQuery = query(
+        // First try to get companies with ratings
+        let companiesQuery = query(
           collection(db, 'companies'),
-          where('totalRating', '>', 0),
-          orderBy('totalRating', 'desc'),
+          orderBy('totalRating', 'desc'), // Order by rating descending
           limit(3) // Limit to 3 companies
         );
         
-        // Get the companies
-        const companiesSnapshot = await getDocs(companiesQuery);
+        let companiesSnapshot = await getDocs(companiesQuery);
+        
+        // If no companies found with this query, try getting any companies
+        if (companiesSnapshot.empty) {
+          companiesQuery = query(
+            collection(db, 'companies'),
+            orderBy('createdAt', 'desc'), // Order by creation date instead
+            limit(3) // Still limit to 3 companies
+          );
+          
+          companiesSnapshot = await getDocs(companiesQuery);
+        }
+        
+        if (companiesSnapshot.empty) {
+          // Still no companies found
+          setTopRatedCompanies([]);
+          setCompaniesLoading(false);
+          return;
+        }
+        
         const companiesData = companiesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date(),
           updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+          // Ensure totalRating has a value
+          totalRating: doc.data().totalRating || 0,
+          totalReviews: doc.data().totalReviews || 0
         }));
         
         // Fetch category info for each company
@@ -106,10 +129,15 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
             let categoryName = "Unknown";
             
             if (company.categoryId) {
-              const categoryDoc = await getDoc(doc(db, 'categories', company.categoryId));
-              if (categoryDoc.exists()) {
-                const categoryData = categoryDoc.data();
-                categoryName = language === 'ar' ? (categoryData.nameAr || categoryData.name) : categoryData.name;
+              try {
+                const categoryDoc = await getDoc(doc(db, 'categories', company.categoryId));
+                if (categoryDoc.exists()) {
+                  const categoryData = categoryDoc.data();
+                  categoryName = language === 'ar' ? (categoryData.nameAr || categoryData.name) : categoryData.name;
+                }
+              } catch (err) {
+                console.error('Error fetching category for company:', err);
+                // Continue with "Unknown" category
               }
             }
             
@@ -123,7 +151,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
         setTopRatedCompanies(companiesWithCategories);
       } catch (error) {
         console.error('Error fetching top rated companies:', error);
-        // Fallback to empty array if error occurs
+        setCompaniesError('Failed to load companies');
         setTopRatedCompanies([]);
       } finally {
         setCompaniesLoading(false);
@@ -480,6 +508,10 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
             </div>
+          ) : companiesError ? (
+            <div className="text-center py-12">
+              <p className="text-red-500">{companiesError}</p>
+            </div>
           ) : topRatedCompanies.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {topRatedCompanies.map((company) => (
@@ -488,27 +520,26 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
                   className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden cursor-pointer"
                   onClick={() => handleCompanyClick(company.id)}
                 >
-                  {company.logoUrl ? (
-                    <div className="w-full h-48 overflow-hidden">
+                  {/* Company Image - Try logo first, then cover image, then fallback */}
+                  <div className="w-full h-48 overflow-hidden">
+                    {company.logoUrl ? (
                       <img
                         src={company.logoUrl}
                         alt={company.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain p-4 bg-gray-50"
                       />
-                    </div>
-                  ) : company.coverImageUrl ? (
-                    <div className="w-full h-48 overflow-hidden">
+                    ) : company.coverImageUrl ? (
                       <img
                         src={company.coverImageUrl}
                         alt={company.name}
                         className="w-full h-full object-cover"
                       />
-                    </div>
-                  ) : (
-                    <div className="w-full h-48 bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
-                      <Building2 className="h-16 w-16 text-gray-400" />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
+                        <Building2 className="h-16 w-16 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <span className="px-3 py-1 text-sm font-medium rounded-full" style={{ backgroundColor: 'rgba(25, 72, 102, 0.1)', color: '#194866' }}>
