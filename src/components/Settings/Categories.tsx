@@ -429,7 +429,7 @@ const Categories = () => {
                   <div className="flex-1">
                    {/* Icon Display */}
 <div className="flex items-center mb-3">
-  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200 overflow-hidden mr-3">
+  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center border border-gray-200 overflow-hidden mr-3">
     {category.iconUrl ? (
       <img 
         src={category.iconUrl} 
