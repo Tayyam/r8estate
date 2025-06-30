@@ -85,7 +85,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     };
 
     loadCompanies();
-  }, [initialSearchQuery, initialCategoryFilter]);
+  }, [initialSearchQuery, initialCategoryFilter, categories.length]);
 
   // Fetch search suggestions
   const fetchSearchSuggestions = async (query: string) => {
@@ -104,12 +104,23 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       
       // Client-side filtering since Firestore doesn't support text search
       const matchingCompanies = companiesSnapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          totalRating: doc.data().totalRating || doc.data().rating || 0,
-          totalReviews: doc.data().totalReviews || 0
-        }))
+        .map(doc => {
+          const data = doc.data();
+          const company = {
+            id: doc.id,
+            ...data,
+            totalRating: data.totalRating || data.rating || 0,
+            totalReviews: data.totalReviews || 0
+          };
+          
+          // Find the category for each company
+          const category = categories.find(cat => cat.id === company.categoryId);
+          
+          return {
+            ...company,
+            categoryName: category?.name || 'Unknown Category'
+          };
+        })
         .filter(company => 
           company.name.toLowerCase().includes(lowercaseQuery)
         )
@@ -133,7 +144,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     return () => {
       clearTimeout(handler);
     };
-  }, [searchQuery]);
+  }, [searchQuery, categories]);
 
   // Load all companies with pagination
   const loadAllCompanies = async (loadMore = false) => {
@@ -464,15 +475,16 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                               <div className="font-medium text-gray-900 truncate">
                                 {company.name}
                               </div>
-                              {company.totalRating > 0 && (
-                                <div className="flex items-center text-xs text-gray-500">
+                              <div className="flex items-center text-xs text-gray-500 space-x-2 rtl:space-x-reverse">
+                                <span>{company.categoryName}</span>
+                                {company.totalRating > 0 && (
                                   <div className="flex items-center space-x-1 rtl:space-x-reverse">
                                     <Star className="w-3 h-3 text-yellow-400 fill-current" />
                                     <span>{company.totalRating.toFixed(1)}</span>
                                     <span>({company.totalReviews})</span>
                                   </div>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
