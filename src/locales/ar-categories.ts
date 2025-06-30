@@ -50,4 +50,7 @@ export const arCategories = {
   broker: 'وسيط عقاري',
   consultant: 'مستشار عقاري',
   propertyManager: 'مدير ممتلكات',
+  
+  // Category Slider
+  noCategoriesFound: 'لم يتم العثور على فئات',
 };

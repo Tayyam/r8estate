@@ -22,5 +22,6 @@ export const arHero = {
   browseByCategory: 'تصفح حسب الفئة',
   developers: 'المطورين العقاريين',
   brokers: 'الوسطاء العقاريين',
-  consultants: 'المستشارين العقاريين'
+  consultants: 'المستشارين العقاريين',
+  noCategoriesFound: 'لم يتم العثور على فئات'
 };
