@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft, Globe } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft, Globe, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -9,7 +9,7 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onNavigate }) => {
-  const { login, resetPassword } = useAuth();
+  const { login, resetPassword, loginWithGoogle, loginWithFacebook } = useAuth();
   const { translations, language, setLanguage } = useLanguage();
   const { showSuccessToast, showErrorToast, showInfoToast, showSuccessModal } = useNotification();
   
@@ -20,6 +20,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +99,42 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const handleBackToHome = () => {
     onNavigate('home');
   };
+  
+  // Handle social login
+  const handleSocialLogin = async (provider: 'google' | 'facebook') => {
+    try {
+      setSocialLoading(provider);
+      
+      if (provider === 'google') {
+        await loginWithGoogle();
+      } else {
+        await loginWithFacebook();
+      }
+      
+      // Show success toast and navigate
+      showSuccessToast(
+        translations?.loginSuccess || 'Login Successful!',
+        translations?.welcomeBack || 'Welcome back to R8 Estate'
+      );
+      
+      setTimeout(() => {
+        onNavigate('home');
+      }, 1000);
+      
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        // User closed popup - don't show error
+        return;
+      }
+      
+      showErrorToast(
+        translations?.loginError || 'Login Failed',
+        error.message || `Failed to login with ${provider}`
+      );
+    } finally {
+      setSocialLoading(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -146,6 +183,68 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
           <p className="text-gray-600">
             {translations?.loginSubtitle || 'Welcome back'}
           </p>
+        </div>
+
+        {/* Social Login Buttons */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6 animate-slideInUp">
+          <div className="flex flex-col space-y-4">
+            <button
+              type="button"
+              onClick={() => handleSocialLogin('google')}
+              disabled={loading || resetLoading || socialLoading !== null}
+              className="w-full flex items-center justify-center space-x-2 rtl:space-x-reverse py-3 px-4 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
+            >
+              {socialLoading === 'google' ? (
+                <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M23.745 12.27c0-.79-.07-1.54-.19-2.27h-11.3v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12.255 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96h-3.98v3.09c1.97 3.92 6.02 6.62 10.71 6.62z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.525 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29v-3.09h-3.98c-.8 1.61-1.26 3.43-1.26 5.38s.46 3.77 1.26 5.38l3.98-3.09z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12.255 5.04c1.77 0 3.35.61 4.6 1.8l3.42-3.42c-2.07-1.94-4.78-3.13-8.02-3.13-4.69 0-8.74 2.7-10.71 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"
+                    />
+                  </svg>
+                  <span>{translations?.signInWithGoogle || 'Sign in with Google'}</span>
+                </>
+              )}
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => handleSocialLogin('facebook')}
+              disabled={loading || resetLoading || socialLoading !== null}
+              className="w-full flex items-center justify-center space-x-2 rtl:space-x-reverse py-3 px-4 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
+            >
+              {socialLoading === 'facebook' ? (
+                <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                  <span>{translations?.signInWithFacebook || 'Sign in with Facebook'}</span>
+                </>
+              )}
+            </button>
+          </div>
+          
+          <div className="flex items-center my-4">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="px-4 text-gray-500 text-sm">{translations?.orContinueWith || 'or continue with'}</span>
+            <div className="flex-grow border-t border-gray-300"></div>
+          </div>
         </div>
 
         {/* Login Form */}
@@ -256,16 +355,16 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
             <div className="animate-slideInUp" style={{ animationDelay: '0.6s' }}>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || socialLoading !== null}
                 className="w-full text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                 style={{ backgroundColor: '#194866' }}
                 onMouseEnter={(e) => {
-                  if (!loading) {
+                  if (!loading && socialLoading === null) {
                     e.target.style.backgroundColor = '#0f3147';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!loading) {
+                  if (!loading && socialLoading === null) {
                     e.target.style.backgroundColor = '#194866';
                   }
                 }}

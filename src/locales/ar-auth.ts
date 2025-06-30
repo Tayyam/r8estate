@@ -47,4 +47,14 @@ export const arAuth = {
   registrationErrorDesc: 'فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى.',
   resetError: 'فشل في إعادة التعيين',
   missingEmail: 'البريد الإلكتروني مطلوب',
+  
+  // Social Login
+  signInWithGoogle: 'تسجيل الدخول باستخدام جوجل',
+  signInWithFacebook: 'تسجيل الدخول باستخدام فيسبوك',
+  signUpWithGoogle: 'التسجيل باستخدام جوجل',
+  signUpWithFacebook: 'التسجيل باستخدام فيسبوك',
+  orContinueWith: 'أو أكمل باستخدام',
+  welcomeToR8Estate: 'مرحبًا بك في R8 Estate! تم إنشاء حسابك وتسجيل دخولك الآن.',
+  passwordStrengthGood: 'طول كلمة المرور جيد',
+  passwordStrengthWeak: 'كلمة المرور ضعيفة جدًا'
 };

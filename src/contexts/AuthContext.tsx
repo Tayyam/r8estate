@@ -7,7 +7,10 @@ import {
   onAuthStateChanged,
   updateProfile,
   sendEmailVerification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -19,6 +22,8 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string, role?: UserRole) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithFacebook: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
@@ -97,12 +102,72 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Login user
+  // Login with email and password
   const login = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error('Login error:', error);
+      throw new Error(error.message);
+    }
+  };
+  
+  // Login with Google
+  const loginWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if user exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      
+      // If user doesn't exist, create a new document
+      if (!userDoc.exists()) {
+        const userData: Omit<User, 'uid'> = {
+          email: user.email!,
+          displayName: user.displayName || user.email!,
+          role: 'user', // Default role for social logins
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isEmailVerified: user.emailVerified,
+          photoURL: user.photoURL
+        };
+        
+        await setDoc(doc(db, 'users', user.uid), userData);
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      throw new Error(error.message);
+    }
+  };
+  
+  // Login with Facebook
+  const loginWithFacebook = async () => {
+    try {
+      const provider = new FacebookAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if user exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      
+      // If user doesn't exist, create a new document
+      if (!userDoc.exists()) {
+        const userData: Omit<User, 'uid'> = {
+          email: user.email!,
+          displayName: user.displayName || user.email!,
+          role: 'user', // Default role for social logins
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isEmailVerified: user.emailVerified,
+          photoURL: user.photoURL
+        };
+        
+        await setDoc(doc(db, 'users', user.uid), userData);
+      }
+    } catch (error: any) {
+      console.error('Facebook login error:', error);
       throw new Error(error.message);
     }
   };
@@ -175,6 +240,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     login,
     register,
+    loginWithGoogle,
+    loginWithFacebook,
     logout,
     resetPassword,
     updateUserProfile
