@@ -4,7 +4,6 @@ import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile
 import { Category, egyptianGovernorates } from '../../types/company';
 import PhotoGallery from './PhotoGallery';
 import ContactInfo from './ContactInfo';
-import Statistics from './Statistics';
 
 interface OverviewTabProps {
   company: CompanyProfileType;
@@ -73,7 +72,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           company={company} 
           getGovernorateName={getGovernorateName}
         />
-        <Statistics company={company} />
       </div>
     </div>
   );
