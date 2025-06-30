@@ -31,7 +31,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   const [categories, setCategories] = useState<Category[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview'); // Default to overview tab
+  const [activeTab, setActiveTab] = useState('write-review'); // Default to write-review tab
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [uploadLoading, setUploadLoading] = useState(false);
@@ -49,6 +49,17 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   
   // Check if user has already reviewed this company
   const hasUserReviewed = currentUser && reviews.some(review => review.userId === currentUser.uid);
+
+  // When loading completes, check if user can review and set the active tab appropriately
+  useEffect(() => {
+    if (!loading) {
+      if (userCanReview && !hasUserReviewed) {
+        setActiveTab('write-review');
+      } else {
+        setActiveTab('overview');
+      }
+    }
+  }, [loading, userCanReview, hasUserReviewed]);
 
   // Load company data
   const loadCompanyData = async () => {
@@ -243,21 +254,17 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
             onError={handleError}
           />
         );
-      default:
+      case 'write-review':
         return (
-          <OverviewTab
+          <WriteReviewTab
             company={company}
-            galleryImages={galleryImages}
-            setGalleryImages={setGalleryImages}
-            canEdit={canEdit}
-            setShowImageUpload={setShowImageUpload}
-            uploadLoading={uploadLoading}
-            setUploadLoading={setUploadLoading}
-            setSuccess={handleSuccess}
-            setError={handleError}
-            categories={categories}
+            onReviewAdded={handleReviewAdded}
+            onSuccess={handleSuccess}
+            onError={handleError}
           />
         );
+      default:
+        return null;
     }
   };
 
@@ -278,31 +285,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         setError={handleError}
         onNavigateBack={onNavigateBack}
       />
-
-      {/* Write Review Section - Always visible for users who can review and haven't yet */}
-      {userCanReview && !hasUserReviewed && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg shadow-md p-4 mb-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-blue-800">
-                  {translations?.shareExperienceWith?.replace('{company}', company.name) || 
-                   `Share your experience with ${company.name}`}
-                </p>
-              </div>
-            </div>
-          </div>
-          <WriteReviewTab 
-            company={company}
-            onReviewAdded={handleReviewAdded}
-            onSuccess={handleSuccess}
-            onError={handleError}
-          />
-        </div>
-      )}
 
       <CompanyTabs
         activeTab={activeTab}
