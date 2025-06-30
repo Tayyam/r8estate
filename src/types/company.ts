@@ -3,6 +3,8 @@ export interface Category {
   name: string;
   nameAr?: string;
   description?: string;
+  descriptionAr?: string;
+  iconUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Edit, Trash2, Tag, AlertCircle, CheckCircle, Search, Upload, Download, File } from 'lucide-react';
+import { Plus, Edit, Trash2, Tag, AlertCircle, CheckCircle, Search, Upload, Download, File, Image } from 'lucide-react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Category } from '../../types/company';
 import * as XLSX from 'xlsx';
@@ -25,9 +26,13 @@ const Categories = () => {
     description: '',
     descriptionAr: ''
   });
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconLoading, setIconLoading] = useState(false);
   const [bulkUploadFile, setBulkUploadFile] = useState<File | null>(null);
   const [parseProgress, setParseProgress] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const iconInputRef = useRef<HTMLInputElement>(null);
+  const editIconInputRef = useRef<HTMLInputElement>(null);
 
   // Load categories from Firestore
   const loadCategories = async () => {
@@ -63,6 +68,179 @@ const Categories = () => {
     (category.descriptionAr && category.descriptionAr.includes(searchQuery))
   );
 
+  // Handle icon upload
+  const validateSvgFile = (file: File): boolean => {
+    // Check file type
+    if (file.type !== 'image/svg+xml') {
+      setError(translations?.invalidFileType || 'Invalid file type. Please upload an SVG file');
+      setTimeout(() => setError(''), 3000);
+      return false;
+    }
+
+    // Check file size (max 100KB)
+    const maxSize = 100 * 1024; // 100KB in bytes
+    if (file.size > maxSize) {
+      setError(translations?.fileTooLarge || 'File too large. Maximum size is 100KB');
+      setTimeout(() => setError(''), 3000);
+      return false;
+    }
+
+    return true;
+  };
+
+  const uploadIcon = async (file: File, categoryId: string): Promise<string | null> => {
+    if (!validateSvgFile(file)) {
+      return null;
+    }
+
+    setIconLoading(true);
+
+    try {
+      // Create a unique filename
+      const timestamp = Date.now();
+      const fileName = `${categoryId}_${timestamp}.svg`;
+      
+      // Create storage reference
+      const storageRef = ref(storage, `category-icons/${fileName}`);
+      
+      // Upload file
+      await uploadBytes(storageRef, file);
+      
+      // Get download URL
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      return downloadURL;
+    } catch (error) {
+      console.error('Error uploading SVG icon:', error);
+      setError(translations?.failedToUploadIcon || 'Failed to upload icon');
+      setTimeout(() => setError(''), 3000);
+      return null;
+    } finally {
+      setIconLoading(false);
+    }
+  };
+
+  const deleteIcon = async (iconUrl: string) => {
+    try {
+      const baseUrl = 'https://firebasestorage.googleapis.com/v0/b/r8estate-2a516.firebasestorage.app/o/';
+      if (iconUrl.startsWith(baseUrl)) {
+        const filePath = decodeURIComponent(iconUrl.replace(baseUrl, '').split('?')[0]);
+        const storageRef = ref(storage, filePath);
+        await deleteObject(storageRef);
+      }
+    } catch (error) {
+      console.error('Error deleting icon:', error);
+      // Don't throw error for delete operations as it might be already deleted
+    }
+  };
+
+  // Handle icon file selection
+  const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (validateSvgFile(file)) {
+        setIconFile(file);
+        
+        if (isEdit && selectedCategory) {
+          handleUpdateIcon(file);
+        }
+      }
+    }
+  };
+
+  // Handle icon update for existing category
+  const handleUpdateIcon = async (file: File) => {
+    if (!selectedCategory) return;
+
+    try {
+      setIconLoading(true);
+      
+      // Delete old icon if exists
+      if (selectedCategory.iconUrl) {
+        await deleteIcon(selectedCategory.iconUrl);
+      }
+      
+      // Upload new icon
+      const iconUrl = await uploadIcon(file, selectedCategory.id);
+      
+      if (iconUrl) {
+        // Update category document
+        await updateDoc(doc(db, 'categories', selectedCategory.id), {
+          iconUrl,
+          updatedAt: new Date()
+        });
+        
+        // Update local state
+        setSelectedCategory({
+          ...selectedCategory,
+          iconUrl,
+          updatedAt: new Date()
+        });
+        
+        // Update categories list
+        setCategories(categories.map(cat => 
+          cat.id === selectedCategory.id 
+            ? { ...cat, iconUrl, updatedAt: new Date() }
+            : cat
+        ));
+        
+        setSuccess(translations?.iconUploadedSuccess || 'Icon uploaded successfully');
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error updating icon:', error);
+      setError(translations?.failedToUploadIcon || 'Failed to upload icon');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setIconLoading(false);
+    }
+  };
+
+  // Handle removing icon
+  const handleRemoveIcon = async (categoryId: string) => {
+    try {
+      const category = categories.find(cat => cat.id === categoryId);
+      if (!category || !category.iconUrl) return;
+
+      setIconLoading(true);
+      
+      // Delete icon from storage
+      await deleteIcon(category.iconUrl);
+      
+      // Update category document
+      await updateDoc(doc(db, 'categories', categoryId), {
+        iconUrl: null,
+        updatedAt: new Date()
+      });
+      
+      // Update local state
+      if (selectedCategory && selectedCategory.id === categoryId) {
+        setSelectedCategory({
+          ...selectedCategory,
+          iconUrl: undefined,
+          updatedAt: new Date()
+        });
+      }
+      
+      // Update categories list
+      setCategories(categories.map(cat => 
+        cat.id === categoryId 
+          ? { ...cat, iconUrl: undefined, updatedAt: new Date() }
+          : cat
+      ));
+      
+      setSuccess(translations?.iconRemovedSuccess || 'Icon removed successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error removing icon:', error);
+      setError(translations?.failedToRemoveIcon || 'Failed to remove icon');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setIconLoading(false);
+    }
+  };
+
   // Add new category
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,17 +254,35 @@ const Categories = () => {
       setActionLoading(true);
       setError('');
       
-      await addDoc(collection(db, 'categories'), {
+      const categoryData = {
         name: formData.name,
         nameAr: formData.nameAr || '',
         description: formData.description || '',
         descriptionAr: formData.descriptionAr || '',
         createdAt: new Date(),
         updatedAt: new Date()
-      });
-
+      };
+      
+      // Add category to Firestore
+      const docRef = await addDoc(collection(db, 'categories'), categoryData);
+      
+      // If icon was selected, upload it
+      let iconUrl;
+      if (iconFile) {
+        iconUrl = await uploadIcon(iconFile, docRef.id);
+        
+        if (iconUrl) {
+          // Update the category with the icon URL
+          await updateDoc(doc(db, 'categories', docRef.id), {
+            iconUrl,
+            updatedAt: new Date()
+          });
+        }
+      }
+      
       setSuccess(translations?.categoryCreatedSuccess || 'Category added successfully');
       setFormData({ name: '', nameAr: '', description: '', descriptionAr: '' });
+      setIconFile(null);
       setShowAddModal(false);
       loadCategories();
       setTimeout(() => setSuccess(''), 3000);
@@ -139,6 +335,11 @@ const Categories = () => {
       setActionLoading(true);
       setError('');
       
+      // If the category has an icon, delete it first
+      if (selectedCategory.iconUrl) {
+        await deleteIcon(selectedCategory.iconUrl);
+      }
+      
       await deleteDoc(doc(db, 'categories', selectedCategory.id));
 
       setCategories(categories.filter(cat => cat.id !== selectedCategory.id));
@@ -181,6 +382,7 @@ const Categories = () => {
     setShowBulkUploadModal(false);
     setSelectedCategory(null);
     setFormData({ name: '', nameAr: '', description: '', descriptionAr: '' });
+    setIconFile(null);
     setBulkUploadFile(null);
     setParseProgress('');
     setError('');
@@ -476,19 +678,34 @@ const Categories = () => {
             {filteredCategories.map((category) => (
               <div key={category.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{category.name}</h3>
-                    {category.nameAr && (
-                      <p className="text-sm text-gray-600 mb-2">{category.nameAr}</p>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-3 rtl:space-x-reverse mb-2">
+                      {/* Category Icon */}
+                      <div className="w-10 h-10 flex-shrink-0 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+                        {category.iconUrl ? (
+                          // SVG from URL
+                          <img 
+                            src={category.iconUrl} 
+                            alt={category.name} 
+                            className="w-6 h-6"
+                          />
+                        ) : (
+                          // Default icon
+                          <Tag className="w-6 h-6 text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 truncate">{category.name}</h3>
+                        {category.nameAr && (
+                          <p className="text-sm text-gray-600 truncate mb-1">{category.nameAr}</p>
+                        )}
+                      </div>
+                    </div>
                     {category.description && (
-                      <p className="text-sm text-gray-600 leading-relaxed">{category.description}</p>
-                    )}
-                    {category.descriptionAr && (
-                      <p className="text-sm text-gray-600 leading-relaxed mt-1">{category.descriptionAr}</p>
+                      <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">{category.description}</p>
                     )}
                   </div>
-                  <div className="flex items-center space-x-1 ml-3">
+                  <div className="flex items-start space-x-1 rtl:space-x-reverse ml-3">
                     <button
                       onClick={() => openEditModal(category)}
                       className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
@@ -505,8 +722,54 @@ const Categories = () => {
                     </button>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {translations?.createdDate || 'Created'}: {category.createdAt.toLocaleDateString()}
+
+                {/* SVG Icon Upload Button */}
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                  <div className="text-xs text-gray-500">
+                    {translations?.createdDate?.replace('{date}', category.createdAt.toLocaleDateString()) || 
+                     `Created: ${category.createdAt.toLocaleDateString()}`}
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="file"
+                      accept=".svg"
+                      className="hidden"
+                      onChange={(e) => {
+                        setSelectedCategory(category);
+                        handleIconChange(e, true);
+                      }}
+                      id={`icon-upload-${category.id}`}
+                    />
+                    
+                    <label
+                      htmlFor={`icon-upload-${category.id}`}
+                      className={`flex items-center space-x-1 rtl:space-x-reverse px-2 py-1 text-xs font-medium rounded-md cursor-pointer transition-colors duration-200 ${
+                        category.iconUrl ? 'text-green-700 bg-green-100 hover:bg-green-200' : 'text-blue-700 bg-blue-100 hover:bg-blue-200'
+                      }`}
+                    >
+                      <Image className="w-3 h-3" />
+                      <span>
+                        {iconLoading && selectedCategory?.id === category.id ? (
+                          translations?.uploadingIcon || 'Uploading...'
+                        ) : category.iconUrl ? (
+                          translations?.changeIcon || 'Change Icon'
+                        ) : (
+                          translations?.uploadIcon || 'Upload Icon'
+                        )}
+                      </span>
+                    </label>
+                    
+                    {category.iconUrl && (
+                      <button
+                        onClick={() => handleRemoveIcon(category.id)}
+                        disabled={iconLoading}
+                        className="ml-2 flex items-center space-x-1 rtl:space-x-reverse px-2 py-1 text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-200 disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -589,6 +852,45 @@ const Categories = () => {
                     focusRingColor: '#194866'
                   }}
                 />
+              </div>
+
+              {/* SVG Icon Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translations?.categoryIconLabel || 'Category Icon (SVG)'}
+                </label>
+                <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                  <div className="w-12 h-12 border border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
+                    {iconFile ? (
+                      <img 
+                        src={URL.createObjectURL(iconFile)} 
+                        alt="Icon Preview" 
+                        className="w-8 h-8"
+                      />
+                    ) : (
+                      <Image className="w-6 h-6 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      ref={iconInputRef}
+                      type="file"
+                      accept=".svg"
+                      className="hidden"
+                      onChange={(e) => handleIconChange(e)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => iconInputRef.current?.click()}
+                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                    >
+                      {iconFile ? translations?.changeIcon || 'Change Icon' : translations?.uploadIcon || 'Upload Icon'}
+                    </button>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {translations?.svgOnly || 'SVG files only'} ({translations?.maxSizeKb || 'Max 100KB'})
+                    </p>
+                  </div>
+                </div>
               </div>
               
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
@@ -688,6 +990,68 @@ const Categories = () => {
                     focusRingColor: '#194866'
                   }}
                 />
+              </div>
+
+              {/* SVG Icon Preview/Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translations?.categoryIconLabel || 'Category Icon (SVG)'}
+                </label>
+                <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                  <div className="w-12 h-12 border border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
+                    {selectedCategory.iconUrl ? (
+                      <img 
+                        src={selectedCategory.iconUrl} 
+                        alt={selectedCategory.name} 
+                        className="w-8 h-8"
+                      />
+                    ) : (
+                      <Image className="w-6 h-6 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      ref={editIconInputRef}
+                      type="file"
+                      accept=".svg"
+                      className="hidden"
+                      onChange={(e) => handleIconChange(e, true)}
+                    />
+                    <div className="flex space-x-2 rtl:space-x-reverse">
+                      <button
+                        type="button"
+                        onClick={() => editIconInputRef.current?.click()}
+                        disabled={iconLoading}
+                        className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none disabled:opacity-50"
+                      >
+                        {iconLoading ? (
+                          <span className="flex items-center space-x-1 rtl:space-x-reverse">
+                            <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span>{translations?.uploadingIcon || 'Uploading...'}</span>
+                          </span>
+                        ) : selectedCategory.iconUrl ? (
+                          translations?.changeIcon || 'Change Icon'
+                        ) : (
+                          translations?.uploadIcon || 'Upload Icon'
+                        )}
+                      </button>
+                      
+                      {selectedCategory.iconUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveIcon(selectedCategory.id)}
+                          disabled={iconLoading}
+                          className="px-3 py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200 focus:outline-none disabled:opacity-50"
+                        >
+                          {translations?.removeIcon || 'Remove Icon'}
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {translations?.svgOnly || 'SVG files only'} ({translations?.maxSizeKb || 'Max 100KB'})
+                    </p>
+                  </div>
+                </div>
               </div>
               
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">

@@ -23,6 +23,7 @@ export const arCategoriesManagement = {
   arabicNameLabel: 'اسم الفئة (العربية)',
   descriptionLabel: 'الوصف (الإنجليزية)',
   descriptionLabelAr: 'الوصف (العربية)',
+  categoryIconLabel: 'أيقونة الفئة (SVG)',
   
   // Form Placeholders
   enterCategoryNameEn: 'أدخل اسم الفئة بالإنجليزية',
@@ -44,19 +45,32 @@ export const arCategoriesManagement = {
   categoryCreatedSuccess: 'تم إنشاء الفئة بنجاح',
   categoryUpdatedSuccess: 'تم تحديث الفئة بنجاح',
   categoryDeletedSuccess: 'تم حذف الفئة بنجاح',
+  iconUploadedSuccess: 'تم رفع الأيقونة بنجاح',
   
   // Error Messages
   failedToCreateCategory: 'فشل في إنشاء الفئة',
   failedToUpdateCategory: 'فشل في تحديث الفئة',
   failedToDeleteCategory: 'فشل في حذف الفئة',
   failedToLoadCategories: 'فشل في تحميل الفئات',
+  failedToUploadIcon: 'فشل في رفع الأيقونة',
   
   // Validation Messages
   categoryNameRequired: 'اسم الفئة مطلوب',
+  invalidFileType: 'نوع الملف غير صالح. يرجى رفع ملف SVG',
+  fileTooLarge: 'حجم الملف كبير جداً. الحد الأقصى هو 100 كيلوبايت',
   
   // Empty States
   noCategoriesMessage: 'لا توجد فئات في النظام حالياً',
   addFirstCategory: 'إضافة أول فئة',
+  
+  // SVG Icon Upload
+  uploadIcon: 'رفع أيقونة',
+  changeIcon: 'تغيير الأيقونة',
+  removeIcon: 'إزالة الأيقونة',
+  dragDropSvg: 'اسحب وأفلت ملف SVG هنا أو انقر للاختيار',
+  svgOnly: 'ملفات SVG فقط',
+  maxSizeKb: 'الحد الأقصى: 100 كيلوبايت',
+  uploadingIcon: 'جاري رفع الأيقونة...',
   
   // Time and Date
   createdDate: 'تاريخ الإنشاء: {date}',

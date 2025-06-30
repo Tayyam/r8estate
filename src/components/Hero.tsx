@@ -78,7 +78,7 @@ const Hero = () => {
       id: cat.id, 
       name: language === 'ar' ? (cat.nameAr || cat.name) : cat.name,
       description: language === 'ar' ? (cat.descriptionAr || cat.description) : cat.description,
-      icon: Building2 
+      iconUrl: cat.iconUrl || null,
     })))
   ];
 
@@ -353,7 +353,16 @@ const Hero = () => {
                         }}
                       >
                         <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: color.bg }}>
-                          <Building2 className="w-8 h-8" style={{ color: color.text }} />
+                          {category.iconUrl ? (
+                            <img 
+                              src={category.iconUrl} 
+                              alt={category.name}
+                              className="w-8 h-8" 
+                              style={{ color: color.text }}
+                            />
+                          ) : (
+                            <Building2 className="w-8 h-8" style={{ color: color.text }} />
+                          )}
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900 mb-4">
                           {language === 'ar' ? (category.nameAr || category.name) : category.name}
@@ -387,7 +396,7 @@ const Hero = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500">
-                {translations?.noCategoriesFound || 'No categories available at the moment.'}
+                {translations?.noCategoriesFound || 'No categories found'}
               </p>
             </div>
           )}
