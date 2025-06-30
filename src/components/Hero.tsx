@@ -24,8 +24,10 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [recentReviews, setRecentReviews] = useState<(Review & { companyName: string, companyLogo?: string })[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [topRatedCompanies, setTopRatedCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryLoading, setCategoryLoading] = useState(true);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
   const [slidesPerView, setSlidesPerView] = useState(4);
 
   // Update slides per view based on screen size
@@ -76,6 +78,61 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
     loadCategories();
   }, []);
 
+  // Fetch top-rated companies from Firestore
+  useEffect(() => {
+    const fetchTopRatedCompanies = async () => {
+      setCompaniesLoading(true);
+      try {
+        // Create a query to get companies ordered by rating
+        const companiesQuery = query(
+          collection(db, 'companies'),
+          where('totalRating', '>', 0),
+          orderBy('totalRating', 'desc'),
+          limit(3) // Limit to 3 companies
+        );
+        
+        // Get the companies
+        const companiesSnapshot = await getDocs(companiesQuery);
+        const companiesData = companiesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        }));
+        
+        // Fetch category info for each company
+        const companiesWithCategories = await Promise.all(
+          companiesData.map(async (company) => {
+            let categoryName = "Unknown";
+            
+            if (company.categoryId) {
+              const categoryDoc = await getDoc(doc(db, 'categories', company.categoryId));
+              if (categoryDoc.exists()) {
+                const categoryData = categoryDoc.data();
+                categoryName = language === 'ar' ? (categoryData.nameAr || categoryData.name) : categoryData.name;
+              }
+            }
+            
+            return {
+              ...company,
+              categoryName
+            };
+          })
+        );
+        
+        setTopRatedCompanies(companiesWithCategories);
+      } catch (error) {
+        console.error('Error fetching top rated companies:', error);
+        // Fallback to empty array if error occurs
+        setTopRatedCompanies([]);
+      } finally {
+        setCompaniesLoading(false);
+      }
+    };
+    
+    fetchTopRatedCompanies();
+  }, [language]);
+
   // Categories data with real data
   const categoryOptions = [
     { id: 'all', name: translations?.allCategories || 'All Categories', icon: Building2 },
@@ -85,34 +142,6 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
       description: language === 'ar' ? (cat.descriptionAr || cat.description) : cat.description,
       iconUrl: cat.iconUrl || null,
     })))
-  ];
-
-  // Top rated companies data
-  const topCompanies = [
-    {
-      id: 1,
-      name: 'Palm Hills Development',
-      rating: 4.8,
-      reviews: 245,
-      category: 'Developer',
-      image: 'https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=300&h=200',
-    },
-    {
-      id: 2,
-      name: 'Cairo Real Estate',
-      rating: 4.7,
-      reviews: 189,
-      category: 'Broker',
-      image: 'https://images.pexels.com/photos/1370704/pexels-photo-1370704.jpeg?auto=compress&cs=tinysrgb&w=300&h=200',
-    },
-    {
-      id: 3,
-      name: 'Emaar Misr',
-      rating: 4.9,
-      reviews: 312,
-      category: 'Developer',
-      image: 'https://images.pexels.com/photos/1546168/pexels-photo-1546168.jpeg?auto=compress&cs=tinysrgb&w=300&h=200',
-    },
   ];
 
   // Fetch recent high-rated reviews (3 stars or more)
@@ -203,6 +232,15 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
         onCategorySelect(categoryId);
       }
     }
+  };
+
+  // Handle company click
+  const handleCompanyClick = (companyId: string) => {
+    // Dispatch event to navigate to company profile
+    const event = new CustomEvent('navigateToCompanyProfile', {
+      detail: { companyId }
+    });
+    window.dispatchEvent(event);
   };
 
   // Format date in a readable way
@@ -437,35 +475,68 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
             {translations?.topRatedCompanies || 'Top Rated Companies'}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {topCompanies.map((company) => (
-              <div
-                key={company.id}
-                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden"
-              >
-                <img
-                  src={company.image}
-                  alt={company.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="px-3 py-1 text-sm font-medium rounded-full" style={{ backgroundColor: 'rgba(25, 72, 102, 0.1)', color: '#194866' }}>
-                      {company.category}
-                    </span>
-                    <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                      <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                      <span className="font-semibold text-gray-900">{company.rating}</span>
+
+          {companiesLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+            </div>
+          ) : topRatedCompanies.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {topRatedCompanies.map((company) => (
+                <div
+                  key={company.id}
+                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden cursor-pointer"
+                  onClick={() => handleCompanyClick(company.id)}
+                >
+                  {company.logoUrl ? (
+                    <div className="w-full h-48 overflow-hidden">
+                      <img
+                        src={company.logoUrl}
+                        alt={company.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
+                  ) : company.coverImageUrl ? (
+                    <div className="w-full h-48 overflow-hidden">
+                      <img
+                        src={company.coverImageUrl}
+                        alt={company.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-48 bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
+                      <Building2 className="h-16 w-16 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="px-3 py-1 text-sm font-medium rounded-full" style={{ backgroundColor: 'rgba(25, 72, 102, 0.1)', color: '#194866' }}>
+                        {company.categoryName}
+                      </span>
+                      <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                        <Star className="w-5 h-5 text-yellow-400 fill-current" />
+                        <span className="font-semibold text-gray-900">{company.totalRating?.toFixed(1) || '0.0'}</span>
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{company.name}</h3>
+                    <p className="text-gray-600">
+                      {company.totalReviews || 0} {translations?.reviews || 'reviews'}
+                    </p>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{company.name}</h3>
-                  <p className="text-gray-600">
-                    {company.reviews} {translations?.reviews || 'reviews'}
-                  </p>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Building2 className="h-8 w-8 text-gray-400" />
               </div>
-            ))}
-          </div>
+              <p className="text-gray-500">
+                {translations?.noCompaniesFound || 'No top rated companies found'}
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

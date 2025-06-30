@@ -12,6 +12,7 @@ export const arHero = {
   
   // Top rated companies
   topRatedCompanies: 'الشركات الأعلى تقييماً',
+  noCompaniesFound: 'لم يتم العثور على شركات',
   
   // Latest reviews
   latestReviews: 'أحدث التقييمات',
