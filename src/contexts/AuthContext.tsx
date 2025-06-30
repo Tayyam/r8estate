@@ -9,7 +9,6 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   GoogleAuthProvider,
-  FacebookAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
@@ -23,7 +22,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string, role?: UserRole) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  loginWithFacebook: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
@@ -141,36 +139,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw new Error(error.message);
     }
   };
-  
-  // Login with Facebook
-  const loginWithFacebook = async () => {
-    try {
-      const provider = new FacebookAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      // Check if user exists in Firestore
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      
-      // If user doesn't exist, create a new document
-      if (!userDoc.exists()) {
-        const userData: Omit<User, 'uid'> = {
-          email: user.email!,
-          displayName: user.displayName || user.email!,
-          role: 'user', // Default role for social logins
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isEmailVerified: user.emailVerified,
-          photoURL: user.photoURL
-        };
-        
-        await setDoc(doc(db, 'users', user.uid), userData);
-      }
-    } catch (error: any) {
-      console.error('Facebook login error:', error);
-      throw new Error(error.message);
-    }
-  };
 
   // Reset password
   const resetPassword = async (email: string) => {
@@ -241,7 +209,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     loginWithGoogle,
-    loginWithFacebook,
     logout,
     resetPassword,
     updateUserProfile

@@ -50,9 +50,7 @@ export const arAuth = {
   
   // Social Login
   signInWithGoogle: 'تسجيل الدخول باستخدام جوجل',
-  signInWithFacebook: 'تسجيل الدخول باستخدام فيسبوك',
   signUpWithGoogle: 'التسجيل باستخدام جوجل',
-  signUpWithFacebook: 'التسجيل باستخدام فيسبوك',
   orContinueWith: 'أو أكمل باستخدام',
   welcomeToR8Estate: 'مرحبًا بك في R8 Estate! تم إنشاء حسابك وتسجيل دخولك الآن.',
   passwordStrengthGood: 'طول كلمة المرور جيد',
