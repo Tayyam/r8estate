@@ -17,9 +17,10 @@ interface CompanyWithCategory extends Company {
 
 interface CategoriesProps {
   onNavigateToProfile?: (companyId: string) => void;
+  initialCategoryFilter?: string;
 }
 
-const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
+const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCategoryFilter }) => {
   const { translations } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -28,6 +29,13 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Set initial category filter if provided
+  useEffect(() => {
+    if (initialCategoryFilter) {
+      setSelectedCategory(initialCategoryFilter);
+    }
+  }, [initialCategoryFilter]);
 
   // Load categories from Firestore
   const loadCategories = async () => {

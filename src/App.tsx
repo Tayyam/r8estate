@@ -21,6 +21,7 @@ import NotificationContainer from './components/UI/NotificationContainer';
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   // Listen for company profile navigation from Header
   useEffect(() => {
@@ -45,6 +46,7 @@ function App() {
             setSelectedCompanyId(companyId);
             setCurrentPage('company-profile');
           }}
+          initialCategoryFilter={selectedCategoryId}
         />;
       case 'about':
         return <About />;
@@ -74,7 +76,12 @@ function App() {
         />;
       case 'home':
       default:
-        return <Hero />;
+        return <Hero 
+          onNavigate={setCurrentPage} 
+          onCategorySelect={(categoryId) => {
+            setSelectedCategoryId(categoryId);
+          }}
+        />;
     }
   };
 

@@ -13,7 +13,12 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 
-const Hero = () => {
+interface HeroProps {
+  onNavigate?: (page: string) => void;
+  onCategorySelect?: (categoryId: string) => void;
+}
+
+const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect }) => {
   const { translations, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -170,11 +175,34 @@ const Hero = () => {
   }, []);
 
   const handleSearch = () => {
-    console.log('Search:', searchQuery, 'Category:', selectedCategory);
+    if (onNavigate) {
+      // Navigate to categories page
+      onNavigate('categories');
+      
+      // If a specific category is selected, pass it along
+      if (selectedCategory !== 'all' && onCategorySelect) {
+        onCategorySelect(selectedCategory);
+      }
+    }
   };
 
   const handleShareExperience = () => {
-    console.log('Share experience clicked');
+    if (onNavigate) {
+      onNavigate('categories');
+    }
+  };
+
+  // Handle category click
+  const handleCategoryClick = (categoryId: string) => {
+    if (onNavigate) {
+      // Navigate to categories page
+      onNavigate('categories');
+      
+      // Pass the selected category
+      if (onCategorySelect && categoryId !== 'all') {
+        onCategorySelect(categoryId);
+      }
+    }
   };
 
   // Format date in a readable way
@@ -343,6 +371,7 @@ const Hero = () => {
                           '--hover-bg': color.bg,
                           '--hover-border': color.text
                         }}
+                        onClick={() => handleCategoryClick(category.id)}
                         onMouseEnter={(e) => {
                           e.target.style.backgroundColor = color.bg;
                           e.target.style.borderColor = color.text;
@@ -358,7 +387,6 @@ const Hero = () => {
                               src={category.iconUrl} 
                               alt={category.name}
                               className="w-8 h-8" 
-                              style={{ color: color.text }}
                             />
                           ) : (
                             <Building2 className="w-8 h-8" style={{ color: color.text }} />
