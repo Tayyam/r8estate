@@ -61,5 +61,14 @@ export const ar = {
   writeReview: 'كتابة تقييم',
   loginToReview: 'يرجى تسجيل الدخول لكتابة تقييم',
   loginToReviewDesc: 'يجب عليك تسجيل الدخول لمشاركة تجربتك مع هذه الشركة',
-  anonymousUser: 'مستخدم مجهول'
+  anonymousUser: 'مستخدم مجهول',
+  
+  // Review voting translations
+  helpful: 'مفيد',
+  notHelpful: 'غير مفيد',
+  markAsHelpful: 'تحديد كمفيد',
+  markAsNotHelpful: 'تحديد كغير مفيد',
+  cannotVote: 'لا يمكنك التصويت',
+  voteSuccess: 'تم تسجيل تصويتك',
+  voteRemoved: 'تم إزالة تصويتك'
 };

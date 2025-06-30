@@ -9,6 +9,7 @@ import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile
 import AddReviewModal from './AddReviewModal';
 import EditReviewModal from './EditReviewModal';
 import ReplyModal from './ReplyModal';
+import ReviewVotingButtons from './ReviewVotingButtons';
 
 interface ReviewsTabProps {
   reviews: Review[];
@@ -516,6 +517,11 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
               
               <h4 className="font-semibold text-gray-900 mb-3 text-lg">{review.title}</h4>
               <p className="text-gray-700 leading-relaxed mb-6">{review.content}</p>
+              
+              {/* Review Voting Buttons */}
+              <div className="flex justify-end mb-4">
+                <ReviewVotingButtons reviewId={review.id} reviewUserId={review.userId} />
+              </div>
               
               {/* Company Reply */}
               {review.companyReply && (
