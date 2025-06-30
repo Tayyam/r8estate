@@ -19,6 +19,7 @@ import { arFooter } from './ar-footer';
 import { arContact } from './ar-contact';
 import { arTerms } from './ar-terms';
 import { arPrivacy } from './ar-privacy';
+import { arMyReviews } from './ar-my-reviews';
 
 export const ar = {
   ...arCommon,
@@ -41,4 +42,5 @@ export const ar = {
   ...arContact,
   ...arTerms,
   ...arPrivacy,
+  ...arMyReviews,
 };

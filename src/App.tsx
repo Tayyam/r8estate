@@ -15,6 +15,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import CompanyProfile from './components/CompanyProfile';
 import PersonalProfile from './components/PersonalProfile';
+import MyReviews from './components/MyReviews';
 import Footer from './components/Footer';
 import NotificationContainer from './components/UI/NotificationContainer';
 
@@ -65,6 +66,8 @@ function App() {
         }} />;
       case 'personal-profile':
         return <PersonalProfile onNavigate={setCurrentPage} />;
+      case 'my-reviews':
+        return <MyReviews onNavigate={setCurrentPage} />;
       case 'login':
         return <Login onNavigate={setCurrentPage} />;
       case 'register':
