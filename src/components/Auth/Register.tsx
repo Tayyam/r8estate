@@ -49,14 +49,14 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     try {
       await register(formData.email, formData.password, formData.displayName, 'user');
       
-      // Show success modal and redirect
-      showSuccessModal(
+      // Show success toast and immediately navigate to home page
+      showSuccessToast(
         translations?.accountCreated || 'Account Created Successfully!',
-        translations?.verificationSent || 'A verification email has been sent to your email address. Please verify your email and then you can sign in.',
-        () => {
-          onNavigate('login');
-        }
+        translations?.welcomeToR8Estate || 'Welcome to R8 Estate! Your account has been created and you are now logged in.',
       );
+      
+      // Directly navigate to home page
+      onNavigate('home');
       
     } catch (error: any) {
       showErrorToast(
@@ -96,13 +96,13 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       await loginWithGoogle();
       
       // Show success toast and navigate
-      showSuccessModal(
+      showSuccessToast(
         translations?.accountCreated || 'Account Created Successfully!',
-        translations?.welcomeToR8Estate || 'Welcome to R8 Estate! Your account has been created and you are now logged in.',
-        () => {
-          onNavigate('home');
-        }
+        translations?.welcomeToR8Estate || 'Welcome to R8 Estate! Your account has been created and you are now logged in.'
       );
+      
+      // Directly navigate to home page
+      onNavigate('home');
       
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
