@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Eye, MessageSquare, Star } from 'lucide-react';
+import { Building2, Eye, MessageSquare } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Property } from '../../types/property';
 import { Review } from '../../types/property';
@@ -10,7 +10,6 @@ interface CompanyTabsProps {
   properties: Property[];
   reviews: Review[];
   userCanReview: boolean;
-  hasUserReviewed: boolean;
 }
 
 const CompanyTabs: React.FC<CompanyTabsProps> = ({
@@ -18,25 +17,16 @@ const CompanyTabs: React.FC<CompanyTabsProps> = ({
   setActiveTab,
   properties,
   reviews,
-  userCanReview,
-  hasUserReviewed
+  userCanReview
 }) => {
   const { translations } = useLanguage();
 
-  // Create base tabs that are always shown
-  const baseTabs = [
+  // Create tabs array
+  const tabs = [
     { id: 'overview', name: translations?.overview || 'Overview', icon: Building2 },
     { id: 'properties', name: translations?.propertiesTab || 'Properties', icon: Eye },
     { id: 'reviews', name: translations?.reviewsTab || 'Reviews', icon: MessageSquare }
   ];
-  
-  // Only add the write-review tab if the user can review
-  const tabs = userCanReview 
-    ? [
-        { id: 'write-review', name: hasUserReviewed ? (translations?.editReview || 'Edit Review') : (translations?.writeReview || 'Write a Review'), icon: Star },
-        ...baseTabs
-      ]
-    : baseTabs;
 
   return (
     <div className="bg-white border-b border-gray-200">

@@ -10,6 +10,8 @@ import AddReviewModal from './AddReviewModal';
 import EditReviewModal from './EditReviewModal';
 import ReplyModal from './ReplyModal';
 import ReviewVotingButtons from './ReviewVotingButtons';
+import WriteReviewTab from './WriteReviewTab';
+import { User } from '../../types/user';
 
 interface ReviewsTabProps {
   reviews: Review[];
@@ -17,6 +19,9 @@ interface ReviewsTabProps {
   onReviewAdded: () => void;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
+  userCanReview: boolean;
+  hasUserReviewed: boolean;
+  currentUser: User | null;
 }
 
 const REVIEWS_PER_PAGE = 5;
@@ -26,9 +31,11 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   company, 
   onReviewAdded, 
   onSuccess, 
-  onError 
+  onError,
+  userCanReview,
+  hasUserReviewed,
+  currentUser
 }) => {
-  const { currentUser } = useAuth();
   const { translations } = useLanguage();
   
   // State for pagination and lazy loading
@@ -55,8 +62,20 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     (currentUser.role === 'company' && company?.email === currentUser.email)
   );
 
-  // Check if current user has already reviewed this company
-  const hasUserReviewed = currentUser && reviews.some(review => review.userId === currentUser.uid);
+  // Sort reviews to show user's review first
+  const sortReviewsWithUserFirst = (reviewsToSort: Review[]): Review[] => {
+    if (!currentUser) return reviewsToSort;
+    
+    // Create a copy to avoid modifying the original array
+    return [...reviewsToSort].sort((a, b) => {
+      // If review A belongs to current user, it comes first
+      if (a.userId === currentUser.uid) return -1;
+      // If review B belongs to current user, it comes first
+      if (b.userId === currentUser.uid) return 1;
+      // Otherwise, sort by creation date (newest first)
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+  };
 
   // Load reviews with pagination
   const loadReviews = async (loadMore = false) => {
@@ -93,9 +112,10 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       })) as Review[];
 
       if (loadMore) {
-        setReviews(prev => [...prev, ...newReviews]);
+        const combinedReviews = [...reviews, ...newReviews];
+        setReviews(sortReviewsWithUserFirst(combinedReviews));
       } else {
-        setReviews(newReviews);
+        setReviews(sortReviewsWithUserFirst(newReviews));
         // Get total count on first load
         const allReviewsQuery = query(
           collection(db, 'reviews'),
@@ -337,7 +357,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         </div>
         
         {/* Add Review Button */}
-        {currentUser && !canEditCompany && !hasUserReviewed && (
+        {userCanReview && !hasUserReviewed && (
           <button
             onClick={() => setShowAddReview(true)}
             className="flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
@@ -419,6 +439,18 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Write Review Section - Only show if user can review and hasn't reviewed yet */}
+      {userCanReview && !hasUserReviewed && (
+        <div id="write-review-section" className="mb-10">
+          <WriteReviewTab
+            company={company}
+            onReviewAdded={handleReviewAdded}
+            onSuccess={onSuccess}
+            onError={onError}
+          />
         </div>
       )}
 

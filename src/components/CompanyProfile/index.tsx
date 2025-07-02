@@ -50,21 +50,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   // Check if user has already reviewed this company
   const hasUserReviewed = currentUser && reviews.some(review => review.userId === currentUser.uid);
 
-  // When loading completes, set the active tab appropriately
-  useEffect(() => {
-    if (!loading) {
-      // For regular users who can review, default to write-review if it exists
-      if (userCanReview && !hasUserReviewed) {
-        setActiveTab('write-review');
-      } else if (userCanReview && hasUserReviewed) {
-        setActiveTab('write-review');
-      } else {
-        // For others, default to overview tab
-        setActiveTab('overview');
-      }
-    }
-  }, [loading, userCanReview, hasUserReviewed]);
-
   // Load company data
   const loadCompanyData = async () => {
     if (!companyId) return;
@@ -178,6 +163,8 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         setCompany(updatedCompanyData);
       }
     }
+    // Switch to reviews tab
+    setActiveTab('reviews');
   };
 
   // Show success message
@@ -224,15 +211,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'write-review':
-        return (
-          <WriteReviewTab
-            company={company}
-            onReviewAdded={handleReviewAdded}
-            onSuccess={handleSuccess}
-            onError={handleError}
-          />
-        );
       case 'overview':
         return (
           <OverviewTab
@@ -264,6 +242,9 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
             onReviewAdded={handleReviewAdded}
             onSuccess={handleSuccess}
             onError={handleError}
+            userCanReview={userCanReview}
+            hasUserReviewed={hasUserReviewed}
+            currentUser={currentUser}
           />
         );
       default:
@@ -294,8 +275,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         setActiveTab={setActiveTab}
         properties={properties}
         reviews={reviews}
-        userCanReview={userCanReview}
-        hasUserReviewed={hasUserReviewed}
+        userCanReview={userCanReview && !hasUserReviewed}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -325,6 +305,24 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
           setError={handleError}
           loadCompanyData={loadCompanyData}
         />
+      )}
+
+      {userCanReview && !hasUserReviewed && (
+        <div className="fixed bottom-4 right-4 z-40">
+          <button
+            onClick={() => {
+              const writeReviewSection = document.getElementById('write-review-section');
+              if (writeReviewSection) {
+                writeReviewSection.scrollIntoView({ behavior: 'smooth' });
+              } else {
+                setActiveTab('reviews');
+              }
+            }}
+            className="flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            <span>{translations?.writeReview || 'Write a Review'}</span>
+          </button>
+        </div>
       )}
     </div>
   );
