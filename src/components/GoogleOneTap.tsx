@@ -61,7 +61,7 @@ const GoogleOneTap: React.FC<GoogleOneTapProps> = ({ onSuccess }) => {
       window.google.accounts.id.initialize({
         client_id: '966003063761-vdi60ri0khonmr676h304c0ivhrbq7v7.apps.googleusercontent.com', // Use your Firebase Web Client ID
         callback: handleCredentialResponse,
-        auto_select: true,
+        auto_select: false,
         cancel_on_tap_outside: true,
       });
       
