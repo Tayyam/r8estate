@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Star, Filter, MapPin, Calendar, Eye, Building2, Users, MessageSquare, ArrowRight, ArrowLeft } from 'lucide-react';
 import { collection, getDocs, query, orderBy, where, limit, startAfter, doc, getDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext'; // Added import
+import { useAuth } from '../contexts/AuthContext';
 import { Review } from '../types/property';
 import { Category, egyptianGovernorates } from '../types/company';
-import GoogleOneTap from './GoogleOneTap'; // Added import for GoogleOneTap component
+import GoogleOneTap from './GoogleOneTap';
+import { getCompanySlug } from '../utils/urlUtils';
+
 // Import Swiper components
 import { Swiper, SwiperSlide } from 'swiper/react';
 // Import Swiper styles
@@ -23,7 +26,8 @@ interface HeroProps {
 
 const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) => {
   const { translations, language } = useLanguage();
-  const { currentUser } = useAuth(); // Added to check if user is logged in
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [recentReviews, setRecentReviews] = useState<(Review & { companyName: string, companyLogo?: string })[]>([]);
@@ -333,49 +337,56 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
     setShowSuggestions(false);
     if (onSearch) {
       onSearch(searchQuery, selectedCategory);
-    } else if (onNavigate) {
-      // Dispatch event to navigate with search params
-      const event = new CustomEvent('navigateToSearch', {
-        detail: { query: searchQuery, category: selectedCategory }
-      });
-      window.dispatchEvent(event);
+    } else {
+      navigate(`/search?q=${encodeURIComponent(searchQuery || '')}&category=${selectedCategory || 'all'}`);
     }
   };
 
   const handleShareExperience = () => {
     if (onNavigate) {
-      // Dispatch event to navigate to search page
-      const event = new CustomEvent('navigateToSearch', {
-        detail: { query: '', category: 'all' }
-      });
-      window.dispatchEvent(event);
+      onNavigate('search-results');
+    } else {
+      navigate('/search');
     }
   };
 
   // Handle category click
   const handleCategoryClick = (categoryId: string) => {
+    if (onCategorySelect) {
+      onCategorySelect(categoryId);
+    }
+    
     if (onNavigate) {
       // Dispatch event to navigate with search params
-      const event = new CustomEvent('navigateToSearch', {
-        detail: { query: '', category: categoryId }
+      const event = new CustomEvent('navigateToCompaniesWithCategory', {
+        detail: { categoryId }
       });
       window.dispatchEvent(event);
+    } else {
+      navigate(`/categories/${categoryId}`);
     }
   };
 
   // Handle company click
-  const handleCompanyClick = (companyId: string) => {
-    // Dispatch event to navigate to company profile
-    const event = new CustomEvent('navigateToCompanyProfile', {
-      detail: { companyId }
-    });
-    window.dispatchEvent(event);
+  const handleCompanyClick = (companyId: string, companyName: string) => {
+    // Format company name for URL
+    const companySlug = getCompanySlug(companyName);
+    
+    if (onNavigate) {
+      // Dispatch event to navigate to company profile
+      const event = new CustomEvent('navigateToCompanyProfile', {
+        detail: { companyId, companyName }
+      });
+      window.dispatchEvent(event);
+    } else {
+      navigate(`/company/${companySlug}/${companyId}/overview`);
+    }
   };
 
   // Handle suggestion click
-  const handleSuggestionClick = (companyId: string) => {
+  const handleSuggestionClick = (companyId: string, companyName: string) => {
     setShowSuggestions(false);
-    handleCompanyClick(companyId);
+    handleCompanyClick(companyId, companyName);
   };
 
   // Format date in a readable way
@@ -427,6 +438,9 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setShowSuggestions(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSearch();
+                    }}
                     className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 text-lg rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
                     style={{ 
                       focusBorderColor: '#EE183F',
@@ -463,7 +477,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
                             <div 
                               key={company.id}
                               className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center space-x-3 rtl:space-x-reverse"
-                              onClick={() => handleSuggestionClick(company.id)}
+                              onClick={() => handleSuggestionClick(company.id, company.name)}
                             >
                               <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
                                 {company.logoUrl ? (
@@ -692,7 +706,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
                 <div
                   key={company.id}
                   className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden cursor-pointer"
-                  onClick={() => handleCompanyClick(company.id)}
+                  onClick={() => handleCompanyClick(company.id, company.name)}
                 >
                   {/* Company Image - Try logo first, then cover image, then fallback */}
                   <div className="w-full h-48 overflow-hidden">
@@ -771,7 +785,13 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
                 >
                   <div className="flex items-center space-x-3 rtl:space-x-reverse mb-4">
                     {/* Company Logo */}
-                    <div className="w-12 h-12 rounded-full bg-white shadow overflow-hidden flex items-center justify-center border border-gray-200">
+                    <div 
+                      className="w-12 h-12 rounded-full bg-white shadow overflow-hidden flex items-center justify-center border border-gray-200 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCompanyClick(review.companyId, review.companyName);
+                      }}
+                    >
                       {review.companyLogo ? (
                         <img 
                           src={review.companyLogo} 
@@ -784,7 +804,15 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
                     </div>
                     
                     <div>
-                      <h3 className="font-bold text-gray-900">{review.companyName}</h3>
+                      <h3 
+                        className="font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCompanyClick(review.companyId, review.companyName);
+                        }}
+                      >
+                        {review.companyName}
+                      </h3>
                       <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
                           <Star

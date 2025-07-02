@@ -20,6 +20,7 @@ import MyReviews from './components/MyReviews';
 import SearchResults from './components/SearchResults';
 import Footer from './components/Footer';
 import NotificationContainer from './components/UI/NotificationContainer';
+import { getCompanySlug } from './utils/urlUtils';
 
 function App() {
   const location = useLocation();
@@ -34,9 +35,12 @@ function App() {
   // Listen for company profile navigation from Header
   useEffect(() => {
     const handleCompanyProfileNavigation = (event: CustomEvent) => {
-      const { companyId } = event.detail;
+      const { companyId, companyName } = event.detail;
       setSelectedCompanyId(companyId);
-      navigate(`/company/${companyId}/overview`);
+      
+      // Format company name for URL
+      const companySlug = companyName ? getCompanySlug(companyName) : companyId;
+      navigate(`/company/${companySlug}/${companyId}/overview`);
     };
 
     window.addEventListener('navigateToCompanyProfile', handleCompanyProfileNavigation as EventListener);
@@ -128,39 +132,40 @@ function App() {
             <main>
               <Routes>
                 <Route path="/" element={<Hero onNavigate={handleNavigate} />} />
-                <Route path="/categories" element={<Categories onNavigateToProfile={(companyId) => {
+                <Route path="/categories" element={<Categories onNavigateToProfile={(companyId, companyName) => {
                   setSelectedCompanyId(companyId);
-                  navigate(`/company/${companyId}/overview`);
+                  const companySlug = companyName ? getCompanySlug(companyName) : companyId;
+                  navigate(`/company/${companySlug}/${companyId}/overview`);
                 }} />} />
-                <Route path="/categories/:categoryId" element={<Categories onNavigateToProfile={(companyId) => {
+                <Route path="/categories/:categoryId" element={<Categories onNavigateToProfile={(companyId, companyName) => {
                   setSelectedCompanyId(companyId);
-                  navigate(`/company/${companyId}/overview`);
+                  const companySlug = companyName ? getCompanySlug(companyName) : companyId;
+                  navigate(`/company/${companySlug}/${companyId}/overview`);
                 }} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/contact" element={<Contact onNavigate={handleNavigate} />} />
                 <Route path="/terms" element={<Terms onNavigate={handleNavigate} />} />
                 <Route path="/privacy" element={<Privacy onNavigate={handleNavigate} />} />
-                <Route path="/admin/settings" element={<Settings onNavigateToProfile={(companyId) => {
+                <Route path="/admin/settings" element={<Settings onNavigateToProfile={(companyId, companyName) => {
                   setSelectedCompanyId(companyId);
-                  navigate(`/company/${companyId}/overview`);
+                  const companySlug = companyName ? getCompanySlug(companyName) : companyId;
+                  navigate(`/company/${companySlug}/${companyId}/overview`);
                 }} />} />
                 <Route path="/login" element={<Login onNavigate={handleNavigate} />} />
                 <Route path="/register" element={<Register onNavigate={handleNavigate} />} />
-                <Route path="/company/:companyId/:tab" element={
-                  <CompanyProfile 
-                    companyId={selectedCompanyId} 
-                    onNavigateBack={() => navigate(-1)} 
-                  />
+                <Route path="/company/:companySlug/:companyId/:tab" element={
+                  <CompanyProfile onNavigateBack={() => navigate(-1)} />
                 } />
                 <Route path="/profile" element={<PersonalProfile onNavigate={handleNavigate} />} />
                 <Route path="/profile/reviews" element={<MyReviews onNavigate={handleNavigate} />} />
                 <Route path="/search" element={
                   <SearchResults 
                     onNavigate={handleNavigate} 
-                    onNavigateToProfile={(companyId) => {
+                    onNavigateToProfile={(companyId, companyName) => {
                       setSelectedCompanyId(companyId);
-                      navigate(`/company/${companyId}/overview`);
+                      const companySlug = companyName ? getCompanySlug(companyName) : companyId;
+                      navigate(`/company/${companySlug}/${companyId}/overview`);
                     }}
                     initialSearchQuery={searchParams.query}
                     initialCategoryFilter={searchParams.category}

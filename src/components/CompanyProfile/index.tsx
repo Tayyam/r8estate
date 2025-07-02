@@ -16,16 +16,17 @@ import ReviewsTab from './ReviewsTab';
 import AddPropertyModal from './AddPropertyModal';
 import ImageUploadModal from './ImageUploadModal';
 import NotificationMessages from './NotificationMessages';
+import { getCompanySlug } from '../../utils/urlUtils';
 
 interface CompanyProfileProps {
-  companyId: string | null;
+  companyId?: string | null;
   onNavigateBack: () => void;
 }
 
 const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBack }) => {
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
-  const params = useParams<{ companyId: string; tab: string }>();
+  const params = useParams<{ companySlug: string; companyId: string; tab: string }>();
   const navigate = useNavigate();
   const [company, setCompany] = useState<CompanyProfileType | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -43,9 +44,10 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   // Update URL when tab changes
   useEffect(() => {
     if (company && activeTab && params.tab !== activeTab) {
-      navigate(`/company/${params.companyId}/${activeTab}`, { replace: true });
+      const companySlug = getCompanySlug(company.name);
+      navigate(`/company/${companySlug}/${company.id}/${activeTab}`, { replace: true });
     }
-  }, [activeTab, company, navigate, params.companyId, params.tab]);
+  }, [activeTab, company, navigate, params.tab]);
 
   // Check if user can edit (admin or company owner)
   const canEdit = currentUser && (
@@ -61,13 +63,14 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
 
   // Load company data
   const loadCompanyData = async () => {
+    // Use companyId from URL params if available, otherwise use the prop
     const actualCompanyId = params.companyId || companyId;
     if (!actualCompanyId) return;
 
     try {
       setLoading(true);
       
-      // Load company profile
+      // Load company profile by ID
       const companyDoc = await getDoc(doc(db, 'companies', actualCompanyId));
       if (companyDoc.exists()) {
         const companyData = {
@@ -76,7 +79,15 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
           createdAt: companyDoc.data().createdAt?.toDate() || new Date(),
           updatedAt: companyDoc.data().updatedAt?.toDate() || new Date()
         } as CompanyProfileType;
+        
         setCompany(companyData);
+        
+        // If URL slug doesn't match company name, update it
+        const correctSlug = getCompanySlug(companyData.name);
+        if (params.companySlug !== correctSlug) {
+          navigate(`/company/${correctSlug}/${actualCompanyId}/${activeTab || 'overview'}`, { replace: true });
+          return;
+        }
         
         // Load gallery images if they exist
         if (companyData.galleryImages) {
@@ -141,7 +152,18 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
           repliedAt: doc.data().companyReply.repliedAt?.toDate() || new Date()
         } : undefined
       })) as Review[];
-      setReviews(reviewsData);
+      
+      // Put current user's review at the top
+      if (currentUser) {
+        const sortedReviews = [...reviewsData].sort((a, b) => {
+          if (a.userId === currentUser.uid) return -1;
+          if (b.userId === currentUser.uid) return 1;
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        });
+        setReviews(sortedReviews);
+      } else {
+        setReviews(reviewsData);
+      }
 
       // Update company's total rating and reviews count if company exists
       if (company && reviewsData.length > 0) {
@@ -194,7 +216,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
 
   useEffect(() => {
     loadCompanyData();
-  }, [params.companyId, companyId]);
+  }, [params.companyId, companyId, params.companySlug]);
 
   // Update active tab when URL tab param changes
   useEffect(() => {
@@ -268,7 +290,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
           />
         );
       default:
-        return <Navigate to={`/company/${company.id}/overview`} />;
+        return null;
     }
   };
 
@@ -346,16 +368,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
       )}
     </div>
   );
-};
-
-const Navigate = ({ to }: { to: string }) => {
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    navigate(to);
-  }, [navigate, to]);
-  
-  return null;
 };
 
 export default CompanyProfile;

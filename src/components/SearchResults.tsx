@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Star, Filter, MapPin, Building2, ArrowLeft, ChevronDown, ChevronUp, X, Sliders, ChevronRight } from 'lucide-react';
 import { collection, getDocs, query, orderBy, where, limit, startAfter, DocumentData } from 'firebase/firestore';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Company } from '../types/company';
 import { Category, egyptianGovernorates } from '../types/company';
+import { getCompanySlug } from '../utils/urlUtils';
 
 interface CompanyWithCategory extends Company {
   categoryName: string;
@@ -17,7 +19,7 @@ interface CompanyWithCategory extends Company {
 
 interface SearchResultsProps {
   onNavigate: (page: string) => void;
-  onNavigateToProfile: (companyId: string) => void;
+  onNavigateToProfile?: (companyId: string, companyName: string) => void;
   initialSearchQuery?: string;
   initialCategoryFilter?: string;
 }
@@ -31,8 +33,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   initialCategoryFilter = 'all' 
 }) => {
   const { translations, language } = useLanguage();
-  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
-  const [selectedCategory, setSelectedCategory] = useState(initialCategoryFilter);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || initialSearchQuery);
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || initialCategoryFilter);
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedRating, setSelectedRating] = useState('all');
   const [companies, setCompanies] = useState<CompanyWithCategory[]>([]);
@@ -51,6 +55,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Update search params when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (selectedCategory !== 'all') params.set('category', selectedCategory);
+    setSearchParams(params);
+  }, [searchQuery, selectedCategory, setSearchParams]);
 
   // Load categories
   useEffect(() => {
@@ -77,33 +89,28 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   // Load companies based on search query - after categories are loaded
   useEffect(() => {
     if (categories.length > 0) {
-      if (!initialSearchQuery && initialCategoryFilter === 'all') {
-        // If no initial filters are applied, load all companies
+      const q = searchParams.get('q') || '';
+      const category = searchParams.get('category') || 'all';
+      
+      setSearchQuery(q);
+      setSelectedCategory(category);
+      
+      if (!q && category === 'all') {
+        // If no filters are applied, load all companies
         loadAllCompanies();
       } else {
-        // Otherwise, apply initial filters
+        // Otherwise, apply filters
         searchCompanies();
       }
     }
-  }, [initialSearchQuery, initialCategoryFilter, categories.length]);
+  }, [searchParams, categories.length]);
 
   // Apply filters automatically when they change
   useEffect(() => {
     if (categories.length > 0) {
       searchCompanies();
     }
-  }, [selectedCategory, selectedLocation, selectedRating]);
-
-  // Apply search when query changes with small delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (categories.length > 0) {
-        searchCompanies();
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [selectedLocation, selectedRating]);
 
   // Fetch search suggestions
   const fetchSearchSuggestions = async (query: string) => {
@@ -368,18 +375,24 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     setSelectedCategory('all');
     setSelectedLocation('all');
     setSelectedRating('all');
+    setSearchParams(new URLSearchParams());
     // Filters will auto-apply via the useEffect
   };
 
   // Handle company click
-  const handleCompanyClick = (companyId: string) => {
-    onNavigateToProfile(companyId);
+  const handleCompanyClick = (companyId: string, companyName: string) => {
+    if (onNavigateToProfile) {
+      onNavigateToProfile(companyId, companyName);
+    } else {
+      const companySlug = getCompanySlug(companyName);
+      navigate(`/company/${companySlug}/${companyId}/overview`);
+    }
   };
 
   // Handle suggestion click
-  const handleSuggestionClick = (companyId: string) => {
+  const handleSuggestionClick = (companyId: string, companyName: string) => {
     setShowSuggestions(false);
-    handleCompanyClick(companyId);
+    handleCompanyClick(companyId, companyName);
   };
 
   // Get category color based on category name
@@ -395,6 +408,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       'إدارة الممتلكات': '#8B5CF6'
     };
     return colors[categoryName as keyof typeof colors] || '#6B7280';
+  };
+
+  // Apply search
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (selectedCategory !== 'all') params.set('category', selectedCategory);
+    setSearchParams(params);
   };
 
   // Create filter options
@@ -463,6 +484,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSearch();
+                }}
                 className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
                 style={{ 
                   focusBorderColor: '#EE183F',
@@ -510,7 +534,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         <div 
                           key={company.id}
                           className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center space-x-3 rtl:space-x-reverse"
-                          onClick={() => handleSuggestionClick(company.id)}
+                          onClick={() => handleSuggestionClick(company.id, company.name)}
                         >
                           <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
                             {company.logoUrl ? (
@@ -656,7 +680,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
                           <span className="truncate max-w-[100px]">{searchQuery}</span>
                           <button 
-                            onClick={() => setSearchQuery('')}
+                            onClick={() => {
+                              setSearchQuery('');
+                              const newParams = new URLSearchParams(searchParams);
+                              newParams.delete('q');
+                              setSearchParams(newParams);
+                            }}
                             className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
                           >
                             <X className="w-3 h-3" />
@@ -667,7 +696,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
                           <span>{categoryOptions.find(o => o.id === selectedCategory)?.name}</span>
                           <button 
-                            onClick={() => setSelectedCategory('all')}
+                            onClick={() => {
+                              setSelectedCategory('all');
+                              const newParams = new URLSearchParams(searchParams);
+                              newParams.delete('category');
+                              setSearchParams(newParams);
+                            }}
                             className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
                           >
                             <X className="w-3 h-3" />
@@ -915,7 +949,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     <div
                       key={company.id}
                       className="bg-white rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden cursor-pointer group"
-                      onClick={() => handleCompanyClick(company.id)}
+                      onClick={() => handleCompanyClick(company.id, company.name)}
                     >
                       {/* Company Image */}
                       <div className="relative h-48">
@@ -1001,7 +1035,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleCompanyClick(company.id);
+                              handleCompanyClick(company.id, company.name);
                             }}
                             className="text-sm font-medium flex items-center space-x-1 rtl:space-x-reverse transition-colors duration-200 hover:scale-105"
                             style={{ color: '#194866' }}

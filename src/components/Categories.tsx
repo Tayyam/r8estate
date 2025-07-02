@@ -5,10 +5,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Category } from '../types/company';
+import { getCompanySlug } from '../utils/urlUtils';
 
 interface CategoriesProps {
-  onNavigateToProfile?: (companyId: string) => void;
-  initialCategoryFilter?: string;
+  onNavigateToProfile?: (companyId: string, companyName: string) => void;
 }
 
 // Interface for top company
@@ -173,11 +173,12 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
   };
 
   // Handle company click
-  const handleCompanyClick = (companyId: string) => {
+  const handleCompanyClick = (companyId: string, companyName: string) => {
     if (onNavigateToProfile) {
-      onNavigateToProfile(companyId);
+      onNavigateToProfile(companyId, companyName);
     } else {
-      navigate(`/company/${companyId}/overview`);
+      const companySlug = getCompanySlug(companyName);
+      navigate(`/company/${companySlug}/${companyId}/overview`);
     }
   };
 
@@ -278,7 +279,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1); // Reset to first page when searching
                 }}
-                className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
+                className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 text-lg rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
                 style={{ 
                   focusBorderColor: '#EE183F',
                   focusRingColor: '#EE183F'
@@ -404,7 +405,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
                                 className="flex items-center border border-gray-100 p-4 rounded-xl hover:bg-gray-50 cursor-pointer transition-all duration-200"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleCompanyClick(company.id);
+                                  handleCompanyClick(company.id, company.name);
                                 }}
                               >
                                 {/* Company Logo */}

@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { getCompanySlug } from '../utils/urlUtils';
 
 interface HeaderProps {
   currentPage?: string;
@@ -122,7 +123,6 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
       await logout();
       setIsUserMenuOpen(false);
       setIsMobileMenuOpen(false);
-      // Navigate to home page after logout
       if (setCurrentPage) {
         setCurrentPage('home');
       } else {
@@ -148,11 +148,12 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
       if (setCurrentPage) {
         // Use the existing navigation pattern from App.tsx
         const event = new CustomEvent('navigateToCompanyProfile', {
-          detail: { companyId: userCompanyId }
+          detail: { companyId: userCompanyId, companyName: userCompanyData.name }
         });
         window.dispatchEvent(event);
       } else {
-        navigate(`/company/${userCompanyId}/overview`);
+        const companySlug = getCompanySlug(userCompanyData.name);
+        navigate(`/company/${companySlug}/${userCompanyId}/overview`);
       }
       setIsUserMenuOpen(false);
       setIsMobileMenuOpen(false);
