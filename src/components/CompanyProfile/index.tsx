@@ -231,6 +231,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
             onReviewAdded={handleReviewAdded}
             onSuccess={handleSuccess}
             onError={handleError}
+            setActiveTab={setActiveTab} // Pass setActiveTab to WriteReviewTab
           />
         );
       case 'overview':
