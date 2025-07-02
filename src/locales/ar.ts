@@ -80,5 +80,13 @@ export const ar = {
   passwordStrengthGood: 'طول كلمة المرور جيد',
   passwordStrengthWeak: 'كلمة المرور ضعيفة جدًا',
   socialLoginError: 'فشل تسجيل الدخول',
-  socialLoginErrorDesc: 'فشل في تسجيل الدخول باستخدام هذه الطريقة، يرجى المحاولة مرة أخرى.'
+  socialLoginErrorDesc: 'فشل في تسجيل الدخول باستخدام هذه الطريقة، يرجى المحاولة مرة أخرى.',
+  
+  // Forgot Password Modal
+  forgotPasswordTitle: 'إعادة تعيين كلمة المرور',
+  forgotPasswordSubtitle: 'أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور',
+  resetPassword: 'إعادة تعيين كلمة المرور',
+  sending: 'جاري الإرسال...',
+  emailRequired: 'البريد الإلكتروني مطلوب',
+  invalidEmailFormat: 'يرجى إدخال عنوان بريد إلكتروني صالح'
 };

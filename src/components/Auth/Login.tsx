@@ -3,6 +3,7 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft, Globe, AlertCircle } fr
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginProps {
   onNavigate: (page: string) => void;
@@ -21,6 +22,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,34 +52,20 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!formData.email) {
-      showErrorToast(
-        translations?.missingEmail || 'Email Required',
-        translations?.enterEmailFirst || 'Please enter your email address first'
-      );
-      return;
-    }
+  const handleForgotPassword = () => {
+    setShowForgotPassword(true);
+  };
 
-    setResetLoading(true);
-
-    try {
-      await resetPassword(formData.email);
-      
-      // Show success modal
-      showSuccessModal(
-        translations?.resetEmailSent || 'Password Reset Email Sent!',
-        translations?.resetEmailDesc || 'We have sent a password reset link to your email address. Please check your inbox and follow the instructions to reset your password.'
-      );
-      
-    } catch (error: any) {
-      showErrorToast(
-        translations?.resetError || 'Reset Failed',
-        error.message || 'Failed to send reset email. Please try again.'
-      );
-    } finally {
-      setResetLoading(false);
-    }
+  const handleResetPassword = async (email: string) => {
+    await resetPassword(email);
+    
+    // Show success modal
+    showSuccessModal(
+      translations?.resetEmailSent || 'Password Reset Email Sent!',
+      translations?.resetEmailDesc || 'We have sent a password reset link to your email address. Please check your inbox and follow the instructions to reset your password.'
+    );
+    
+    setShowForgotPassword(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,6 +366,13 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        onSubmit={handleResetPassword}
+      />
 
       {/* CSS Animations */}
       <style jsx>{`

@@ -54,5 +54,13 @@ export const arAuth = {
   orContinueWith: 'أو أكمل باستخدام',
   welcomeToR8Estate: 'مرحبًا بك في R8 Estate! تم إنشاء حسابك وتسجيل دخولك الآن.',
   passwordStrengthGood: 'طول كلمة المرور جيد',
-  passwordStrengthWeak: 'كلمة المرور ضعيفة جدًا'
+  passwordStrengthWeak: 'كلمة المرور ضعيفة جدًا',
+  
+  // Forgot Password Modal
+  forgotPasswordTitle: 'إعادة تعيين كلمة المرور',
+  forgotPasswordSubtitle: 'أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور',
+  resetPassword: 'إعادة تعيين كلمة المرور',
+  sending: 'جاري الإرسال...',
+  emailRequired: 'البريد الإلكتروني مطلوب',
+  invalidEmailFormat: 'يرجى إدخال عنوان بريد إلكتروني صالح'
 };
