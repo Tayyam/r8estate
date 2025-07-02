@@ -57,8 +57,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
   // Check if current user has already reviewed this company
   const hasUserReviewed = currentUser && reviews.some(review => review.userId === currentUser.uid);
-  // Find the user's review if exists
-  const userReview = currentUser ? reviews.find(review => review.userId === currentUser.uid) : null;
 
   // Load reviews with pagination
   const loadReviews = async (loadMore = false) => {
@@ -367,17 +365,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                 {translations?.thankYouForReview || 'Thank you for your review!'}
               </p>
             </div>
-            {userReview && (
-              <div className="mt-2 flex justify-end">
-                <button
-                  onClick={() => openEditModal(userReview)}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center space-x-1 rtl:space-x-reverse"
-                >
-                  <Edit className="h-4 w-4" />
-                  <span>{translations?.editReview || 'Edit Review'}</span>
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>

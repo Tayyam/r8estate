@@ -12,7 +12,6 @@ interface WriteReviewTabProps {
   onReviewAdded: () => void;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
-  setActiveTab?: (tab: string) => void; // Added setter for active tab
 }
 
 interface RatingCategory {
@@ -24,8 +23,7 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
   company,
   onReviewAdded,
   onSuccess,
-  onError,
-  setActiveTab
+  onError
 }) => {
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
@@ -226,11 +224,6 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
       onSuccess(translations?.reviewAddedSuccess || 'Review added successfully!');
       onReviewAdded();
       
-      // Switch to reviews tab after successful submission
-      if (setActiveTab) {
-        setActiveTab('reviews');
-      }
-      
       // Reload the review to get the edit mode working
       const checkExistingReview = async () => {
         const reviewsQuery = query(
@@ -321,11 +314,6 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
 
       onSuccess(translations?.reviewUpdatedSuccess || 'Review updated successfully!');
       onReviewAdded();
-      
-      // Switch to reviews tab after successful update
-      if (setActiveTab) {
-        setActiveTab('reviews');
-      }
     } catch (error: any) {
       console.error('Error updating review:', error);
       onError(translations?.failedToUpdateReview || 'Failed to update review. Please try again.');
