@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -12,7 +13,6 @@ import CompanyTabs from './CompanyTabs';
 import OverviewTab from './OverviewTab';
 import PropertiesTab from './PropertiesTab';
 import ReviewsTab from './ReviewsTab';
-import WriteReviewTab from './WriteReviewTab';
 import AddPropertyModal from './AddPropertyModal';
 import ImageUploadModal from './ImageUploadModal';
 import NotificationMessages from './NotificationMessages';
@@ -24,19 +24,28 @@ interface CompanyProfileProps {
 
 const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBack }) => {
   const { currentUser } = useAuth();
-  const { translations, language } = useLanguage();
+  const { translations } = useLanguage();
+  const params = useParams<{ companyId: string; tab: string }>();
+  const navigate = useNavigate();
   const [company, setCompany] = useState<CompanyProfileType | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview'); // Default to overview tab
+  const [activeTab, setActiveTab] = useState(params.tab || 'overview');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [uploadLoading, setUploadLoading] = useState(false);
   const [showAddProperty, setShowAddProperty] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
+
+  // Update URL when tab changes
+  useEffect(() => {
+    if (company && activeTab && params.tab !== activeTab) {
+      navigate(`/company/${params.companyId}/${activeTab}`, { replace: true });
+    }
+  }, [activeTab, company, navigate, params.companyId, params.tab]);
 
   // Check if user can edit (admin or company owner)
   const canEdit = currentUser && (
@@ -52,13 +61,14 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
 
   // Load company data
   const loadCompanyData = async () => {
-    if (!companyId) return;
+    const actualCompanyId = params.companyId || companyId;
+    if (!actualCompanyId) return;
 
     try {
       setLoading(true);
       
       // Load company profile
-      const companyDoc = await getDoc(doc(db, 'companies', companyId));
+      const companyDoc = await getDoc(doc(db, 'companies', actualCompanyId));
       if (companyDoc.exists()) {
         const companyData = {
           id: companyDoc.id,
@@ -77,7 +87,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
       // Load properties
       const propertiesQuery = query(
         collection(db, 'properties'),
-        where('companyId', '==', companyId),
+        where('companyId', '==', actualCompanyId),
         orderBy('createdAt', 'desc')
       );
       const propertiesSnapshot = await getDocs(propertiesQuery);
@@ -90,7 +100,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
       setProperties(propertiesData);
 
       // Load reviews
-      await loadReviews();
+      await loadReviews(actualCompanyId);
 
       // Load categories
       const categoriesSnapshot = await getDocs(collection(db, 'categories'));
@@ -111,13 +121,13 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   };
 
   // Load reviews separately to allow refreshing after adding new review
-  const loadReviews = async () => {
-    if (!companyId) return;
+  const loadReviews = async (companyIdToLoad: string) => {
+    if (!companyIdToLoad) return [];
 
     try {
       const reviewsQuery = query(
         collection(db, 'reviews'),
-        where('companyId', '==', companyId),
+        where('companyId', '==', companyIdToLoad),
         orderBy('createdAt', 'desc')
       );
       const reviewsSnapshot = await getDocs(reviewsQuery);
@@ -142,17 +152,22 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
           totalReviews: reviewsData.length
         } : null);
       }
+      
+      return reviewsData;
     } catch (error) {
       console.error('Error loading reviews:', error);
+      return [];
     }
   };
 
   // Handle review added
   const handleReviewAdded = async () => {
-    await loadReviews();
-    // Optionally reload the entire company data to get updated stats
-    if (companyId) {
-      const companyDoc = await getDoc(doc(db, 'companies', companyId));
+    const actualCompanyId = params.companyId || companyId;
+    if (actualCompanyId) {
+      const updatedReviews = await loadReviews(actualCompanyId);
+      
+      // Optionally reload the entire company data to get updated stats
+      const companyDoc = await getDoc(doc(db, 'companies', actualCompanyId));
       if (companyDoc.exists()) {
         const updatedCompanyData = {
           id: companyDoc.id,
@@ -163,8 +178,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         setCompany(updatedCompanyData);
       }
     }
-    // Switch to reviews tab
-    setActiveTab('reviews');
   };
 
   // Show success message
@@ -181,7 +194,14 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
 
   useEffect(() => {
     loadCompanyData();
-  }, [companyId]);
+  }, [params.companyId, companyId]);
+
+  // Update active tab when URL tab param changes
+  useEffect(() => {
+    if (params.tab) {
+      setActiveTab(params.tab);
+    }
+  }, [params.tab]);
 
   if (loading) {
     return (
@@ -248,7 +268,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
           />
         );
       default:
-        return null;
+        return <Navigate to={`/company/${company.id}/overview`} />;
     }
   };
 
@@ -326,6 +346,16 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
       )}
     </div>
   );
+};
+
+const Navigate = ({ to }: { to: string }) => {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    navigate(to);
+  }, [navigate, to]);
+  
+  return null;
 };
 
 export default CompanyProfile;

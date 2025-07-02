@@ -6,12 +6,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../types/property';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
+import { User } from '../../types/user';
 import AddReviewModal from './AddReviewModal';
 import EditReviewModal from './EditReviewModal';
 import ReplyModal from './ReplyModal';
 import ReviewVotingButtons from './ReviewVotingButtons';
 import WriteReviewTab from './WriteReviewTab';
-import { User } from '../../types/user';
 
 interface ReviewsTabProps {
   reviews: Review[];
@@ -44,6 +44,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<DocumentData | null>(null);
   const [totalReviewsCount, setTotalReviewsCount] = useState(0);
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
 
   // Modal states
   const [showAddReview, setShowAddReview] = useState(false);
@@ -126,8 +127,9 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       }
 
       // Set pagination state
-      setHasMore(reviewsSnapshot.docs.length === REVIEWS_PER_PAGE);
       setLastDoc(reviewsSnapshot.docs[reviewsSnapshot.docs.length - 1] || null);
+      setHasMore(reviewsSnapshot.docs.length === REVIEWS_PER_PAGE);
+      setReviewsLoaded(true);
 
     } catch (error) {
       console.error('Error loading reviews:', error);
@@ -141,6 +143,15 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   useEffect(() => {
     loadReviews();
   }, [company.id]);
+
+  // Initialize reviews with sorted initial reviews
+  useEffect(() => {
+    if (initialReviews && initialReviews.length > 0 && !reviewsLoaded) {
+      setReviews(sortReviewsWithUserFirst(initialReviews));
+      setTotalReviewsCount(initialReviews.length);
+      setReviewsLoaded(true);
+    }
+  }, [initialReviews, currentUser, reviewsLoaded]);
 
   // Calculate average rating
   const averageRating = totalReviewsCount > 0 && reviews.length > 0
@@ -335,6 +346,30 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     );
   };
 
+  // Show loading placeholder
+  const renderLoadingPlaceholder = () => {
+    return (
+      <div className="animate-pulse space-y-6">
+        {[...Array(3)].map((_, index) => (
+          <div key={index} className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="flex items-start space-x-4 mb-4">
+              <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/3 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+            <div className="h-4 bg-gray-200 rounded w-1/3 mb-3"></div>
+            <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div>
       {/* Header Section */}
@@ -346,9 +381,12 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
           <p className="text-gray-600">
             {totalReviewsCount > 0 
               ? (translations?.reviewsFromVerified?.replace('{count}', totalReviewsCount.toString()) || `${totalReviewsCount} review${totalReviewsCount > 1 ? 's' : ''} from verified customers`)
-              : (translations?.noReviewsYet || 'No reviews yet - be the first to share your experience!')
+              : (reviews.length > 0 || loading
+                  ? (translations?.reviewsFromVerified?.replace('{count}', reviews.length.toString()) || `${reviews.length} review${reviews.length > 1 ? 's' : ''} from verified customers`)
+                  : (translations?.noReviewsYet || 'No reviews yet - be the first to share your experience!')
+                )
             }
-            {totalReviewsCount > reviews.length && (
+            {totalReviewsCount > reviews.length && reviewsLoaded && (
               <span className="text-sm text-gray-500 ml-2">
                 ({translations?.showing || 'Showing'} {reviews.length} {translations?.of || 'of'} {totalReviewsCount})
               </span>
@@ -389,8 +427,43 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         )}
       </div>
 
+      {/* Write Review Section - Only show if user can review and hasn't reviewed yet */}
+      {userCanReview && !hasUserReviewed && (
+        <div id="write-review-section" className="mb-10">
+          <WriteReviewTab
+            company={company}
+            onReviewAdded={onReviewAdded}
+            onSuccess={onSuccess}
+            onError={onError}
+          />
+        </div>
+      )}
+
       {/* Rating Overview */}
-      {totalReviewsCount > 0 && (
+      {loading && !reviewsLoaded ? (
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 animate-pulse">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="text-center lg:text-left">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-6 rtl:space-x-reverse">
+                <div className="mb-4 lg:mb-0">
+                  <div className="h-12 bg-gray-200 rounded w-24 mx-auto lg:mx-0 mb-2"></div>
+                  <div className="h-6 bg-gray-200 rounded w-32 mx-auto lg:mx-0 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-40 mx-auto lg:mx-0"></div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {[...Array(5)].map((_, index) => (
+                <div key={index} className="flex items-center space-x-3 rtl:space-x-reverse">
+                  <div className="h-4 bg-gray-200 rounded w-12"></div>
+                  <div className="flex-1 h-2 bg-gray-200 rounded-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-8"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : reviews.length > 0 ? (
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Average Rating */}
@@ -440,22 +513,12 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Write Review Section - Only show if user can review and hasn't reviewed yet */}
-      {userCanReview && !hasUserReviewed && (
-        <div id="write-review-section" className="mb-10">
-          <WriteReviewTab
-            company={company}
-            onReviewAdded={handleReviewAdded}
-            onSuccess={onSuccess}
-            onError={onError}
-          />
-        </div>
-      )}
+      ) : null}
 
       {/* Reviews List */}
-      {reviews.length > 0 ? (
+      {loading && !reviewsLoaded ? (
+        renderLoadingPlaceholder()
+      ) : reviews.length > 0 ? (
         <div className="space-y-6">
           {reviews.map((review) => (
             <div key={review.id} className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
@@ -649,7 +712,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             </div>
           )}
         </div>
-      ) : (
+      ) : !loading ? (
         <div className="text-center py-16">
           {/* Empty State */}
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -672,15 +735,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             </button>
           )}
         </div>
-      )}
-
-      {/* Loading Indicator */}
-      {loading && reviews.length === 0 && (
-        <div className="text-center py-16">
-          <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">{translations?.loadingReviews || 'Loading reviews...'}</p>
-        </div>
-      )}
+      ) : null}
 
       {/* Add Review Modal */}
       {showAddReview && (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -21,7 +22,8 @@ import Footer from './components/Footer';
 import NotificationContainer from './components/UI/NotificationContainer';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home');
+  const location = useLocation();
+  const navigate = useNavigate();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useState({
@@ -34,7 +36,7 @@ function App() {
     const handleCompanyProfileNavigation = (event: CustomEvent) => {
       const { companyId } = event.detail;
       setSelectedCompanyId(companyId);
-      setCurrentPage('company-profile');
+      navigate(`/company/${companyId}/overview`);
     };
 
     window.addEventListener('navigateToCompanyProfile', handleCompanyProfileNavigation as EventListener);
@@ -43,7 +45,7 @@ function App() {
     const handleCategoriesWithFilter = (event: CustomEvent) => {
       const { categoryId } = event.detail;
       setSelectedCategoryId(categoryId);
-      setCurrentPage('companies-by-category'); // New page for filtered companies
+      navigate(`/categories/${categoryId}`);
     };
 
     window.addEventListener('navigateToCompaniesWithCategory', handleCategoriesWithFilter as EventListener);
@@ -52,7 +54,7 @@ function App() {
     const handleSearchNavigation = (event: CustomEvent) => {
       const { query, category } = event.detail;
       setSearchParams({ query, category });
-      setCurrentPage('search-results');
+      navigate(`/search?q=${encodeURIComponent(query || '')}&category=${category || 'all'}`);
     };
 
     window.addEventListener('navigateToSearch', handleSearchNavigation as EventListener);
@@ -62,83 +64,55 @@ function App() {
       window.removeEventListener('navigateToCompaniesWithCategory', handleCategoriesWithFilter as EventListener);
       window.removeEventListener('navigateToSearch', handleSearchNavigation as EventListener);
     };
-  }, []);
+  }, [navigate]);
 
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'categories':
-        return <Categories 
-          onNavigateToProfile={(companyId) => {
-            setSelectedCompanyId(companyId);
-            setCurrentPage('company-profile');
-          }}
-          initialCategoryFilter={selectedCategoryId}
-        />;
-      case 'companies-by-category':
-        // This is a new case to handle when a user clicks on a category
-        // It will use the existing Companies component from before our changes
-        // We'd need to implement this component if needed
-        return <CategoriesWithCompanies 
-          categoryId={selectedCategoryId}
-          onNavigateToProfile={(companyId) => {
-            setSelectedCompanyId(companyId);
-            setCurrentPage('company-profile');
-          }}
-        />;
-      case 'search-results':
-        return <SearchResults 
-          onNavigate={setCurrentPage} 
-          onNavigateToProfile={(companyId) => {
-            setSelectedCompanyId(companyId);
-            setCurrentPage('company-profile');
-          }}
-          initialSearchQuery={searchParams.query}
-          initialCategoryFilter={searchParams.category}
-        />;
-      case 'about':
-        return <About />;
-      case 'pricing':
-        return <Pricing />;
-      case 'contact':
-        return <Contact onNavigate={setCurrentPage} />;
-      case 'terms':
-        return <Terms onNavigate={setCurrentPage} />;
-      case 'privacy':
-        return <Privacy onNavigate={setCurrentPage} />;
-      case 'settings':
-        return <Settings onNavigateToProfile={(companyId) => {
-          setSelectedCompanyId(companyId);
-          setCurrentPage('company-profile');
-        }} />;
-      case 'personal-profile':
-        return <PersonalProfile onNavigate={setCurrentPage} />;
-      case 'my-reviews':
-        return <MyReviews onNavigate={setCurrentPage} />;
-      case 'login':
-        return <Login onNavigate={setCurrentPage} />;
-      case 'register':
-        return <Register onNavigate={setCurrentPage} />;
-      case 'company-profile':
-        return <CompanyProfile 
-          companyId={selectedCompanyId} 
-          onNavigateBack={() => setCurrentPage('categories')}
-        />;
+  const shouldShowHeaderFooter = !location.pathname.includes('/login') && !location.pathname.includes('/register');
+
+  const handleNavigate = (page: string) => {
+    switch (page) {
       case 'home':
+        navigate('/');
+        break;
+      case 'categories':
+        navigate('/categories');
+        break;
+      case 'about':
+        navigate('/about');
+        break;
+      case 'pricing':
+        navigate('/pricing');
+        break;
+      case 'contact':
+        navigate('/contact');
+        break;
+      case 'terms':
+        navigate('/terms');
+        break;
+      case 'privacy':
+        navigate('/privacy');
+        break;
+      case 'settings':
+        navigate('/admin/settings');
+        break;
+      case 'personal-profile':
+        navigate('/profile');
+        break;
+      case 'my-reviews':
+        navigate('/profile/reviews');
+        break;
+      case 'login':
+        navigate('/login');
+        break;
+      case 'register':
+        navigate('/register');
+        break;
+      case 'search-results':
+        navigate(`/search?q=${encodeURIComponent(searchParams.query || '')}&category=${searchParams.category || 'all'}`);
+        break;
       default:
-        return <Hero 
-          onNavigate={setCurrentPage} 
-          onCategorySelect={(categoryId) => {
-            setSelectedCategoryId(categoryId);
-          }}
-          onSearch={(query, category) => {
-            setSearchParams({ query, category });
-            setCurrentPage('search-results');
-          }}
-        />;
+        navigate('/');
     }
   };
-
-  const shouldShowHeaderFooter = !['login', 'register'].includes(currentPage);
 
   return (
     <LanguageProvider>
@@ -146,12 +120,56 @@ function App() {
         <NotificationProvider>
           <div className="min-h-screen bg-gray-50">
             {shouldShowHeaderFooter && (
-              <Header currentPage={currentPage} setCurrentPage={setCurrentPage} />
+              <Header 
+                currentPage={location.pathname.split('/')[1] || 'home'} 
+                setCurrentPage={handleNavigate} 
+              />
             )}
             <main>
-              {renderCurrentPage()}
+              <Routes>
+                <Route path="/" element={<Hero onNavigate={handleNavigate} />} />
+                <Route path="/categories" element={<Categories onNavigateToProfile={(companyId) => {
+                  setSelectedCompanyId(companyId);
+                  navigate(`/company/${companyId}/overview`);
+                }} />} />
+                <Route path="/categories/:categoryId" element={<Categories onNavigateToProfile={(companyId) => {
+                  setSelectedCompanyId(companyId);
+                  navigate(`/company/${companyId}/overview`);
+                }} />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/contact" element={<Contact onNavigate={handleNavigate} />} />
+                <Route path="/terms" element={<Terms onNavigate={handleNavigate} />} />
+                <Route path="/privacy" element={<Privacy onNavigate={handleNavigate} />} />
+                <Route path="/admin/settings" element={<Settings onNavigateToProfile={(companyId) => {
+                  setSelectedCompanyId(companyId);
+                  navigate(`/company/${companyId}/overview`);
+                }} />} />
+                <Route path="/login" element={<Login onNavigate={handleNavigate} />} />
+                <Route path="/register" element={<Register onNavigate={handleNavigate} />} />
+                <Route path="/company/:companyId/:tab" element={
+                  <CompanyProfile 
+                    companyId={selectedCompanyId} 
+                    onNavigateBack={() => navigate(-1)} 
+                  />
+                } />
+                <Route path="/profile" element={<PersonalProfile onNavigate={handleNavigate} />} />
+                <Route path="/profile/reviews" element={<MyReviews onNavigate={handleNavigate} />} />
+                <Route path="/search" element={
+                  <SearchResults 
+                    onNavigate={handleNavigate} 
+                    onNavigateToProfile={(companyId) => {
+                      setSelectedCompanyId(companyId);
+                      navigate(`/company/${companyId}/overview`);
+                    }}
+                    initialSearchQuery={searchParams.query}
+                    initialCategoryFilter={searchParams.category}
+                  />
+                } />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
             </main>
-            {shouldShowHeaderFooter && <Footer onNavigate={setCurrentPage} />}
+            {shouldShowHeaderFooter && <Footer onNavigate={handleNavigate} />}
             <NotificationContainer />
           </div>
         </NotificationProvider>
@@ -159,28 +177,5 @@ function App() {
     </LanguageProvider>
   );
 }
-
-// Placeholder for the companies by category component
-// In a real implementation, we would create this as a separate file
-const CategoriesWithCompanies = ({ categoryId, onNavigateToProfile }: { categoryId: string | null, onNavigateToProfile: (id: string) => void }) => {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <div className="text-center bg-white rounded-xl p-8 shadow-md">
-        <h2 className="text-2xl font-bold mb-4" style={{ color: '#194866' }}>
-          Companies in this Category
-        </h2>
-        <p className="text-gray-600 mb-6">
-          This is a placeholder for the companies list filtered by category ID: {categoryId}
-        </p>
-        <button
-          onClick={() => window.history.back()}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg"
-        >
-          Go Back
-        </button>
-      </div>
-    </div>
-  );
-};
 
 export default App;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, ChevronDown, User, UserPlus, Menu, X, LogOut, Settings as SettingsIcon, Building2, MessageSquare } from 'lucide-react';
 import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +14,8 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage }) => {
   const { language, translations, setLanguage, direction } = useLanguage();
   const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isLanguageOpen, setIsLanguageOpen] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
@@ -26,10 +29,10 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
   ];
 
   const navItems = [
-    { id: 'home', label: translations?.home || 'Home' },
-    { id: 'categories', label: translations?.categories || 'Categories' },
-    { id: 'about', label: translations?.about || 'About' },
-    { id: 'pricing', label: translations?.pricing || 'Pricing' },
+    { id: 'home', label: translations?.home || 'Home', path: '/' },
+    { id: 'categories', label: translations?.categories || 'Categories', path: '/categories' },
+    { id: 'about', label: translations?.about || 'About', path: '/about' },
+    { id: 'pricing', label: translations?.pricing || 'Pricing', path: '/pricing' },
   ];
 
   const currentLanguage = languages.find(lang => lang.code === language);
@@ -99,6 +102,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
   const handleCreateAccount = () => {
     if (setCurrentPage) {
       setCurrentPage('register');
+    } else {
+      navigate('/register');
     }
     setIsMobileMenuOpen(false);
   };
@@ -106,6 +111,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
   const handleLogin = () => {
     if (setCurrentPage) {
       setCurrentPage('login');
+    } else {
+      navigate('/login');
     }
     setIsMobileMenuOpen(false);
   };
@@ -118,27 +125,35 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
       // Navigate to home page after logout
       if (setCurrentPage) {
         setCurrentPage('home');
+      } else {
+        navigate('/');
       }
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
-  const handleNavClick = (itemId: string) => {
+  const handleNavClick = (item: { id: string, path: string }) => {
     if (setCurrentPage) {
-      setCurrentPage(itemId);
+      setCurrentPage(item.id);
+    } else {
+      navigate(item.path);
     }
     setIsMobileMenuOpen(false);
   };
 
   // Handle company profile navigation
   const handleCompanyProfile = () => {
-    if (userCompanyId && setCurrentPage) {
-      // Use the existing navigation pattern from App.tsx
-      const event = new CustomEvent('navigateToCompanyProfile', {
-        detail: { companyId: userCompanyId }
-      });
-      window.dispatchEvent(event);
+    if (userCompanyId) {
+      if (setCurrentPage) {
+        // Use the existing navigation pattern from App.tsx
+        const event = new CustomEvent('navigateToCompanyProfile', {
+          detail: { companyId: userCompanyId }
+        });
+        window.dispatchEvent(event);
+      } else {
+        navigate(`/company/${userCompanyId}/overview`);
+      }
       setIsUserMenuOpen(false);
       setIsMobileMenuOpen(false);
     }
@@ -148,18 +163,22 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
   const handlePersonalProfile = () => {
     if (setCurrentPage) {
       setCurrentPage('personal-profile');
-      setIsUserMenuOpen(false);
-      setIsMobileMenuOpen(false);
+    } else {
+      navigate('/profile');
     }
+    setIsUserMenuOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
   // Handle my reviews navigation
   const handleMyReviews = () => {
     if (setCurrentPage) {
       setCurrentPage('my-reviews');
-      setIsUserMenuOpen(false);
-      setIsMobileMenuOpen(false);
+    } else {
+      navigate('/profile/reviews');
     }
+    setIsUserMenuOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
   // Get user avatar based on role
@@ -211,13 +230,22 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen, isUserMenuOpen]);
 
+  // Get current page from location
+  const getCurrentPage = () => {
+    const path = location.pathname;
+    if (path === '/') return 'home';
+    return path.split('/')[1] || 'home';
+  };
+
+  const activePage = currentPage || getCurrentPage();
+
   return (
     <header className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
           {/* Logo */}
-          <div className="flex items-center space-x-3 rtl:space-x-reverse flex-shrink-0 cursor-pointer" onClick={() => handleNavClick('home')}>
+          <div className="flex items-center space-x-3 rtl:space-x-reverse flex-shrink-0 cursor-pointer" onClick={() => handleNavClick(navItems[0])}>
             <img 
               src="https://i.ibb.co/YrNNbnz/R8-ESTATEORG.png" 
               alt="R8ESTATE Logo" 
@@ -235,23 +263,23 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
             {navItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => handleNavClick(item.id)}
+                onClick={() => handleNavClick(item)}
                 className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 text-sm xl:text-base ${
-                  currentPage === item.id
+                  activePage === item.id
                     ? 'bg-opacity-10'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
                 style={{
-                  color: currentPage === item.id ? '#194866' : '',
-                  backgroundColor: currentPage === item.id ? 'rgba(25, 72, 102, 0.1)' : ''
+                  color: activePage === item.id ? '#194866' : '',
+                  backgroundColor: activePage === item.id ? 'rgba(25, 72, 102, 0.1)' : ''
                 }}
                 onMouseEnter={(e) => {
-                  if (currentPage !== item.id) {
+                  if (activePage !== item.id) {
                     e.target.style.color = '#194866';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (currentPage !== item.id) {
+                  if (activePage !== item.id) {
                     e.target.style.color = '#374151';
                   }
                 }}
@@ -404,7 +432,11 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          handleNavClick('settings');
+                          if (setCurrentPage) {
+                            setCurrentPage('settings');
+                          } else {
+                            navigate('/admin/settings');
+                          }
                         }}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
                       >
@@ -484,15 +516,15 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
               {navItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => handleNavClick(item.id)}
+                  onClick={() => handleNavClick(item)}
                   className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    currentPage === item.id
+                    activePage === item.id
                       ? 'bg-opacity-10'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                   style={{
-                    color: currentPage === item.id ? '#194866' : '',
-                    backgroundColor: currentPage === item.id ? 'rgba(25, 72, 102, 0.1)' : ''
+                    color: activePage === item.id ? '#194866' : '',
+                    backgroundColor: activePage === item.id ? 'rgba(25, 72, 102, 0.1)' : ''
                   }}
                 >
                   {item.label}
@@ -603,7 +635,11 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                       <button
                         onClick={() => {
                           setIsMobileMenuOpen(false);
-                          handleNavClick('settings');
+                          if (setCurrentPage) {
+                            setCurrentPage('settings');
+                          } else {
+                            navigate('/admin/settings');
+                          }
                         }}
                         className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
                       >
