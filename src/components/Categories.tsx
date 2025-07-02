@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, ChevronRight, Building2, Users, ChevronDown, ChevronUp, Star, ArrowLeft, ArrowRight } from 'lucide-react';
 import { collection, getDocs, query, orderBy, where, doc, getDoc } from 'firebase/firestore';
+import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Category } from '../types/company';
@@ -31,8 +32,10 @@ interface EnhancedCategory extends Category {
 
 const CATEGORIES_PER_PAGE = 5;
 
-const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCategoryFilter }) => {
+const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
   const { translations, language } = useLanguage();
+  const { categoryId } = useParams<{ categoryId: string }>();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [categories, setCategories] = useState<EnhancedCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,13 +128,22 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
     loadCategories();
   }, []);
 
-  // Filter categories based on search query
-  const filteredCategories = categories.filter(category => 
-    category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (category.nameAr && category.nameAr.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (category.descriptionAr && category.descriptionAr.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filter categories based on search query and URL parameter
+  const filteredCategories = categories.filter(category => {
+    // First check if it matches the search query
+    const matchesSearch = 
+      category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (category.nameAr && category.nameAr.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (category.descriptionAr && category.descriptionAr.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Then check if there's a category ID filter from the URL
+    if (categoryId && categoryId !== 'all') {
+      return category.id === categoryId && matchesSearch;
+    }
+    
+    return matchesSearch;
+  });
 
   // Calculate total pages
   useEffect(() => {
@@ -150,6 +162,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
 
   // Handle category selection
   const handleCategoryClick = (categoryId: string) => {
+    navigate(`/categories/${categoryId}`);
     if (onNavigateToProfile) {
       // Dispatch event to navigate with the selected category filter
       const event = new CustomEvent('navigateToCompaniesWithCategory', {
@@ -163,6 +176,8 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
   const handleCompanyClick = (companyId: string) => {
     if (onNavigateToProfile) {
       onNavigateToProfile(companyId);
+    } else {
+      navigate(`/company/${companyId}/overview`);
     }
   };
 
@@ -198,6 +213,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile, initialCat
 
   // Handle "View All Companies" button click
   const handleViewAllCompanies = (categoryId: string) => {
+    navigate(`/search?category=${categoryId}`);
     if (onNavigateToProfile) {
       // Navigate to search results page with category filter
       const event = new CustomEvent('navigateToSearch', {
