@@ -8,7 +8,9 @@ export const arCompanyProfile = {
   // Company Header
   changeCover: 'تغيير الغلاف',
   companyCoverImage: 'صورة غلاف الشركة',
-  verified: 'مُوثّق',
+  verified: 'موثّق',
+  officialAccount: 'حساب رسمي',
+  verifiedCompanyExplanation: 'هذا حساب شركة رسمي موثّق من قبل R8 ESTATE.',
   averageRating: 'متوسط التقييم',
   properties: 'العقارات',
   reviews: 'التقييمات',

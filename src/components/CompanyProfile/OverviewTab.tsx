@@ -6,7 +6,7 @@ import { Category, egyptianGovernorates } from '../../types/company';
 import PhotoGallery from './PhotoGallery';
 import ContactInfo from './ContactInfo';
 import ClaimRequestModal from './ClaimRequestModal';
-import { Building2, AlertCircle } from 'lucide-react';
+import { Building2, CheckCircle } from 'lucide-react';
 
 interface OverviewTabProps {
   company: CompanyProfileType;
@@ -84,6 +84,27 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           getGovernorateName={getGovernorateName}
         />
 
+        {/* Verification Badge - for claimed companies */}
+        {isClaimed && !isOwnerOrAdmin && (
+          <div className="bg-white rounded-2xl shadow-md p-6 border border-green-200">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 flex items-center space-x-2 rtl:space-x-reverse">
+                  <span className="text-green-600">{translations?.verified || 'Verified'}</span>
+                  <span className="text-gray-600 text-sm">• {translations?.officialAccount || 'Official Account'}</span>
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {translations?.verifiedCompanyExplanation || 
+                  'This is an official company account verified by R8 ESTATE.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Claim Company Button - show for all users if company is not claimed */}
         {!isClaimed && (
           <div className="bg-white rounded-2xl shadow-md p-6 flex items-center justify-between border-l-4 border-blue-500">
@@ -110,26 +131,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             >
               {translations?.claimCompany || 'Claim Company'}
             </button>
-          </div>
-        )}
-
-        {/* Already Claimed Notice */}
-        {isClaimed && !isOwnerOrAdmin && (
-          <div className="bg-gray-50 rounded-2xl shadow-md p-6 border border-gray-200">
-            <div className="flex items-start space-x-4 rtl:space-x-reverse">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="h-6 w-6 text-gray-500" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-700 mb-2">
-                  {translations?.companyAlreadyClaimed || 'Company Already Claimed'}
-                </h3>
-                <p className="text-gray-600">
-                  {translations?.claimedCompanyExplanation || 
-                  'This company profile has already been claimed and is being managed by the company owner or representative.'}
-                </p>
-              </div>
-            </div>
           </div>
         )}
       </div>
