@@ -17,6 +17,7 @@ export const arPersonalProfile = {
   photoInstructionsDetails: 'الحد الأقصى للحجم: 5 ميجابايت. التنسيقات: JPG, PNG, GIF, WebP',
   changePhoto: 'تغيير الصورة',
   uploadingPhoto: 'جاري الرفع...',
+  change: 'تغيير',
   
   // Basic Information Section
   basicInformation: 'المعلومات الأساسية',
@@ -50,6 +51,8 @@ export const arPersonalProfile = {
   newPasswordPlaceholder: 'أدخل كلمة مرور جديدة (6 أحرف على الأقل)',
   confirmNewPassword: 'تأكيد كلمة المرور الجديدة *',
   confirmNewPasswordPlaceholder: 'أعد إدخال كلمة المرور الجديدة',
+  passwordsMatch: 'كلمات المرور متطابقة',
+  passwordMismatch: 'كلمات المرور غير متطابقة',
   
   // Form Actions
   updateProfile: 'تحديث الملف الشخصي',
@@ -80,5 +83,5 @@ export const arPersonalProfile = {
   recentLoginRequired: 'تتطلب هذه العملية تسجيل دخول حديث. يرجى تسجيل الخروج وإعادة تسجيل الدخول قبل إعادة المحاولة.',
   invalidEmailFormat: 'تنسيق البريد الإلكتروني غير صالح',
   fillAllEmailFields: 'يرجى ملء جميع حقول تغيير البريد الإلكتروني',
-  failedToUpdateEmail: 'فشل في تحديث البريد الإلكتروني',
+  failedToUpdateEmail: 'فشل في تحديث البريد الإلكتروني'
 };
