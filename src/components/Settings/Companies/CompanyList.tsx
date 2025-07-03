@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, Edit, Trash2, Building2, MapPin, Star, Calendar, Shield, ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
+import { Edit, Trash2, Building2, MapPin, Star, Calendar, Shield, ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
 
@@ -24,23 +24,25 @@ const CompanyList: React.FC<CompanyListProps> = ({
   onDeleteCompany,
   onNavigateToProfile
 }) => {
-  const { translations, direction } = useLanguage();
+  const { translations, direction, language } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(companies.length / COMPANIES_PER_PAGE);
   const indexOfLastCompany = currentPage * COMPANIES_PER_PAGE;
   const indexOfFirstCompany = indexOfLastCompany - COMPANIES_PER_PAGE;
   const currentCompanies = companies.slice(indexOfFirstCompany, indexOfLastCompany);
   
-  // Get category name by ID
+  // Get category name by ID with language support
   const getCategoryName = (categoryId: string): string => {
     const category = categories.find(cat => cat.id === categoryId);
-    return category ? (category.nameAr || category.name) : 'Unknown Category';
+    // Use the appropriate name based on language
+    return category ? (language === 'ar' ? (category.nameAr || category.name) : category.name) : 'Unknown Category';
   };
 
-  // Get location name by ID
+  // Get location name by ID with language support
   const getLocationName = (locationId: string): string => {
     const location = egyptianGovernorates.find(loc => loc.id === locationId);
-    return location ? (location.nameAr || location.name) : locationId;
+    // Use the appropriate name based on language
+    return location ? (language === 'ar' ? (location.nameAr || location.name) : location.name) : locationId;
   };
 
   // Handle pagination
@@ -148,13 +150,6 @@ const CompanyList: React.FC<CompanyListProps> = ({
                           </button>
                         )}
                         <button
-                          onClick={() => onViewCompany(company)}
-                          className="text-blue-600 hover:text-blue-900 p-1"
-                          title={translations?.view || 'View'}
-                        >
-                          <Eye className="h-5 w-5" />
-                        </button>
-                        <button
                           onClick={() => onEditCompany(company)}
                           className="text-orange-600 hover:text-orange-900 p-1"
                           title={translations?.edit || 'Edit'}
@@ -244,13 +239,6 @@ const CompanyList: React.FC<CompanyListProps> = ({
                           <span>{translations?.profile || 'Profile'}</span>
                         </button>
                       )}
-                      <button
-                        onClick={() => onViewCompany(company)}
-                        className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-blue-600 hover:bg-blue-50"
-                      >
-                        <Eye className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                        <span>{translations?.view || 'View'}</span>
-                      </button>
                       <button
                         onClick={() => onEditCompany(company)}
                         className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-orange-600 hover:bg-orange-50"

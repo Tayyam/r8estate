@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit, Trash2, Building2, MapPin, Globe, Phone, Mail, Calendar, Link2, ExternalLink } from 'lucide-react';
+import { Edit, Trash2, Building2, MapPin, Globe, Phone, Mail, Calendar, Link2, ExternalLink } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
 
@@ -20,18 +20,20 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
   onDelete,
   onNavigateToProfile
 }) => {
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
   
-  // Get category name by ID
+  // Get category name by ID with language support
   const getCategoryName = (categoryId: string): string => {
     const category = categories.find(cat => cat.id === categoryId);
-    return category ? (category.nameAr || category.name) : 'Unknown Category';
+    // Use the appropriate name based on language
+    return category ? (language === 'ar' ? (category.nameAr || category.name) : category.name) : 'Unknown Category';
   };
 
-  // Get location name by ID
+  // Get location name by ID with language support
   const getLocationName = (locationId: string): string => {
     const location = egyptianGovernorates.find(loc => loc.id === locationId);
-    return location ? (location.nameAr || location.name) : locationId;
+    // Use the appropriate name based on language
+    return location ? (language === 'ar' ? (location.nameAr || location.name) : location.name) : locationId;
   };
 
   // Format website URL for display
@@ -46,7 +48,7 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <Eye className="h-5 w-5 text-blue-600" />
+              <Building2 className="h-5 w-5 text-blue-600" />
             </div>
             <h3 className="text-xl font-bold text-gray-900">{company.name}</h3>
           </div>

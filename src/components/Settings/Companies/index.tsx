@@ -18,7 +18,7 @@ interface CompaniesProps {
 }
 
 const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,7 +237,7 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
               <option value="all">{translations?.allCategories || 'All Categories'}</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
-                  {category.nameAr || category.name}
+                  {language === 'ar' ? (category.nameAr || category.name) : category.name}
                 </option>
               ))}
             </select>
@@ -257,7 +257,7 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
               <option value="all">{translations?.allLocations || 'All Locations'}</option>
               {egyptianGovernorates.map((governorate) => (
                 <option key={governorate.id} value={governorate.id}>
-                  {governorate.nameAr || governorate.name}
+                  {language === 'ar' ? (governorate.nameAr || governorate.name) : governorate.name}
                 </option>
               ))}
             </select>
