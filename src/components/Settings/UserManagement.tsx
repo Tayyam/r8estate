@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Trash2, User, Shield, Mail, Calendar, AlertCircle, CheckCircle, Search, Key } from 'lucide-react';
+import { Users, Plus, Trash2, User, Shield, Mail, Calendar, AlertCircle, CheckCircle, Key } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../config/firebase';
 import { User as UserType } from '../../types/user';
+import { Table, TableColumn, TableAction } from '../UI';
 
 const UserManagement = () => {
   const { currentUser } = useAuth();
@@ -26,6 +27,9 @@ const UserManagement = () => {
     password: ''
   });
   const [newPassword, setNewPassword] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [roleFilter, setRoleFilter] = useState('all');
 
   // Initialize the cloud functions
   const createUserFunction = httpsCallable(functions, 'createUser');
@@ -60,11 +64,22 @@ const UserManagement = () => {
     loadUsers();
   }, []);
 
-  // Filter users based on search query
-  const filteredUsers = users.filter(user => 
-    user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter users based on search query and role filter
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
+      user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    
+    return matchesSearch && matchesRole;
+  });
+
+  // Paginate users
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   // Delete user using cloud function
@@ -213,15 +228,112 @@ const UserManagement = () => {
     }
   };
 
-  // Get role icon
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return Shield;
-      default:
-        return User;
+  // Define table columns
+  const columns: TableColumn<UserType>[] = [
+    {
+      id: 'user',
+      header: translations?.user || 'User',
+      accessor: (user: UserType) => (
+        <div className="flex items-center">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4 rtl:ml-4 rtl:mr-0" style={{ backgroundColor: '#194866' }}>
+            {user.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt={user.displayName}
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <User className="w-5 h-5 text-white" />
+            )}
+          </div>
+          <div>
+            <div className="text-sm font-medium text-gray-900">
+              {user.displayName}
+            </div>
+            <div className="flex items-center text-sm text-gray-500">
+              <Mail className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
+              {user.email}
+            </div>
+          </div>
+        </div>
+      ),
+      width: '40%'
+    },
+    {
+      id: 'role',
+      header: translations?.role || 'Role',
+      accessor: (user: UserType) => {
+        const roleColors = getRoleBadgeColor(user.role);
+        const RoleIcon = user.role === 'admin' ? Shield : User;
+        
+        return (
+          <div className="flex items-center">
+            <div 
+              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize"
+              style={{ 
+                backgroundColor: roleColors.bg,
+                color: roleColors.text
+              }}
+            >
+              <RoleIcon className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
+              <span>
+                {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
+              </span>
+            </div>
+          </div>
+        );
+      },
+      width: '20%',
+      sortable: true
+    },
+    {
+      id: 'createdAt',
+      header: translations?.createdDate || 'Created',
+      accessor: (user: UserType) => (
+        <div className="flex items-center text-sm text-gray-500">
+          <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
+          {user.createdAt.toLocaleDateString()}
+        </div>
+      ),
+      sortable: true,
+      width: '20%'
     }
-  };
+  ];
+
+  // Define table actions
+  const actions: TableAction<UserType>[] = [
+    {
+      label: translations?.passwordAction || 'Password',
+      onClick: (user: UserType) => openChangePasswordModal(user),
+      icon: <Key className="h-4 w-4" />,
+      color: '#3B82F6',
+      show: (user: UserType) => user.uid !== currentUser?.uid,
+      disabled: (user: UserType) => actionLoading
+    },
+    {
+      label: translations?.deleteAction || 'Delete',
+      onClick: (user: UserType) => openDeleteModal(user),
+      icon: <Trash2 className="h-4 w-4" />,
+      color: '#EF4444',
+      show: (user: UserType) => user.uid !== currentUser?.uid,
+      disabled: (user: UserType) => actionLoading
+    }
+  ];
+
+  // Define table filters
+  const filters = [
+    {
+      id: 'role',
+      label: translations?.filterByRole || 'Filter by Role',
+      options: [
+        { value: 'all', label: translations?.allRoles || 'All Roles' },
+        { value: 'admin', label: translations?.adminRole || 'Admin' },
+        { value: 'user', label: translations?.userRole || 'User' }
+      ],
+      value: roleFilter,
+      onChange: setRoleFilter
+    }
+  ];
 
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -278,242 +390,31 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="px-4 sm:px-8 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder={translations?.searchUsers || 'Search users...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
-              style={{ 
-                focusBorderColor: '#194866',
-                focusRingColor: '#194866'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#194866';
-                e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#d1d5db';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          </div>
-          {!loading && (
-            <div className="text-sm text-gray-600">
-              {translations?.showingUsers?.replace('{current}', filteredUsers.length.toString()).replace('{total}', users.length.toString()) || `Showing ${filteredUsers.length} of ${users.length} users`}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Users List */}
-      <div className="overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="text-center py-12">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">{translations?.noUsersFound || 'No users found'}</p>
-          </div>
-        ) : (
-          <>
-            {/* Desktop Table View */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-8 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      {translations?.user || 'User'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      {translations?.role || 'Role'}
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      {translations?.createdDate || 'Created'}
-                    </th>
-                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      {translations?.actions || 'Actions'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => {
-                    const roleColors = getRoleBadgeColor(user.role);
-                    const RoleIcon = getRoleIcon(user.role);
-                    
-                    return (
-                      <tr key={user.uid} className="hover:bg-gray-50 transition-colors duration-150">
-                        {/* User Info */}
-                        <td className="px-8 py-6">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4" style={{ backgroundColor: '#194866' }}>
-                              {user.photoURL ? (
-                                <img 
-                                  src={user.photoURL} 
-                                  alt={user.displayName}
-                                  className="w-full h-full rounded-full object-cover"
-                                />
-                              ) : (
-                                <User className="w-5 h-5 text-white" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {user.displayName}
-                              </div>
-                              <div className="flex items-center text-sm text-gray-500">
-                                <Mail className="w-3 h-3 mr-1" />
-                                {user.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Role */}
-                        <td className="px-6 py-6">
-                          <div className="flex items-center">
-                            <div 
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize"
-                              style={{ 
-                                backgroundColor: roleColors.bg,
-                                color: roleColors.text
-                              }}
-                            >
-                              <RoleIcon className="w-3 h-3 mr-1" />
-                              {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Created Date */}
-                        <td className="px-6 py-6">
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {user.createdAt.toLocaleDateString()}
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-6 py-6 text-right">
-                          {user.uid !== currentUser?.uid && (
-                            <div className="flex items-center justify-end space-x-2">
-                              {/* Change Password Button */}
-                              <button
-                                onClick={() => openChangePasswordModal(user)}
-                                disabled={actionLoading}
-                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
-                                title={translations?.changePassword || 'Change Password'}
-                              >
-                                <Key className="w-3 h-3 mr-1" />
-                                {translations?.passwordAction || 'Password'}
-                              </button>
-
-                              {/* Delete Button */}
-                              <button
-                                onClick={() => openDeleteModal(user)}
-                                disabled={actionLoading}
-                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
-                                title={translations?.deleteUser || 'Delete User'}
-                              >
-                                <Trash2 className="w-3 h-3 mr-1" />
-                                {translations?.deleteAction || 'Delete'}
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Card View */}
-            <div className="lg:hidden">
-              <div className="space-y-4 p-4">
-                {filteredUsers.map((user) => {
-                  const roleColors = getRoleBadgeColor(user.role);
-                  const RoleIcon = getRoleIcon(user.role);
-                  
-                  return (
-                    <div key={user.uid} className="bg-gray-50 rounded-xl p-4 space-y-3">
-                      {/* User Info */}
-                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#194866' }}>
-                          {user.photoURL ? (
-                            <img 
-                              src={user.photoURL} 
-                              alt={user.displayName}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          ) : (
-                            <User className="w-6 h-6 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 truncate">
-                            {user.displayName}
-                          </div>
-                          <div className="flex items-center text-xs text-gray-500">
-                            <Mail className="w-3 h-3 mr-1" />
-                            <span className="truncate">{user.email}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Role and Date */}
-                      <div className="flex items-center justify-between">
-                        <div 
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                          style={{ 
-                            backgroundColor: roleColors.bg,
-                            color: roleColors.text
-                          }}
-                        >
-                          <RoleIcon className="w-3 h-3 mr-1" />
-                          {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
-                        </div>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Calendar className="w-3 h-3 mr-1" />
-                          {user.createdAt.toLocaleDateString()}
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      {user.uid !== currentUser?.uid && (
-                        <div className="flex space-x-2 rtl:space-x-reverse pt-2">
-                          <button
-                            onClick={() => openChangePasswordModal(user)}
-                            disabled={actionLoading}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
-                          >
-                            <Key className="w-4 h-4 mr-1" />
-                            {translations?.passwordAction || 'Password'}
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(user)}
-                            disabled={actionLoading}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            {translations?.deleteAction || 'Delete'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
+      {/* Table Component */}
+      <div className="p-4 sm:p-6">
+        <Table
+          columns={columns}
+          data={paginatedUsers}
+          keyExtractor={(user) => user.uid}
+          loading={loading}
+          actions={actions}
+          filters={filters}
+          searchable={true}
+          searchPlaceholder={translations?.searchUsers || 'Search users...'}
+          onSearch={setSearchQuery}
+          pagination={{
+            currentPage,
+            totalPages: Math.ceil(filteredUsers.length / itemsPerPage),
+            onPageChange: setCurrentPage,
+            itemsPerPage,
+            totalItems: filteredUsers.length
+          }}
+          emptyState={{
+            icon: <Users className="h-12 w-12 text-gray-400 mx-auto" />,
+            title: translations?.noUsersFound || 'No Users Found',
+            description: translations?.adjustSearchCriteriaUsers || 'Try adjusting your search criteria or filters'
+          }}
+        />
       </div>
 
       {/* Add Admin Modal */}

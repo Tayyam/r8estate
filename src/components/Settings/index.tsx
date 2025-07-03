@@ -2,16 +2,9 @@ import React, { useState } from 'react';
 import { Settings as SettingsIcon, Users, Building2, Tag, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-
-// Import old components for backward compatibility
 import UserManagement from './UserManagement';
 import Companies from './Companies';
 import Categories from './Categories';
-
-// Import new table-based components
-import UserManagementWithTable from './UserManagementWithTable';
-import CompaniesWithTable from './CompaniesWithTable';
-import CategoriesWithTable from './CategoriesWithTable';
 
 interface SettingsProps {
   onNavigateToProfile?: (companyId: string, companyName?: string) => void;
@@ -21,7 +14,6 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const [activeTab, setActiveTab] = useState('users');
-  const [useNewTables, setUseNewTables] = useState(true); // Controls which set of components to use
 
   // Check if current user is admin
   const isAdmin = currentUser?.role === 'admin';
@@ -50,33 +42,30 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
       id: 'users',
       name: translations?.userManagement || 'User Management',
       icon: Users,
-      oldComponent: UserManagement,
-      newComponent: UserManagementWithTable
+      component: UserManagement
     },
     {
       id: 'companies',
       name: translations?.companies || 'Companies',
       icon: Building2,
-      oldComponent: (props: any) => <Companies {...props} onNavigateToProfile={onNavigateToProfile} />,
-      newComponent: (props: any) => <CompaniesWithTable {...props} onNavigateToProfile={onNavigateToProfile} />
+      component: (props: any) => <Companies {...props} onNavigateToProfile={onNavigateToProfile} />
     },
     {
       id: 'categories',
       name: translations?.categories || 'Categories',
       icon: Tag,
-      oldComponent: Categories,
-      newComponent: CategoriesWithTable
+      component: Categories
     }
   ];
 
-  // Get the appropriate component based on the active tab and table mode
+  // Get the active component
   const getActiveComponent = () => {
     const tabData = tabs.find(tab => tab.id === activeTab);
     if (!tabData) {
       return <div>Tab not found</div>;
     }
     
-    const Component = useNewTables ? tabData.newComponent : tabData.oldComponent;
+    const Component = tabData.component;
     return <Component />;
   };
 
@@ -95,24 +84,6 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
             <p className="text-base sm:text-lg text-gray-600">
               {translations?.manageUsersSystem || 'Manage users and system configuration'}
             </p>
-
-            {/* Table Mode Toggle */}
-            <div className="mt-4 flex justify-center">
-              <div className="bg-gray-100 p-1 rounded-lg">
-                <button
-                  className={`px-4 py-2 text-sm rounded-md ${useNewTables ? 'bg-blue-600 text-white' : 'text-gray-700'}`}
-                  onClick={() => setUseNewTables(true)}
-                >
-                  {translations?.newTableView || 'New Table View'}
-                </button>
-                <button
-                  className={`px-4 py-2 text-sm rounded-md ${!useNewTables ? 'bg-blue-600 text-white' : 'text-gray-700'}`}
-                  onClick={() => setUseNewTables(false)}
-                >
-                  {translations?.classicView || 'Classic View'}
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </section>
