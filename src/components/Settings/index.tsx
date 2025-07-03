@@ -41,7 +41,7 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
   const tabs = [
     {
       id: 'users',
-      name: translations?.userManagement || 'User Management',
+      name: translations?.userManagement || 'User fgfgdfgManagement',
       icon: Users,
       component: UserManagement
     },
