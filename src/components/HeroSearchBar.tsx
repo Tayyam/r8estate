@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Star, ArrowRight } from 'lucide-react';
+import { Search, Star, Building2, MapPin, ArrowRight } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getCompanySlug } from '../utils/urlUtils';
 import { doc, getDoc } from 'firebase/firestore';
+import { getRatingColorClass } from './Hero';
 
 interface HeroSearchBarProps {
   onSearch?: (query: string, category: string) => void;
@@ -61,10 +62,14 @@ const HeroSearchBar: React.FC<HeroSearchBarProps> = ({ onSearch }) => {
               categoryName = language === 'ar' ? (categoryData.nameAr || categoryData.name) : categoryData.name;
             }
           }
+
+          // Get location name
+          let locationName = company.location || "";
           
           return {
             ...company,
-            categoryName
+            categoryName,
+            locationName
           };
         })
       );
@@ -125,117 +130,133 @@ const HeroSearchBar: React.FC<HeroSearchBarProps> = ({ onSearch }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-4xl mx-auto">
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <input
-          ref={searchInputRef}
-          type="text"
-          placeholder={translations?.searchPlaceholder || 'Search companies...'}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onFocus={() => setShowSuggestions(true)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSearch();
-          }}
-          className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 text-lg rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
-          style={{ 
-            focusBorderColor: '#EE183F',
-            focusRingColor: '#EE183F'
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = '#EE183F';
-            e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
-            setShowSuggestions(true);
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = '#d1d5db';
-            e.target.style.boxShadow = 'none';
-          }}
-        />
-        
-        {/* Search Suggestions Dropdown */}
-        {showSuggestions && searchQuery.trim() !== '' && (
-          <div 
-            ref={suggestionsRef}
-            className="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
-          >
-            {suggestionsLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mr-2"></div>
-                <span className="text-gray-500 text-sm">{translations?.loading || 'Loading...'}</span>
-              </div>
-            ) : searchSuggestions.length > 0 ? (
-              <div>
-                <div className="px-4 py-2 text-xs font-semibold text-gray-500 border-b border-gray-100">
-                  {translations?.companies || 'Companies'}
-                </div>
-                {searchSuggestions.map(company => (
-                  <div 
-                    key={company.id}
-                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center space-x-3 rtl:space-x-reverse"
-                    onClick={() => handleSuggestionClick(company.id, company.name)}
-                  >
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-                      {company.logoUrl ? (
-                        <img 
-                          src={company.logoUrl} 
-                          alt={company.name}
-                          className="w-full h-full object-cover" 
-                        />
-                      ) : (
-                        <div className="w-5 h-5 text-gray-400">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M2 22h20V2L2 22z"></path>
-                            <path d="M17 22V7L2 22h15z"></path>
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">
-                        {company.name}
-                      </div>
-                      <div className="flex items-center text-xs text-gray-500 space-x-2 rtl:space-x-reverse">
-                        <span>{company.categoryName}</span>
-                        {company.totalRating > 0 && (
-                          <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                            <span>{company.totalRating.toFixed(1)}</span>
-                            <span>({company.totalReviews})</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="px-4 py-3 text-sm text-gray-500">
-                {translations?.noCompaniesFound || 'No companies found'}
-              </div>
-            )}
+    <div className="max-w-4xl mx-auto">
+      <div className="rounded-2xl shadow-xl overflow-hidden">
+        {/* Search Input - Made more prominent */}
+        <div className="relative">
+          <div className="bg-white flex items-center px-2 py-1">
+            <div className="w-12 h-12 flex items-center justify-center">
+              <Search className="w-5 h-5 text-gray-400" />
+            </div>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder={translations?.searchPlaceholder || 'Search companies...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSearch();
+              }}
+              className="w-full py-4 px-2 text-lg border-none ring-0 focus:ring-0 focus:outline-none placeholder-gray-400"
+              autoFocus
+            />
           </div>
-        )}
-      </div>
-      
-      {/* Advanced Search Button - Below search input */}
-      <div className="mt-4 text-center">
-        <button
-          onClick={handleSearch}
-          className="px-8 py-3 rounded-xl font-medium text-white transition-all duration-200 shadow-md hover:shadow-xl"
-          style={{ backgroundColor: '#EE183F' }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#c71535';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#EE183F';
-          }}
-        >
-          {translations?.advancedSearch || 'بحث متقدم'}
-        </button>
+          
+          {/* Search Suggestions Dropdown - Styled like the company list in the image */}
+          {showSuggestions && searchQuery.trim() !== '' && (
+            <div 
+              ref={suggestionsRef}
+              className="absolute z-50 inset-x-0 bg-white border-t border-gray-100 shadow-lg overflow-hidden max-h-[calc(100vh-200px)] overflow-y-auto"
+            >
+              {suggestionsLoading ? (
+                <div className="flex items-center justify-center py-6 px-4">
+                  <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mr-3"></div>
+                  <span className="text-gray-500">{translations?.loading || 'Loading...'}</span>
+                </div>
+              ) : searchSuggestions.length > 0 ? (
+                <>
+                  <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
+                    <h3 className="text-sm font-medium text-gray-500">
+                      {translations?.companies || 'Companies'}
+                    </h3>
+                  </div>
+                  
+                  {/* Company suggestions styled like the image */}
+                  <div className="divide-y divide-gray-100">
+                    {searchSuggestions.map(company => (
+                      <div 
+                        key={company.id}
+                        className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                        onClick={() => handleSuggestionClick(company.id, company.name)}
+                      >
+                        <div className="px-6 py-4 flex items-center justify-between">
+                          <div className="flex items-start space-x-3 rtl:space-x-reverse flex-1">
+                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {company.logoUrl ? (
+                                <img 
+                                  src={company.logoUrl} 
+                                  alt={company.name}
+                                  className="w-full h-full object-contain p-1" 
+                                />
+                              ) : (
+                                <Building2 className="w-5 h-5 text-gray-400" />
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 mb-1 truncate">
+                                {company.name}
+                              </div>
+                              <div className="flex items-center text-xs text-gray-500">
+                                <span className="truncate mr-2">{company.categoryName}</span>
+                                {company.locationName && (
+                                  <div className="flex items-center text-xs text-gray-400">
+                                    <MapPin className="w-3 h-3 mr-1" />
+                                    <span className="truncate">{company.locationName}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Rating Badge with TrustPilot-style colors */}
+                          {company.totalRating > 0 && (
+                            <div className={`flex-shrink-0 px-3 py-1 rounded-md ${getRatingColorClass(company.totalRating)} font-semibold text-sm flex items-center space-x-1 rtl:space-x-reverse`}>
+                              <Star className="w-4 h-4 fill-current" />
+                              <span>{company.totalRating.toFixed(1)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex justify-center">
+                    <button
+                      onClick={handleSearch}
+                      className="text-blue-600 font-medium text-sm flex items-center space-x-1 rtl:space-x-reverse hover:text-blue-800 transition-colors"
+                    >
+                      <span>{translations?.viewAll || 'View all results'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="px-6 py-8 text-center text-gray-500">
+                  <p>{translations?.noCompaniesFound || 'No companies found'}</p>
+                  <button
+                    onClick={handleSearch}
+                    className="mt-2 text-blue-600 font-medium text-sm hover:underline"
+                  >
+                    {translations?.search || 'Search'} "{searchQuery}"
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Advanced Search Button - Below search input */}
+        <div className="bg-gray-50 px-6 py-3 text-center">
+          <button
+            onClick={handleSearch}
+            className="px-8 py-2 rounded-lg font-medium text-white transition-all duration-200"
+            style={{ backgroundColor: '#EE183F' }}
+          >
+            {translations?.advancedSearch || 'بحث متقدم'}
+          </button>
+        </div>
       </div>
 
       {/* Share Experience CTA */}
