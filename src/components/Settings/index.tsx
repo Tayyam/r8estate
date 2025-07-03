@@ -41,13 +41,13 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
   const tabs = [
     {
       id: 'users',
-      name: translations?.userManagement || 'User fgfgdfgManagement',
+      name: translations?.userManagement || 'User Management',
       icon: Users,
       component: UserManagement
     },
     {
       id: 'companies',
-      name: translations?.companies || 'Companiesبيليلبيل',
+      name: translations?.companies || 'Companies',
       icon: Building2,
       component: (props: any) => <Companies {...props} onNavigateToProfile={onNavigateToProfile} />
     },
