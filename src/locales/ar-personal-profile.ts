@@ -23,16 +23,21 @@ export const arPersonalProfile = {
   fullNameLabel: 'الاسم الكامل *',
   fullNamePlaceholder: 'أدخل اسمك الكامل',
   emailAddress: 'عنوان البريد الإلكتروني',
-  emailCannotChange: 'لا يمكن تغيير البريد الإلكتروني. اتصل بالدعم إذا كنت بحاجة إلى ذلك.',
-  accountType: 'نوع الحساب',
   emailVerification: 'التحقق من البريد الإلكتروني',
   verified: 'تم التحقق',
   notVerified: 'لم يتم التحقق',
+  sendVerification: 'إرسال رابط التحقق',
+  verificationEmailSent: 'تم إرسال رابط التحقق إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد الخاص بك.',
   
-  // Account Types
-  adminAccount: 'حساب المدير',
-  userAccount: 'حساب المستخدم',
-  companyAccount: 'حساب الشركة',
+  // Email Change
+  changeEmail: 'تغيير البريد الإلكتروني',
+  newEmailAddress: 'عنوان البريد الإلكتروني الجديد *',
+  currentPasswordForEmail: 'كلمة المرور الحالية *',
+  enterCurrentPassword: 'أدخل كلمة المرور الحالية',
+  enterNewEmail: 'أدخل عنوان البريد الإلكتروني الجديد',
+  updateEmail: 'تحديث البريد الإلكتروني',
+  updatingEmail: 'جاري التحديث...',
+  emailUpdatedSuccess: 'تم تحديث البريد الإلكتروني بنجاح',
   
   // Password Section
   passwordSecurity: 'كلمة المرور والأمان',
@@ -70,9 +75,10 @@ export const arPersonalProfile = {
   currentPasswordIncorrect: 'كلمة المرور الحالية غير صحيحة',
   newPasswordTooWeak: 'كلمة المرور الجديدة ضعيفة جداً',
   failedToUpdatePassword: 'فشل في تحديث كلمة المرور',
-  
-  // Role Display Names
-  administrator: 'مدير',
-  user: 'مستخدم',
-  company: 'شركة',
+  failedToSendVerification: 'فشل في إرسال رسالة التحقق. يرجى المحاولة مرة أخرى لاحقاً.',
+  emailAlreadyInUse: 'هذا البريد الإلكتروني مستخدم بالفعل من قبل حساب آخر',
+  recentLoginRequired: 'تتطلب هذه العملية تسجيل دخول حديث. يرجى تسجيل الخروج وإعادة تسجيل الدخول قبل إعادة المحاولة.',
+  invalidEmailFormat: 'تنسيق البريد الإلكتروني غير صالح',
+  fillAllEmailFields: 'يرجى ملء جميع حقول تغيير البريد الإلكتروني',
+  failedToUpdateEmail: 'فشل في تحديث البريد الإلكتروني',
 };

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { User, Mail, Lock, Camera, Save, ArrowLeft, Eye, EyeOff, CheckCircle, AlertCircle, Key } from 'lucide-react';
-import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { User, Mail, Lock, Camera, Save, ArrowLeft, Eye, EyeOff, CheckCircle, AlertCircle, Key, RefreshCw, Edit } from 'lucide-react';
+import { updateProfile, updatePassword, updateEmail, EmailAuthProvider, reauthenticateWithCredential, sendEmailVerification } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,16 +19,116 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [verificationLoading, setVerificationLoading] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     displayName: currentUser?.displayName || '',
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    currentPasswordForEmail: '',
+    newEmail: ''
   });
+
+  // Send email verification
+  const handleSendVerification = async () => {
+    if (!firebaseUser) {
+      setError(translations?.noUserLoggedIn || 'No user logged in');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    try {
+      setVerificationLoading(true);
+      setError('');
+      
+      await sendEmailVerification(firebaseUser);
+      
+      setSuccess(translations?.verificationEmailSent || 'Verification email has been sent. Please check your inbox.');
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (error: any) {
+      console.error('Error sending verification email:', error);
+      setError(translations?.failedToSendVerification || 'Failed to send verification email. Please try again later.');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setVerificationLoading(false);
+    }
+  };
+
+  // Change email address
+  const handleEmailChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!firebaseUser || !currentUser) {
+      setError(translations?.noUserLoggedIn || 'No user logged in');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    if (!formData.currentPasswordForEmail || !formData.newEmail) {
+      setError(translations?.fillAllEmailFields || 'Please fill in all email fields');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.newEmail)) {
+      setError(translations?.invalidEmailFormat || 'Invalid email format');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Re-authenticate user first
+      const credential = EmailAuthProvider.credential(
+        firebaseUser.email!,
+        formData.currentPasswordForEmail
+      );
+      await reauthenticateWithCredential(firebaseUser, credential);
+      
+      // Update email in Firebase Auth
+      await updateEmail(firebaseUser, formData.newEmail);
+      
+      // Update Firestore document
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        email: formData.newEmail,
+        updatedAt: new Date()
+      });
+      
+      // Clear form
+      setFormData(prev => ({
+        ...prev,
+        currentPasswordForEmail: '',
+        newEmail: ''
+      }));
+      
+      setShowChangeEmail(false);
+      setSuccess(translations?.emailUpdatedSuccess || 'Email updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error: any) {
+      console.error('Error updating email:', error);
+      if (error.code === 'auth/wrong-password') {
+        setError(translations?.currentPasswordIncorrect || 'Current password is incorrect');
+      } else if (error.code === 'auth/email-already-in-use') {
+        setError(translations?.emailAlreadyInUse || 'This email is already in use by another account');
+      } else if (error.code === 'auth/requires-recent-login') {
+        setError(translations?.recentLoginRequired || 'This operation requires a recent login. Please log out and log back in before retrying.');
+      } else {
+        setError(translations?.failedToUpdateEmail || 'Failed to update email');
+      }
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Compress image before upload
   const compressImage = (file: File, maxWidth: number = 400, quality: number = 0.8): Promise<File> => {
@@ -272,20 +372,6 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
     }
   };
 
-  // Get role display name
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return translations?.administrator || 'Administrator';
-      case 'user':
-        return translations?.user || 'User';
-      case 'company':
-        return translations?.company || 'Company';
-      default:
-        return role;
-    }
-  };
-
   if (!currentUser || currentUser.role === 'company') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -469,55 +555,195 @@ const PersonalProfile: React.FC<PersonalProfileProps> = ({ onNavigate }) => {
                   />
                 </div>
 
-                {/* Email (Read-only) */}
+                {/* Email Address Section */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {translations?.emailAddress || 'Email Address'}
                   </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                      type="email"
-                      value={currentUser.email}
-                      disabled
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {translations?.emailCannotChange || 'Email cannot be changed. Contact support if needed.'}
-                  </p>
-                </div>
+                  <div className="flex flex-col md:flex-row md:items-center md:space-x-4 rtl:space-x-reverse space-y-2 md:space-y-0">
+                    <div className="flex-grow">
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                        <input
+                          type="email"
+                          value={currentUser.email}
+                          disabled
+                          className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-700"
+                          readOnly
+                        />
+                        {/* Email Verification Badge */}
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {currentUser.isEmailVerified ? (
+                            <div className="bg-green-100 text-green-600 text-xs font-medium px-2 py-1 rounded-full flex items-center">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              {translations?.verified || 'Verified'}
+                            </div>
+                          ) : (
+                            <div className="bg-yellow-100 text-yellow-600 text-xs font-medium px-2 py-1 rounded-full flex items-center">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              {translations?.notVerified || 'Not Verified'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Role (Read-only) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {translations?.accountType || 'Account Type'}
-                  </label>
-                  <input
-                    type="text"
-                    value={getRoleDisplayName(currentUser.role)}
-                    disabled
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed"
-                  />
-                </div>
-
-                {/* Email Verification Status */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {translations?.emailVerification || 'Email Verification'}
-                  </label>
-                  <div className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 rounded-xl ${
-                    currentUser.isEmailVerified 
-                      ? 'bg-green-50 text-green-700 border border-green-200' 
-                      : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                  }`}>
-                    <CheckCircle className={`h-5 w-5 ${currentUser.isEmailVerified ? 'text-green-500' : 'text-yellow-500'}`} />
-                    <span className="font-medium">
-                      {currentUser.isEmailVerified ? (translations?.verified || 'Verified') : (translations?.notVerified || 'Not Verified')}
-                    </span>
+                    {/* Email Actions Buttons */}
+                    {!currentUser.isEmailVerified && (
+                      <button
+                        type="button"
+                        onClick={handleSendVerification}
+                        disabled={verificationLoading}
+                        className="px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200 flex items-center justify-center space-x-2 rtl:space-x-reverse"
+                      >
+                        {verificationLoading ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                        <span>{translations?.sendVerification || 'Send Verification'}</span>
+                      </button>
+                    )}
+                    
+                    {/* Email Change Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowChangeEmail(!showChangeEmail)}
+                      className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2 rtl:space-x-reverse whitespace-nowrap"
+                    >
+                      <Edit className="h-4 w-4" />
+                      <span>{translations?.changeEmail || 'Change Email'}</span>
+                    </button>
                   </div>
                 </div>
               </div>
+
+              {/* Change Email Form */}
+              {showChangeEmail && (
+                <div className="mt-6 pt-6 border-t border-gray-200 space-y-6">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {translations?.changeEmail || 'Change Email Address'}
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Current Password for Email Change */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {translations?.currentPasswordForEmail || 'Current Password *'}
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                        <input
+                          type={showCurrentPassword ? 'text' : 'password'}
+                          value={formData.currentPasswordForEmail}
+                          onChange={(e) => setFormData({ ...formData, currentPasswordForEmail: e.target.value })}
+                          className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                          style={{ 
+                            focusBorderColor: '#194866',
+                            focusRingColor: '#194866'
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = '#194866';
+                            e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = '#d1d5db';
+                            e.target.style.boxShadow = 'none';
+                          }}
+                          placeholder={translations?.enterCurrentPassword || 'Enter your current password'}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showCurrentPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                          ) : (
+                            <Eye className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* New Email */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {translations?.newEmailAddress || 'New Email Address *'}
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                        <input
+                          type="email"
+                          value={formData.newEmail}
+                          onChange={(e) => setFormData({ ...formData, newEmail: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                          style={{ 
+                            focusBorderColor: '#194866',
+                            focusRingColor: '#194866'
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = '#194866';
+                            e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = '#d1d5db';
+                            e.target.style.boxShadow = 'none';
+                          }}
+                          placeholder={translations?.enterNewEmail || 'Enter your new email address'}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-3 rtl:space-x-reverse">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowChangeEmail(false);
+                        setFormData(prev => ({
+                          ...prev,
+                          currentPasswordForEmail: '',
+                          newEmail: ''
+                        }));
+                      }}
+                      className="px-6 py-3 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-colors duration-200"
+                    >
+                      {translations?.cancel || 'Cancel'}
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={handleEmailChange}
+                      disabled={loading || !formData.currentPasswordForEmail || !formData.newEmail}
+                      className="px-6 py-3 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 flex items-center space-x-2 rtl:space-x-reverse"
+                      style={{ backgroundColor: '#194866' }}
+                      onMouseEnter={(e) => {
+                        if (!loading) {
+                          e.target.style.backgroundColor = '#0f3147';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!loading) {
+                          e.target.style.backgroundColor = '#194866';
+                        }
+                      }}
+                    >
+                      {loading ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Save className="h-5 w-5" />
+                      )}
+                      <span>
+                        {loading 
+                          ? (translations?.updatingEmail || 'Updating...') 
+                          : (translations?.updateEmail || 'Update Email')
+                        }
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end">
                 <button
