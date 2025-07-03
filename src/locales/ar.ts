@@ -70,6 +70,10 @@ export const ar = {
   userActivatedSuccess: 'تم تنشيط المستخدم بنجاح',
   failedToUpdateUserStatus: 'فشل تحديث حالة المستخدم',
   
+  // Suspend confirmation
+  confirmSuspendUser: 'هل أنت متأكد من رغبتك في إيقاف حساب {name}؟ لن يتمكن من الوصول إلى المنصة حتى يتم إعادة تنشيطه.',
+  confirmReactivateUser: 'هل أنت متأكد من رغبتك في إعادة تنشيط حساب {name}؟',
+  
   // Suspended account page
   accountSuspended: 'حسابك موقوف',
   accountSuspendedMessage: 'تم إيقاف حسابك. يرجى التواصل مع الدعم الفني للمساعدة.',

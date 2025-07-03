@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Users, Plus, Trash2, User, Shield, Mail, Calendar, AlertCircle, CheckCircle, Search, Key, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../config/firebase';
 import { User as UserType } from '../../types/user';
 
 const UserManagement = () => {
   const { currentUser } = useAuth();
-  const { translations, language } = useLanguage();
+  const { translations, language, direction } = useLanguage();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -458,22 +458,22 @@ const UserManagement = () => {
           <>
             {/* Desktop Table View */}
             <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full" dir={direction}>
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-8 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-8 py-4 text-start text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.user || 'User'}
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-start text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.role || 'Role'}
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-start text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.userStatus || 'Status'}
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-start text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.createdDate || 'Created'}
                     </th>
-                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-end text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.actions || 'Actions'}
                     </th>
                   </tr>
@@ -489,7 +489,7 @@ const UserManagement = () => {
                         {/* User Info */}
                         <td className="px-8 py-6">
                           <div className="flex items-center">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4" style={{ backgroundColor: '#194866' }}>
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4 rtl:ml-4 rtl:mr-0" style={{ backgroundColor: '#194866' }}>
                               {user.photoURL ? (
                                 <img 
                                   src={user.photoURL} 
@@ -505,7 +505,7 @@ const UserManagement = () => {
                                 {user.displayName}
                               </div>
                               <div className="flex items-center text-sm text-gray-500">
-                                <Mail className="w-3 h-3 mr-1" />
+                                <Mail className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                                 {user.email}
                               </div>
                             </div>
@@ -522,7 +522,7 @@ const UserManagement = () => {
                                 color: roleColors.text
                               }}
                             >
-                              <RoleIcon className="w-3 h-3 mr-1" />
+                              <RoleIcon className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                               <span>
                                 {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
                               </span>
@@ -541,9 +541,9 @@ const UserManagement = () => {
                               }}
                             >
                               {user.status === 'suspended' ? (
-                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                <AlertTriangle className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                               ) : (
-                                <CheckCircle className="w-3 h-3 mr-1" />
+                                <CheckCircle className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                               )}
                               <span>
                                 {user.status === 'suspended' ? (translations?.suspended || 'Suspended') : (translations?.active || 'Active')}
@@ -555,15 +555,15 @@ const UserManagement = () => {
                         {/* Created Date */}
                         <td className="px-6 py-6">
                           <div className="flex items-center text-sm text-gray-500">
-                            <Calendar className="w-3 h-3 mr-1" />
+                            <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                             {user.createdAt.toLocaleDateString()}
                           </div>
                         </td>
 
                         {/* Actions */}
-                        <td className="px-6 py-6 text-right">
+                        <td className="px-6 py-6 text-right rtl:text-left">
                           {user.uid !== currentUser?.uid && (
-                            <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
+                            <div className="flex items-center justify-end rtl:justify-start space-x-2 rtl:space-x-reverse">
                               {/* Suspend/Reactivate Button */}
                               <button
                                 onClick={() => openSuspendModal(user)}
@@ -571,7 +571,7 @@ const UserManagement = () => {
                                 className={`inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md transition-colors duration-150 disabled:opacity-50
                                   ${user.status === 'suspended'
                                     ? 'text-green-700 bg-green-100 hover:bg-green-200'
-                                    : 'text-red-700 bg-red-100 hover:bg-red-200'
+                                    : 'text-yellow-700 bg-yellow-100 hover:bg-yellow-200'
                                   }`}
                                 title={user.status === 'suspended'
                                   ? (translations?.reactivateUser || 'Reactivate User')
@@ -579,9 +579,9 @@ const UserManagement = () => {
                                 }
                               >
                                 {suspendLoading === user.uid ? (
-                                  <div className="w-3 h-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                  <div className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                 ) : (
-                                  <AlertTriangle className="w-3 h-3 mr-1" />
+                                  <AlertTriangle className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                                 )}
                                 {user.status === 'suspended'
                                   ? (translations?.reactivateUser || 'Reactivate')
@@ -596,7 +596,7 @@ const UserManagement = () => {
                                 className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
                                 title={translations?.changePassword || 'Change Password'}
                               >
-                                <Key className="w-3 h-3 mr-1" />
+                                <Key className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                                 {translations?.passwordAction || 'Password'}
                               </button>
 
@@ -607,7 +607,7 @@ const UserManagement = () => {
                                 className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
                                 title={translations?.deleteUser || 'Delete User'}
                               >
-                                <Trash2 className="w-3 h-3 mr-1" />
+                                <Trash2 className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                                 {translations?.deleteAction || 'Delete'}
                               </button>
                             </div>
@@ -648,12 +648,12 @@ const UserManagement = () => {
                             {user.displayName}
                           </div>
                           <div className="flex items-center text-xs text-gray-500">
-                            <Mail className="w-3 h-3 mr-1" />
+                            <Mail className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                             <span className="truncate">{user.email}</span>
                           </div>
                         </div>
                       </div>
-
+                      
                       {/* Role, Status and Date */}
                       <div className="flex items-center flex-wrap gap-2">
                         <div 
@@ -663,7 +663,7 @@ const UserManagement = () => {
                             color: roleColors.text
                           }}
                         >
-                          <RoleIcon className="w-3 h-3 mr-1" />
+                          <RoleIcon className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                           {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
                         </div>
                         
@@ -675,15 +675,15 @@ const UserManagement = () => {
                           }}
                         >
                           {user.status === 'suspended' ? (
-                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            <AlertTriangle className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                           ) : (
-                            <CheckCircle className="w-3 h-3 mr-1" />
+                            <CheckCircle className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                           )}
                           {user.status === 'suspended' ? (translations?.suspended || 'Suspended') : (translations?.active || 'Active')}
                         </div>
                         
                         <div className="flex items-center text-xs text-gray-500 ml-auto">
-                          <Calendar className="w-3 h-3 mr-1" />
+                          <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                           {user.createdAt.toLocaleDateString()}
                         </div>
                       </div>
@@ -697,13 +697,13 @@ const UserManagement = () => {
                             className={`flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md transition-colors duration-150 disabled:opacity-50
                               ${user.status === 'suspended'
                                 ? 'text-green-700 bg-green-100 hover:bg-green-200'
-                                : 'text-red-700 bg-red-100 hover:bg-red-200'
+                                : 'text-yellow-700 bg-yellow-100 hover:bg-yellow-200'
                               }`}
                           >
                             {suspendLoading === user.uid ? (
-                              <div className="w-4 h-4 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                              <div className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                             ) : (
-                              <AlertTriangle className="w-4 h-4 mr-1" />
+                              <AlertTriangle className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
                             )}
                             {user.status === 'suspended'
                               ? (translations?.reactivateUser || 'Reactivate')
@@ -716,7 +716,7 @@ const UserManagement = () => {
                             disabled={actionLoading}
                             className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
                           >
-                            <Key className="w-4 h-4 mr-1" />
+                            <Key className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
                             {translations?.passwordAction || 'Password'}
                           </button>
                           
@@ -725,7 +725,7 @@ const UserManagement = () => {
                             disabled={actionLoading}
                             className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
                           >
-                            <Trash2 className="w-4 h-4 mr-1" />
+                            <Trash2 className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
                             {translations?.deleteAction || 'Delete'}
                           </button>
                         </div>
@@ -1002,8 +1002,8 @@ const UserManagement = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full">
             <div className="text-center">
-              <div className={`w-16 h-16 ${selectedUser.status === 'suspended' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-6`}>
-                <AlertTriangle className={`h-8 w-8 ${selectedUser.status === 'suspended' ? 'text-green-500' : 'text-red-500'}`} />
+              <div className={`w-16 h-16 ${selectedUser.status === 'suspended' ? 'bg-green-100' : 'bg-yellow-100'} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                <AlertTriangle className={`h-8 w-8 ${selectedUser.status === 'suspended' ? 'text-green-500' : 'text-yellow-500'}`} />
               </div>
               <h3 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">
                 {selectedUser.status === 'suspended' 
@@ -1022,11 +1022,11 @@ const UserManagement = () => {
                   onClick={handleToggleUserStatus}
                   disabled={actionLoading}
                   className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 flex items-center justify-center text-white
-                    ${selectedUser.status === 'suspended' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                    ${selectedUser.status === 'suspended' ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'}
                   `}
                 >
                   {actionLoading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2 rtl:ml-2 rtl:mr-0"></div>
                   ) : null}
                   <span>
                     {selectedUser.status === 'suspended'
