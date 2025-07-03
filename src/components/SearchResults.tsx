@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Star, Filter, MapPin, Building2, ArrowLeft, ChevronDown, ChevronUp, X, Sliders, ChevronRight } from 'lucide-react';
 import { collection, getDocs, query, orderBy, where, limit, startAfter, DocumentData } from 'firebase/firestore';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Company } from '../types/company';
 import { Category, egyptianGovernorates } from '../types/company';
+import { getRatingColorClass } from './Hero';
 import { getCompanySlug } from '../utils/urlUtils';
 
 interface CompanyWithCategory extends Company {
@@ -18,7 +19,7 @@ interface CompanyWithCategory extends Company {
 }
 
 interface SearchResultsProps {
-  onNavigate: (page: string) => void;
+  onNavigate?: (page: string) => void;
   onNavigateToProfile?: (companyId: string, companyName: string) => void;
   initialSearchQuery?: string;
   initialCategoryFilter?: string;
@@ -33,10 +34,16 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   initialCategoryFilter = 'all' 
 }) => {
   const { translations, language } = useLanguage();
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || initialSearchQuery);
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || initialCategoryFilter);
+  const location = useLocation();
+  
+  // Parse search params from URL if available
+  const searchParams = new URLSearchParams(location.search);
+  const queryParam = searchParams.get('q') || initialSearchQuery || '';
+  const categoryParam = searchParams.get('category') || initialCategoryFilter || 'all';
+  
+  const [searchQuery, setSearchQuery] = useState(queryParam);
+  const [selectedCategory, setSelectedCategory] = useState(categoryParam);
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedRating, setSelectedRating] = useState('all');
   const [companies, setCompanies] = useState<CompanyWithCategory[]>([]);
@@ -55,14 +62,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-
-  // Update search params when filters change
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (selectedCategory !== 'all') params.set('category', selectedCategory);
-    setSearchParams(params);
-  }, [searchQuery, selectedCategory, setSearchParams]);
 
   // Load categories
   useEffect(() => {
@@ -86,31 +85,52 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     loadCategories();
   }, []);
 
-  // Load companies based on search query
+  // Load companies based on search query - after categories are loaded
   useEffect(() => {
     if (categories.length > 0) {
-      const q = searchParams.get('q') || '';
-      const category = searchParams.get('category') || 'all';
-      
-      setSearchQuery(q);
-      setSelectedCategory(category);
-      
-      if (!q && category === 'all') {
-        // If no filters are applied, load all companies
+      if (!queryParam && categoryParam === 'all') {
+        // If no initial filters are applied, load all companies
         loadAllCompanies();
       } else {
-        // Otherwise, apply filters
+        // Otherwise, apply initial filters
         searchCompanies();
       }
     }
-  }, [searchParams, categories.length]);
+  }, [queryParam, categoryParam, categories.length]);
 
   // Apply filters automatically when they change
   useEffect(() => {
     if (categories.length > 0) {
       searchCompanies();
+      
+      // Update URL with current search params
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('q', searchQuery);
+      if (selectedCategory !== 'all') params.set('category', selectedCategory);
+      
+      const newUrl = `/search${params.toString() ? `?${params.toString()}` : ''}`;
+      navigate(newUrl, { replace: true });
     }
-  }, [selectedLocation, selectedRating]);
+  }, [selectedCategory, selectedLocation, selectedRating]);
+
+  // Apply search when query changes with small delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (categories.length > 0) {
+        searchCompanies();
+        
+        // Update URL with current search query
+        const params = new URLSearchParams();
+        if (searchQuery) params.set('q', searchQuery);
+        if (selectedCategory !== 'all') params.set('category', selectedCategory);
+        
+        const newUrl = `/search${params.toString() ? `?${params.toString()}` : ''}`;
+        navigate(newUrl, { replace: true });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch search suggestions
   const fetchSearchSuggestions = async (query: string) => {
@@ -375,7 +395,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     setSelectedCategory('all');
     setSelectedLocation('all');
     setSelectedRating('all');
-    setSearchParams(new URLSearchParams());
+    
+    // Update URL to remove search params
+    navigate('/search', { replace: true });
     // Filters will auto-apply via the useEffect
   };
 
@@ -393,29 +415,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const handleSuggestionClick = (companyId: string, companyName: string) => {
     setShowSuggestions(false);
     handleCompanyClick(companyId, companyName);
-  };
-
-  // Get category color based on category name
-  const getCategoryColor = (categoryName: string) => {
-    const colors = {
-      'Developer': '#194866',
-      'Broker': '#EE183F',
-      'Consultant': '#10B981',
-      'Property Management': '#8B5CF6',
-      'مطور عقاري': '#194866',
-      'وسيط عقاري': '#EE183F',
-      'مستشار عقاري': '#10B981',
-      'إدارة الممتلكات': '#8B5CF6'
-    };
-    return colors[categoryName as keyof typeof colors] || '#6B7280';
-  };
-
-  // Apply search
-  const handleSearch = () => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (selectedCategory !== 'all') params.set('category', selectedCategory);
-    setSearchParams(params);
   };
 
   // Create filter options
@@ -437,11 +436,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
   const ratingOptions = [
     { id: 'all', name: translations?.allRatings || 'All Ratings' },
-    { id: '5', name: translations?.rating5 || '5 Stars', stars: 5 },
-    { id: '4', name: translations?.rating4 || '4 Stars', stars: 4 },
-    { id: '3', name: translations?.rating3 || '3 Stars', stars: 3 },
-    { id: '2', name: translations?.rating2 || '2 Stars', stars: 2 },
-    { id: '1', name: translations?.rating1 || '1 Star', stars: 1 },
+    { id: '5', name: translations?.rating5 || '5 Stars' },
+    { id: '4', name: translations?.rating4 || '4 Stars' },
+    { id: '3', name: translations?.rating3 || '3 Stars' },
+    { id: '2', name: translations?.rating2 || '2 Stars' },
+    { id: '1', name: translations?.rating1 || '1 Star' },
   ];
 
   return (
@@ -451,7 +450,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => onNavigate('home')}
+              onClick={() => navigate('/')}
               className="flex items-center space-x-2 rtl:space-x-reverse text-gray-600 hover:text-gray-800 transition-colors duration-200"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -484,10 +483,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSearch();
-                }}
-                className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
+                className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 text-lg rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
                 style={{ 
                   focusBorderColor: '#EE183F',
                   focusRingColor: '#EE183F'
@@ -495,6 +491,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 onFocus={(e) => {
                   e.target.style.borderColor = '#EE183F';
                   e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
+                  setShowSuggestions(true);
                 }}
                 onBlur={(e) => {
                   e.target.style.borderColor = '#d1d5db';
@@ -554,8 +551,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                             <div className="flex items-center text-xs text-gray-500 space-x-2 rtl:space-x-reverse">
                               <span>{company.categoryName}</span>
                               {company.totalRating > 0 && (
-                                <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                  <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                                <div className={`flex items-center space-x-1 rtl:space-x-reverse ${getRatingColorClass(company.totalRating)}`}>
+                                  <Star className="w-3 h-3 fill-current" />
                                   <span>{company.totalRating.toFixed(1)}</span>
                                   <span>({company.totalReviews})</span>
                                 </div>
@@ -598,67 +595,77 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               
               <div className="space-y-6">
                 {/* Category Filter */}
-                <div className="filter-group">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {translations?.category || 'Category'}
                   </label>
-                  <div className="relative">
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-                    >
-                      {categoryOptions.map(option => (
-                        <option key={option.id} value={option.id}>{option.name}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none"
+                    style={{ 
+                      focusBorderColor: '#194866',
+                      focusRingColor: '#194866'
+                    }}
+                  >
+                    {categoryOptions.map(option => (
+                      <option key={option.id} value={option.id}>{option.name}</option>
+                    ))}
+                  </select>
                 </div>
                 
                 {/* Location Filter */}
-                <div className="filter-group">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {translations?.location || 'Location'}
                   </label>
-                  <div className="relative">
-                    <select
-                      value={selectedLocation}
-                      onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-                    >
-                      {locationOptions.map(option => (
-                        <option key={option.id} value={option.id}>{option.name}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none"
+                    style={{ 
+                      focusBorderColor: '#194866',
+                      focusRingColor: '#194866'
+                    }}
+                  >
+                    {locationOptions.map(option => (
+                      <option key={option.id} value={option.id}>{option.name}</option>
+                    ))}
+                  </select>
                 </div>
                 
-                {/* Rating Filter - Converted to Dropdown */}
-                <div className="filter-group">
+                {/* Rating Filter */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {translations?.rating || 'Rating'}
                   </label>
-                  <div className="relative">
-                    <select
-                      value={selectedRating}
-                      onChange={(e) => setSelectedRating(e.target.value)}
-                      className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-                    >
-                      {ratingOptions.map(option => (
-                        <option key={option.id} value={option.id}>
+                  <div className="space-y-2">
+                    {ratingOptions.map((option) => (
+                      <div key={option.id} className="flex items-center">
+                        <input
+                          type="radio"
+                          id={`rating-${option.id}`}
+                          name="rating"
+                          value={option.id}
+                          checked={selectedRating === option.id}
+                          onChange={() => setSelectedRating(option.id)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor={`rating-${option.id}`} className="ml-3 text-sm text-gray-700">
                           {option.name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
-                    </div>
+                          {option.id !== 'all' && (
+                            <div className="flex items-center ml-2">
+                              {Array.from({ length: parseInt(option.id) }).map((_, i) => (
+                                <Star 
+                                  key={i} 
+                                  className={`w-3 h-3 fill-current ${getRatingColorClass(parseInt(option.id))}`} 
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -673,12 +680,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
                           <span className="truncate max-w-[100px]">{searchQuery}</span>
                           <button 
-                            onClick={() => {
-                              setSearchQuery('');
-                              const newParams = new URLSearchParams(searchParams);
-                              newParams.delete('q');
-                              setSearchParams(newParams);
-                            }}
+                            onClick={() => setSearchQuery('')}
                             className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
                           >
                             <X className="w-3 h-3" />
@@ -689,12 +691,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
                           <span>{categoryOptions.find(o => o.id === selectedCategory)?.name}</span>
                           <button 
-                            onClick={() => {
-                              setSelectedCategory('all');
-                              const newParams = new URLSearchParams(searchParams);
-                              newParams.delete('category');
-                              setSearchParams(newParams);
-                            }}
+                            onClick={() => setSelectedCategory('all')}
                             className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
                           >
                             <X className="w-3 h-3" />
@@ -714,9 +711,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       )}
                       {selectedRating !== 'all' && (
                         <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
-                          <span className="flex items-center">
-                            {ratingOptions.find(o => o.id === selectedRating)?.name}
-                          </span>
+                          <span>{ratingOptions.find(o => o.id === selectedRating)?.name}</span>
                           <button 
                             onClick={() => setSelectedRating('all')}
                             className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
@@ -754,113 +749,79 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                   {/* Category Filter */}
-                  <div className="filter-group">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {translations?.category || 'Category'}
                     </label>
-                    <div className="relative">
-                      <select
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-                      >
-                        {categoryOptions.map(option => (
-                          <option key={option.id} value={option.id}>{option.name}</option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                      </div>
-                    </div>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none"
+                      style={{ 
+                        focusBorderColor: '#194866',
+                        focusRingColor: '#194866'
+                      }}
+                    >
+                      {categoryOptions.map(option => (
+                        <option key={option.id} value={option.id}>{option.name}</option>
+                      ))}
+                    </select>
                   </div>
                   
                   {/* Location Filter */}
-                  <div className="filter-group">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {translations?.location || 'Location'}
                     </label>
-                    <div className="relative">
-                      <select
-                        value={selectedLocation}
-                        onChange={(e) => setSelectedLocation(e.target.value)}
-                        className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-                      >
-                        {locationOptions.map(option => (
-                          <option key={option.id} value={option.id}>{option.name}</option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                      </div>
-                    </div>
+                    <select
+                      value={selectedLocation}
+                      onChange={(e) => setSelectedLocation(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none"
+                      style={{ 
+                        focusBorderColor: '#194866',
+                        focusRingColor: '#194866'
+                      }}
+                    >
+                      {locationOptions.map(option => (
+                        <option key={option.id} value={option.id}>{option.name}</option>
+                      ))}
+                    </select>
                   </div>
                   
-                  {/* Rating Filter - Converted to Dropdown */}
-                  <div className="filter-group">
+                  {/* Rating Filter */}
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {translations?.rating || 'Rating'}
                     </label>
-                    <div className="relative">
-                      <select
-                        value={selectedRating}
-                        onChange={(e) => setSelectedRating(e.target.value)}
-                        className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-                      >
-                        {ratingOptions.map(option => (
-                          <option key={option.id} value={option.id}>
+                    <div className="space-y-2">
+                      {ratingOptions.map((option) => (
+                        <div key={option.id} className="flex items-center">
+                          <input
+                            type="radio"
+                            id={`mobile-rating-${option.id}`}
+                            name="mobile-rating"
+                            value={option.id}
+                            checked={selectedRating === option.id}
+                            onChange={() => setSelectedRating(option.id)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor={`mobile-rating-${option.id}`} className="ml-3 text-sm text-gray-700">
                             {option.name}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                      </div>
+                            {option.id !== 'all' && (
+                              <div className="flex items-center ml-2">
+                                {Array.from({ length: parseInt(option.id) }).map((_, i) => (
+                                  <Star 
+                                    key={i} 
+                                    className={`w-3 h-3 fill-current ${getRatingColorClass(parseInt(option.id))}`} 
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </label>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  
-                  {/* Active Filters Summary - Mobile */}
-                  {(selectedCategory !== 'all' || selectedLocation !== 'all' || selectedRating !== 'all') && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        {translations?.activeFilters || 'Active Filters'}:
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedCategory !== 'all' && (
-                          <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
-                            <span>{categoryOptions.find(o => o.id === selectedCategory)?.name}</span>
-                            <button 
-                              onClick={() => setSelectedCategory('all')}
-                              className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
-                        {selectedLocation !== 'all' && (
-                          <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
-                            <span>{locationOptions.find(o => o.id === selectedLocation)?.name}</span>
-                            <button 
-                              onClick={() => setSelectedLocation('all')}
-                              className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
-                        {selectedRating !== 'all' && (
-                          <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
-                            <span>{ratingOptions.find(o => o.id === selectedRating)?.name}</span>
-                            <button 
-                              onClick={() => setSelectedRating('all')}
-                              className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
                 
                 <div className="p-4 border-t border-gray-200">
@@ -1010,12 +971,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                           </div>
                         )}
 
-                        {/* Rating Badge */}
+                        {/* Rating Badge with TrustPilot-like color scheme */}
                         {company.totalRating > 0 && (
                           <div className="absolute top-4 right-4 rtl:left-4 rtl:right-auto">
-                            <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse">
-                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                              <span className="font-semibold text-gray-900">{company.totalRating.toFixed(1)}</span>
+                            <div className={`bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center space-x-1 rtl:space-x-reverse ${getRatingColorClass(company.totalRating)} font-semibold`}>
+                              <Star className="w-4 h-4 fill-current" />
+                              <span>{company.totalRating.toFixed(1)}</span>
                             </div>
                           </div>
                         )}
@@ -1047,7 +1008,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                           <div className="flex items-center space-x-4 rtl:space-x-reverse">
                             {company.totalReviews > 0 && (
                               <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                                <Star className={`w-4 h-4 fill-current ${getRatingColorClass(company.totalRating)}`} />
                                 <span className="text-sm text-gray-600">{company.totalReviews}</span>
                                 <span className="text-sm text-gray-500">{translations?.reviews || 'reviews'}</span>
                               </div>
@@ -1057,10 +1018,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
                         {/* Category Badge */}
                         <div className="flex items-center justify-between">
-                          <span 
-                            className="px-3 py-1 rounded-full text-sm font-medium text-white"
-                            style={{ backgroundColor: getCategoryColor(company.categoryName) }}
-                          >
+                          <span className="px-3 py-1 rounded-full text-sm font-medium text-white bg-blue-600">
                             {language === 'ar' ? company.categoryNameAr : company.categoryName}
                           </span>
                           
@@ -1125,22 +1083,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Add custom style for better filter UI */}
-      <style jsx>{`
-        .filter-group {
-          position: relative;
-          transition: all 0.2s ease;
-        }
-        
-        .filter-group:hover {
-          transform: translateY(-1px);
-        }
-        
-        .filter-group select:focus {
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-      `}</style>
     </div>
   );
 };
