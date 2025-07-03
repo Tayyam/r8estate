@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Plus, Edit, Trash2, Eye, Shield, Mail, Calendar, Search, Check, X, MapPin } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Eye, Shield, AlignRight, Mail, Calendar, Search, Check, X, MapPin } from 'lucide-react';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../config/firebase';
@@ -8,7 +8,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Company } from '../../types/company';
 import { Category, egyptianGovernorates } from '../../types/company';
 import { getCompanySlug } from '../../utils/urlUtils';
-import { Table, TableColumn, TableAction } from '../UI';
 
 interface CompaniesProps {
   onNavigateToProfile?: (companyId: string, companyName: string) => void;
@@ -24,12 +23,12 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [locationFilter, setLocationFilter] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedLocation, setSelectedLocation] = useState('all');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [companiesPerPage] = useState(10);
 
   // Delete confirmation state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -94,19 +93,19 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
       (company.email && company.email.toLowerCase().includes(searchQuery.toLowerCase()));
     
     // Category filter
-    const matchesCategory = categoryFilter === 'all' || company.categoryId === categoryFilter;
+    const matchesCategory = selectedCategory === 'all' || company.categoryId === selectedCategory;
     
     // Location filter
-    const matchesLocation = locationFilter === 'all' || company.location === locationFilter;
+    const matchesLocation = selectedLocation === 'all' || company.location === selectedLocation;
     
     return matchesSearch && matchesCategory && matchesLocation;
   });
 
   // Paginate companies
-  const paginatedCompanies = filteredCompanies.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const indexOfLastCompany = currentPage * companiesPerPage;
+  const indexOfFirstCompany = indexOfLastCompany - companiesPerPage;
+  const currentCompanies = filteredCompanies.slice(indexOfFirstCompany, indexOfLastCompany);
+  const totalPages = Math.ceil(filteredCompanies.length / companiesPerPage);
 
   // Get category name
   const getCategoryName = (categoryId: string) => {
@@ -180,8 +179,8 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
       );
       setTimeout(() => setSuccess(''), 3000);
       
-    } catch (error) {
-      console.error('Error toggling verification:', error);
+    } catch (err) {
+      console.error('Error toggling verification:', err);
       setError(translations?.failedToUpdateCompany || 'Failed to update company verification status');
       setTimeout(() => setError(''), 5000);
     } finally {
@@ -199,157 +198,30 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
     }
   };
 
-  // Handle edit company
+  // Handle edit company (to be implemented)
   const handleEditCompany = (company: Company) => {
     console.log('Edit company:', company.id);
     // Implementation for editing companies would go here
   };
 
-  // Define table columns
-  const columns: TableColumn<Company>[] = [
-    {
-      id: 'company',
-      header: translations?.company || 'Company',
-      accessor: (company: Company) => (
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-lg overflow-hidden">
-            {company.logoUrl ? (
-              <img 
-                src={company.logoUrl}
-                alt={company.name}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-gray-400" />
-              </div>
-            )}
-          </div>
-          <div className="ml-3 rtl:mr-3 rtl:ml-0">
-            <span className="font-medium text-gray-900">{company.name}</span>
-            <div className="flex items-center space-x-1 rtl:space-x-reverse">
-              <Mail className="h-3 w-3 text-gray-400" />
-              <span className="text-xs text-gray-500">{company.email}</span>
-            </div>
-          </div>
-        </div>
-      ),
-      width: '30%'
-    },
-    {
-      id: 'category',
-      header: translations?.category || 'Category',
-      accessor: (company: Company) => (
-        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-          {getCategoryName(company.categoryId)}
-        </span>
-      ),
-      width: '20%'
-    },
-    {
-      id: 'location',
-      header: translations?.location || 'Location',
-      accessor: (company: Company) => (
-        <div className="flex items-center">
-          <MapPin className="h-4 w-4 text-gray-400 mr-1 rtl:ml-1 rtl:mr-0" />
-          <span className="text-sm text-gray-700">{getGovernorateName(company.location)}</span>
-        </div>
-      ),
-      width: '20%'
-    },
-    {
-      id: 'status',
-      header: translations?.status || 'Status',
-      accessor: (company: Company) => (
-        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-          company.verified
-            ? 'bg-green-100 text-green-800'
-            : 'bg-gray-100 text-gray-800'
-        }`}>
-          {company.verified 
-            ? translations?.verifiedStatus || 'Verified'
-            : translations?.unverifiedStatus || 'Not Verified'
-          }
-        </span>
-      ),
-      width: '15%'
-    },
-    {
-      id: 'createdAt',
-      header: translations?.createdDate || 'Created',
-      accessor: (company: Company) => (
-        <div className="text-sm text-gray-500">
-          {company.createdAt.toLocaleDateString()}
-        </div>
-      ),
-      sortable: true,
-      width: '15%'
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
     }
-  ];
+  };
 
-  // Define table actions
-  const actions: TableAction<Company>[] = [
-    {
-      label: translations?.viewProfile || 'View',
-      onClick: (company) => handleViewProfile(company),
-      icon: <Eye className="h-4 w-4" />,
-      color: '#3B82F6'
-    },
-    {
-      label: translations?.editProfile || 'Edit',
-      onClick: (company) => handleEditCompany(company),
-      icon: <Edit className="h-4 w-4" />,
-      color: '#F97316'
-    },
-    {
-      label: company => company.verified 
-        ? translations?.unverifyCompany || 'Unverify' 
-        : translations?.verifyCompany || 'Verify',
-      onClick: (company) => handleToggleVerification(company),
-      icon: <Shield className="h-4 w-4" />,
-      color: company => company.verified ? '#EF4444' : '#10B981',
-      disabled: (company) => verifyLoading === company.id
-    },
-    {
-      label: translations?.deleteProfile || 'Delete',
-      onClick: (company) => {
-        setCompanyToDelete(company);
-        setShowDeleteConfirm(true);
-      },
-      icon: <Trash2 className="h-4 w-4" />,
-      color: '#EF4444'
-    }
-  ];
+  // Reset filters
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSelectedLocation('all');
+  };
 
-  // Define table filters
-  const filters = [
-    {
-      id: 'category',
-      label: translations?.category || 'Category',
-      options: [
-        { value: 'all', label: translations?.allCategories || 'All Categories' },
-        ...categories.map(cat => ({
-          value: cat.id,
-          label: language === 'ar' ? (cat.nameAr || cat.name) : cat.name
-        }))
-      ],
-      value: categoryFilter,
-      onChange: setCategoryFilter
-    },
-    {
-      id: 'location',
-      label: translations?.location || 'Location',
-      options: [
-        { value: 'all', label: translations?.allLocations || 'All Locations' },
-        ...egyptianGovernorates.map(gov => ({
-          value: gov.id,
-          label: language === 'ar' ? (gov.nameAr || gov.name) : gov.name
-        }))
-      ],
-      value: locationFilter,
-      onChange: setLocationFilter
-    }
-  ];
+  // Format date
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString();
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -395,32 +267,385 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
         </div>
       )}
 
-      {/* Table Component */}
-      <div className="p-6">
-        <Table
-          columns={columns}
-          data={paginatedCompanies}
-          keyExtractor={(company) => company.id}
-          loading={loading}
-          actions={actions}
-          filters={filters}
-          searchable={true}
-          searchPlaceholder={translations?.searchCompanies || 'Search companies...'}
-          onSearch={setSearchQuery}
-          pagination={{
-            currentPage,
-            totalPages: Math.ceil(filteredCompanies.length / itemsPerPage),
-            onPageChange: setCurrentPage,
-            itemsPerPage,
-            totalItems: filteredCompanies.length
-          }}
-          emptyState={{
-            icon: <Building2 className="h-12 w-12 text-gray-400 mx-auto" />,
-            title: translations?.noCompaniesFound || 'No Companies Found',
-            description: translations?.adjustSearchCriteria || 'Try adjusting your search criteria or filters'
-          }}
-        />
+      {/* Search and Filters */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-4 rtl:space-x-reverse">
+          {/* Search */}
+          <div className="w-full lg:w-64 relative">
+            <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder={translations?.searchCompanies || 'Search companies...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
+            />
+          </div>
+          
+          {/* Category Filter */}
+          <div className="w-full lg:w-48">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
+            >
+              <option value="all">{translations?.allCategories || 'All Categories'}</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>
+                  {language === 'ar' ? (category.nameAr || category.name) : category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Location Filter */}
+          <div className="w-full lg:w-48">
+            <select
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
+            >
+              <option value="all">{translations?.allLocations || 'All Locations'}</option>
+              {egyptianGovernorates.map(governorate => (
+                <option key={governorate.id} value={governorate.id}>
+                  {language === 'ar' ? governorate.nameAr : governorate.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Reset Filters */}
+          <button
+            onClick={handleResetFilters}
+            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            {translations?.clearFilters || 'Clear Filters'}
+          </button>
+        </div>
+        
+        {/* Results Counter */}
+        <div className="text-sm text-gray-600 mt-4">
+          {translations?.showingCompanies?.replace('{current}', filteredCompanies.length.toString()).replace('{total}', companies.length.toString()) || `Showing ${filteredCompanies.length} of ${companies.length} companies`}
+        </div>
       </div>
+
+      {/* Companies Table */}
+      {loading ? (
+        <div className="p-6 text-center">
+          <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
+          <p className="mt-2 text-gray-600">{translations?.loadingCompanies || 'Loading companies...'}</p>
+        </div>
+      ) : currentCompanies.length === 0 ? (
+        <div className="p-6 text-center">
+          <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-600">{translations?.noCompaniesFound || 'No companies found'}</p>
+        </div>
+      ) : (
+        <>
+          {/* Desktop View */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.company || 'Company'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.category || 'Category'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.location || 'Location'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.status || 'Status'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.createdDate || 'Created'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.actions || 'Actions'}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {currentCompanies.map(company => (
+                  <tr key={company.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                        <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-lg overflow-hidden">
+                          {company.logoUrl ? (
+                            <img 
+                              src={company.logoUrl}
+                              alt={company.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <Building2 className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-900">{company.name}</span>
+                          <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                            <Mail className="h-3 w-3 text-gray-400" />
+                            <span className="text-xs text-gray-500">{company.email}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        {getCategoryName(company.categoryId)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 text-gray-400 mr-1" />
+                        <span className="text-sm text-gray-700">{getGovernorateName(company.location)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        company.verified
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {company.verified 
+                          ? translations?.verifiedStatus || 'Verified'
+                          : translations?.unverifiedStatus || 'Not Verified'
+                        }
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                      {formatDate(company.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex justify-end space-x-2 rtl:space-x-reverse">
+                        <button
+                          onClick={() => handleViewProfile(company)}
+                          className="text-blue-600 hover:text-blue-800 transition-colors p-1 rounded hover:bg-blue-50"
+                          title={translations?.viewProfile || 'View Profile'}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditCompany(company)}
+                          className="text-amber-600 hover:text-amber-800 transition-colors p-1 rounded hover:bg-amber-50"
+                          title={translations?.editCompany || 'Edit Company'}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleToggleVerification(company)}
+                          disabled={verifyLoading === company.id}
+                          className={`transition-colors p-1 rounded ${
+                            company.verified
+                              ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                              : 'text-green-600 hover:text-green-800 hover:bg-green-50'
+                          } ${verifyLoading === company.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          title={company.verified 
+                            ? translations?.unverifyCompany || 'Unverify Company'
+                            : translations?.verifyCompany || 'Verify Company'
+                          }
+                        >
+                          {verifyLoading === company.id ? (
+                            <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <Shield className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCompanyToDelete(company);
+                            setShowDeleteConfirm(true);
+                          }}
+                          className="text-red-600 hover:text-red-800 transition-colors p-1 rounded hover:bg-red-50"
+                          title={translations?.deleteCompany || 'Delete Company'}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile View */}
+          <div className="lg:hidden divide-y divide-gray-200">
+            {currentCompanies.map(company => (
+              <div key={company.id} className="p-4">
+                <div className="flex items-start space-x-3 rtl:space-x-reverse mb-3">
+                  <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-lg overflow-hidden">
+                    {company.logoUrl ? (
+                      <img 
+                        src={company.logoUrl}
+                        alt={company.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center">
+                        <Building2 className="h-5 w-5 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between">
+                      <p className="font-medium text-gray-900 truncate">{company.name}</p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        company.verified
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {company.verified 
+                          ? translations?.verifiedStatus || 'Verified'
+                          : translations?.unverifiedStatus || 'Not Verified'
+                        }
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                      <Mail className="h-3 w-3 text-gray-400" />
+                      <span className="text-xs text-gray-500 truncate">{company.email}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div>
+                    <span className="text-xs text-gray-500 block mb-1">{translations?.category || 'Category'}</span>
+                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      {getCategoryName(company.categoryId)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 block mb-1">{translations?.location || 'Location'}</span>
+                    <div className="flex items-center">
+                      <MapPin className="h-3 w-3 text-gray-400 mr-1" />
+                      <span className="text-sm text-gray-700">{getGovernorateName(company.location)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    <span>{formatDate(company.createdAt)}</span>
+                  </div>
+                  
+                  <div className="flex space-x-2 rtl:space-x-reverse">
+                    <button
+                      onClick={() => handleViewProfile(company)}
+                      className="text-blue-600 hover:text-blue-800 transition-colors p-1.5 rounded hover:bg-blue-50"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEditCompany(company)}
+                      className="text-amber-600 hover:text-amber-800 transition-colors p-1.5 rounded hover:bg-amber-50"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleToggleVerification(company)}
+                      disabled={verifyLoading === company.id}
+                      className={`transition-colors p-1.5 rounded ${
+                        company.verified
+                          ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                          : 'text-green-600 hover:text-green-800 hover:bg-green-50'
+                      } ${verifyLoading === company.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {verifyLoading === company.id ? (
+                        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Shield className="h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCompanyToDelete(company);
+                        setShowDeleteConfirm(true);
+                      }}
+                      className="text-red-600 hover:text-red-800 transition-colors p-1.5 rounded hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Pagination */}
+      {!loading && filteredCompanies.length > 0 && (
+        <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
+          <div className="text-sm text-gray-500 mb-2 sm:mb-0">
+            {translations?.showingCompanies?.replace('{current}', currentCompanies.length.toString()).replace('{total}', filteredCompanies.length.toString()) || `Showing ${currentCompanies.length} of ${filteredCompanies.length} companies`}
+          </div>
+          
+          <div className="flex space-x-2 rtl:space-x-reverse">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {translations?.previous || 'Previous'}
+            </button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => 
+                page === 1 || 
+                page === totalPages || 
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              )
+              .map((page, index, array) => {
+                // Add ellipsis
+                if (index > 0 && array[index - 1] !== page - 1) {
+                  return (
+                    <React.Fragment key={`ellipsis-${page}`}>
+                      <span className="px-3 py-1 text-gray-500">...</span>
+                      <button
+                        onClick={() => handlePageChange(page)}
+                        className={`px-3 py-1 border rounded-md ${
+                          currentPage === page
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    </React.Fragment>
+                  );
+                }
+                
+                return (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-3 py-1 border rounded-md ${
+                      currentPage === page
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {translations?.next || 'Next'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && companyToDelete && (

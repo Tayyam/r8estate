@@ -5,9 +5,10 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { db, storage } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Category } from '../../types/company';
+import { Table, TableColumn, TableAction } from '../UI';
 
-const Categories = () => {
-  const { translations } = useLanguage();
+const CategoriesWithTable = () => {
+  const { translations, language } = useLanguage();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -26,6 +27,8 @@ const Categories = () => {
     iconFile: null as File | null
   });
   const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,6 +64,12 @@ const Categories = () => {
     (category.nameAr && category.nameAr.includes(searchQuery)) ||
     (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (category.descriptionAr && category.descriptionAr.includes(searchQuery))
+  );
+
+  // Paginate categories
+  const paginatedCategories = filteredCategories.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   // Handle file change
@@ -293,6 +302,39 @@ const Categories = () => {
     }
   };
 
+  // Handle icon upload for a category
+  const handleIconUpload = async (category: Category, file: File) => {
+    try {
+      setActionLoading(true);
+      
+      // Upload icon
+      const iconUrl = await uploadIcon(file, category.id);
+      
+      // Update category document
+      await updateDoc(doc(db, 'categories', category.id), {
+        iconUrl: iconUrl,
+        updatedAt: new Date()
+      });
+      
+      // Update local state
+      setCategories(categories.map(cat => 
+        cat.id === category.id ? { ...cat, iconUrl } : cat
+      ));
+      
+      setSuccess(translations?.iconUploadedSuccess || 'Icon uploaded successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error uploading icon:', error);
+      setError(translations?.failedToUploadIcon || 'Failed to upload icon');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setActionLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   // Open edit modal
   const openEditModal = (category: Category) => {
     setSelectedCategory(category);
@@ -322,10 +364,141 @@ const Categories = () => {
     setError('');
   };
 
+  // Define table columns
+  const columns: TableColumn<Category>[] = [
+    {
+      id: 'icon',
+      header: translations?.icon || 'Icon',
+      accessor: (category: Category) => (
+        <div className="flex items-center">
+          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden border border-gray-200">
+            {category.iconUrl ? (
+              <img 
+                src={category.iconUrl} 
+                alt={category.name} 
+                className="w-8 h-8 object-contain"
+              />
+            ) : (
+              <Tag className="w-5 h-5 text-gray-400" />
+            )}
+          </div>
+        </div>
+      ),
+      width: '10%'
+    },
+    {
+      id: 'name',
+      header: translations?.name || 'Name',
+      accessor: (category: Category) => (
+        <div>
+          <div className="text-gray-900 font-medium">{category.name}</div>
+          {category.nameAr && (
+            <div className="text-gray-500 text-sm mt-0.5">{category.nameAr}</div>
+          )}
+        </div>
+      ),
+      width: '25%',
+      sortable: true
+    },
+    {
+      id: 'description',
+      header: translations?.description || 'Description',
+      accessor: (category: Category) => (
+        <div>
+          {category.description ? (
+            <div className="text-gray-600 text-sm line-clamp-2">{category.description}</div>
+          ) : (
+            <div className="text-gray-400 text-sm italic">{translations?.noDescription || 'No description'}</div>
+          )}
+          {category.descriptionAr && (
+            <div className="text-gray-500 text-sm mt-1 line-clamp-1">{category.descriptionAr}</div>
+          )}
+        </div>
+      ),
+      width: '40%'
+    },
+    {
+      id: 'createdAt',
+      header: translations?.createdDate || 'Created',
+      accessor: (category: Category) => (
+        <div className="text-sm text-gray-500">
+          {category.createdAt.toLocaleDateString()}
+        </div>
+      ),
+      sortable: true,
+      width: '15%'
+    }
+  ];
+
+  // Define table actions
+  const actions: TableAction<Category>[] = [
+    {
+      label: category => category.iconUrl 
+        ? translations?.removeIcon || 'Remove Icon'
+        : translations?.uploadIcon || 'Upload Icon',
+      onClick: (category) => {
+        if (category.iconUrl) {
+          handleRemoveIcon(category.id, category.iconUrl);
+        } else {
+          setSelectedCategory(category);
+          fileInputRef.current?.click();
+        }
+      },
+      icon: category => category.iconUrl ? <Trash2 className="h-4 w-4" /> : <Upload className="h-4 w-4" />,
+      color: category => category.iconUrl ? '#EF4444' : '#3B82F6',
+      disabled: () => actionLoading || uploadingIcon
+    },
+    {
+      label: translations?.edit || 'Edit',
+      onClick: openEditModal,
+      icon: <Edit className="h-4 w-4" />,
+      color: '#F97316',
+      disabled: () => actionLoading
+    },
+    {
+      label: translations?.delete || 'Delete',
+      onClick: openDeleteModal,
+      icon: <Trash2 className="h-4 w-4" />,
+      color: '#EF4444',
+      disabled: () => actionLoading
+    }
+  ];
+
+  // Hidden file input for icon upload
+  const hiddenFileInput = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept=".svg,image/svg+xml"
+      className="hidden"
+      onChange={async (e) => {
+        const file = e.target.files?.[0];
+        if (!file || !selectedCategory) return;
+        
+        // Validate file type (SVG only)
+        if (file.type !== 'image/svg+xml') {
+          setError(translations?.invalidFileType || 'Invalid file type. Please upload an SVG file');
+          setTimeout(() => setError(''), 3000);
+          return;
+        }
+        
+        // Validate file size (max 100KB)
+        const maxSize = 100 * 1024; // 100KB
+        if (file.size > maxSize) {
+          setError(translations?.fileTooLarge || 'File too large. Maximum size is 100KB');
+          setTimeout(() => setError(''), 3000);
+          return;
+        }
+        
+        await handleIconUpload(selectedCategory, file);
+      }}
+    />
+  );
+
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
       {/* Section Header */}
-      <div className="px-4 sm:px-8 py-6 border-b border-gray-200">
+      <div className="px-6 py-6 border-b border-gray-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
             <Tag className="h-6 w-6" style={{ color: '#194866' }} />
@@ -363,209 +536,46 @@ const Categories = () => {
 
       {/* Success/Error Messages */}
       {error && (
-        <div className="mx-4 sm:mx-8 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
+        <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
           <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
           <p className="text-red-700 text-sm sm:text-base">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="mx-4 sm:mx-8 mt-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
+        <div className="mx-6 mt-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
           <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
           <p className="text-green-700 text-sm sm:text-base">{success}</p>
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="px-4 sm:px-8 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder={translations?.searchCategories || 'Search categories...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
-              style={{ 
-                focusBorderColor: '#194866',
-                focusRingColor: '#194866'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#194866';
-                e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#d1d5db';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          </div>
-          {!loading && (
-            <div className="text-sm text-gray-600">
-              {translations?.showingCategories?.replace('{current}', filteredCategories.length.toString()).replace('{total}', categories.length.toString()) || 
-               `Showing ${filteredCategories.length} of ${categories.length} categories`}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Hidden file input for icon uploads */}
+      {hiddenFileInput}
 
-      {/* Categories List */}
+      {/* Table Component */}
       <div className="p-6">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-          </div>
-        ) : filteredCategories.length === 0 ? (
-          <div className="text-center py-12">
-            <Tag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">{translations?.noCategoriesFound || 'No categories found'}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCategories.map((category) => (
-              <div key={category.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                   {/* Icon Display */}
-<div className="flex items-center mb-3">
-  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center border border-gray-200 overflow-hidden mr-3">
-    {category.iconUrl ? (
-      <img 
-        src={category.iconUrl} 
-        alt={category.name} 
-        className="w-8 h-8 object-contain"
-      />
-    ) : (
-      <Tag className="w-6 h-6 text-gray-400" />
-    )}
-  </div>
-
-                      
-                      {/* Icon Actions */}
-                      <div className="flex items-center space-x-2">
-                        {category.iconUrl ? (
-                          <>
-                            <button
-                              onClick={() => handleRemoveIcon(category.id, category.iconUrl!)}
-                              disabled={actionLoading}
-                              className="p-1 text-red-500 hover:bg-red-50 rounded-lg text-xs flex items-center"
-                              title={translations?.removeIcon || "Remove Icon"}
-                            >
-                              <X className="w-4 h-4 mr-1" />
-                              <span>{translations?.removeIcon || "Remove"}</span>
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setSelectedCategory(category);
-                              if (fileInputRef.current) {
-                                fileInputRef.current.click();
-                              }
-                            }}
-                            disabled={actionLoading || uploadingIcon}
-                            className="p-1 text-blue-500 hover:bg-blue-50 rounded-lg text-xs flex items-center"
-                            title={translations?.uploadIcon || "Upload Icon"}
-                          >
-                            <Upload className="w-4 h-4 mr-1" />
-                            <span>{translations?.uploadIcon || "Upload"}</span>
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".svg,image/svg+xml"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file || !selectedCategory) return;
-                          
-                          // Validate file type (SVG only)
-                          if (file.type !== 'image/svg+xml') {
-                            setError(translations?.invalidFileType || 'Invalid file type. Please upload an SVG file');
-                            setTimeout(() => setError(''), 3000);
-                            return;
-                          }
-                          
-                          // Validate file size (max 100KB)
-                          const maxSize = 100 * 1024; // 100KB
-                          if (file.size > maxSize) {
-                            setError(translations?.fileTooLarge || 'File too large. Maximum size is 100KB');
-                            setTimeout(() => setError(''), 3000);
-                            return;
-                          }
-                          
-                          try {
-                            setUploadingIcon(true);
-                            
-                            // Upload icon
-                            const iconUrl = await uploadIcon(file, selectedCategory.id);
-                            
-                            // Update category document
-                            await updateDoc(doc(db, 'categories', selectedCategory.id), {
-                              iconUrl: iconUrl,
-                              updatedAt: new Date()
-                            });
-                            
-                            // Update local state
-                            setCategories(categories.map(cat => 
-                              cat.id === selectedCategory.id ? { ...cat, iconUrl } : cat
-                            ));
-                            
-                            setSuccess(translations?.iconUploadedSuccess || 'Icon uploaded successfully');
-                            setTimeout(() => setSuccess(''), 3000);
-                            setSelectedCategory(null);
-                          } catch (error) {
-                            console.error('Error uploading icon:', error);
-                            setError(translations?.failedToUploadIcon || 'Failed to upload icon');
-                            setTimeout(() => setError(''), 3000);
-                          } finally {
-                            setUploadingIcon(false);
-                            if (fileInputRef.current) {
-                              fileInputRef.current.value = '';
-                            }
-                          }
-                        }}
-                      />
-                    </div>
-                    
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{category.name}</h3>
-                    {category.nameAr && (
-                      <p className="text-sm text-gray-600 mb-2">{category.nameAr}</p>
-                    )}
-                    {category.description && (
-                      <p className="text-sm text-gray-600 leading-relaxed">{category.description}</p>
-                    )}
-                    {category.descriptionAr && (
-                      <p className="text-sm text-gray-600 leading-relaxed mt-1">{category.descriptionAr}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-1 ml-3">
-                    <button
-                      onClick={() => openEditModal(category)}
-                      className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                      title={translations?.editCategory || 'Edit Category'}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => openDeleteModal(category)}
-                      className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                      title={translations?.deleteCategory || 'Delete Category'}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {translations?.createdDate?.replace('{date}', category.createdAt.toLocaleDateString()) || `Created: ${category.createdAt.toLocaleDateString()}`}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <Table
+          columns={columns}
+          data={paginatedCategories}
+          keyExtractor={(category) => category.id}
+          loading={loading}
+          actions={actions}
+          searchable={true}
+          searchPlaceholder={translations?.searchCategories || 'Search categories...'}
+          onSearch={setSearchQuery}
+          pagination={{
+            currentPage,
+            totalPages: Math.ceil(filteredCategories.length / itemsPerPage),
+            onPageChange: setCurrentPage,
+            itemsPerPage,
+            totalItems: filteredCategories.length
+          }}
+          emptyState={{
+            icon: <Tag className="h-12 w-12 text-gray-400 mx-auto" />,
+            title: translations?.noCategoriesFound || 'No Categories Found',
+            description: translations?.adjustSearchCriteria || 'Try adjusting your search criteria or filters'
+          }}
+        />
       </div>
 
       {/* Add Category Modal */}
@@ -973,4 +983,4 @@ const Categories = () => {
   );
 };
 
-export default Categories;
+export default CategoriesWithTable;
