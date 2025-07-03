@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Users, Building2, Tag, AlertCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Building2, Tag, AlertCircle, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import UserManagement from './Settings/UserManagement';
 import Companies from './Settings/Companies';
 import Categories from './Settings/Categories';
+import ClaimRequests from './Settings/ClaimRequests';
 
 interface SettingsProps {
-  onNavigateToProfile?: (companyId: string) => void;
+  onNavigateToProfile?: (companyId: string, companyName: string) => void;
 }
 
 const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
@@ -55,6 +56,12 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
       name: translations?.categories || 'Categories',
       icon: Tag,
       component: Categories
+    },
+    {
+      id: 'claims',
+      name: translations?.claimRequests || 'Claim Requests',
+      icon: FileText,
+      component: ClaimRequests
     }
   ];
 
