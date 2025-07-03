@@ -47,7 +47,7 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
     },
     {
       id: 'companies',
-      name: translations?.companies || 'Companies',
+      name: translations?.companies || 'Companiesبيليلبيل',
       icon: Building2,
       component: (props: any) => <Companies {...props} onNavigateToProfile={onNavigateToProfile} />
     },
