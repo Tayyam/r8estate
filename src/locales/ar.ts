@@ -108,7 +108,6 @@ export const ar = {
   registerToContinue: 'الرجاء إنشاء حساب للاستمرار إلى الصفحة التي تريدها',
   
   // Table Modal translations
-  viewAllUsers: 'عرض جميع المستخدمين',
   filterByRole: 'تصفية حسب الدور',
   allRoles: 'جميع الأدوار',
   adminRole: 'مسؤول',

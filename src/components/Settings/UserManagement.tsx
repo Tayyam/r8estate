@@ -20,7 +20,6 @@ const UserManagement = () => {
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-  const [showUserTableModal, setShowUserTableModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [newUserData, setNewUserData] = useState({
     displayName: '',
@@ -28,6 +27,8 @@ const UserManagement = () => {
     password: ''
   });
   const [newPassword, setNewPassword] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Initialize the cloud functions
   const createUserFunction = httpsCallable(functions, 'createUser');
@@ -67,6 +68,13 @@ const UserManagement = () => {
     user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.role.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   // Delete user using cloud function
@@ -351,22 +359,6 @@ const UserManagement = () => {
               <Plus className="h-4 w-4" />
               <span>{translations?.addAdmin || 'Add Admin'}</span>
             </button>
-            
-            {/* View Users Table Button */}
-            <button
-              onClick={() => setShowUserTableModal(true)}
-              className="flex items-center justify-center space-x-2 rtl:space-x-reverse px-4 py-2 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg text-sm"
-              style={{ backgroundColor: '#194866' }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#0f3147';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#194866';
-              }}
-            >
-              <Users className="h-4 w-4" />
-              <span>{translations?.viewAllUsers || 'View All Users'}</span>
-            </button>
           </div>
         </div>
       </div>
@@ -386,276 +378,48 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="px-4 sm:px-8 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder={translations?.searchUsers || 'Search users...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
-              style={{ 
-                focusBorderColor: '#194866',
-                focusRingColor: '#194866'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#194866';
-                e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#d1d5db';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          </div>
-          {!loading && (
-            <div className="text-sm text-gray-600">
-              {translations?.showingUsers?.replace('{current}', filteredUsers.length.toString()).replace('{total}', users.length.toString()) || `Showing ${filteredUsers.length} of ${users.length} users`}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Users List - Legacy View */}
-      <div className="overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="text-center py-12">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">{translations?.noUsersFound || 'No users found'}</p>
-          </div>
-        ) : (
-          <>
-            {/* Desktop Table View */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-8 py-4 text-left rtl:text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      {translations?.user || 'User'}
-                    </th>
-                    <th className="px-6 py-4 text-left rtl:text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      {translations?.role || 'Role'}
-                    </th>
-                    <th className="px-6 py-4 text-left rtl:text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      {translations?.createdDate || 'Created'}
-                    </th>
-                    <th className="px-6 py-4 text-right rtl:text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                      {translations?.actions || 'Actions'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => {
-                    const roleColors = getRoleBadgeColor(user.role);
-                    const RoleIcon = getRoleIcon(user.role);
-                    
-                    return (
-                      <tr key={user.uid} className="hover:bg-gray-50 transition-colors duration-150">
-                        {/* User Info */}
-                        <td className="px-8 py-6">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4 rtl:ml-4 rtl:mr-0" style={{ backgroundColor: '#194866' }}>
-                              {user.photoURL ? (
-                                <img 
-                                  src={user.photoURL} 
-                                  alt={user.displayName}
-                                  className="w-full h-full rounded-full object-cover"
-                                />
-                              ) : (
-                                <User className="w-5 h-5 text-white" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {user.displayName}
-                              </div>
-                              <div className="flex items-center text-sm text-gray-500">
-                                <Mail className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
-                                {user.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Role */}
-                        <td className="px-6 py-6">
-                          <div className="flex items-center">
-                            <div 
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize"
-                              style={{ 
-                                backgroundColor: roleColors.bg,
-                                color: roleColors.text
-                              }}
-                            >
-                              {RoleIcon}
-                              <span className="ml-1 rtl:mr-1 rtl:ml-0">{user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}</span>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Created Date */}
-                        <td className="px-6 py-6">
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
-                            {user.createdAt.toLocaleDateString()}
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-6 py-6 text-right rtl:text-left">
-                          {user.uid !== currentUser?.uid && (
-                            <div className="flex items-center justify-end rtl:justify-start space-x-2 rtl:space-x-reverse">
-                              {/* Change Password Button */}
-                              <button
-                                onClick={() => openChangePasswordModal(user)}
-                                disabled={actionLoading}
-                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
-                                title={translations?.changePassword || 'Change Password'}
-                              >
-                                <Key className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
-                                {translations?.passwordAction || 'Password'}
-                              </button>
-
-                              {/* Delete Button */}
-                              <button
-                                onClick={() => openDeleteModal(user)}
-                                disabled={actionLoading}
-                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
-                                title={translations?.deleteUser || 'Delete User'}
-                              >
-                                <Trash2 className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
-                                {translations?.deleteAction || 'Delete'}
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Card View */}
-            <div className="lg:hidden">
-              <div className="space-y-4 p-4">
-                {filteredUsers.map((user) => {
-                  const roleColors = getRoleBadgeColor(user.role);
-                  
-                  return (
-                    <div key={user.uid} className="bg-gray-50 rounded-xl p-4 space-y-3">
-                      {/* User Info */}
-                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#194866' }}>
-                          {user.photoURL ? (
-                            <img 
-                              src={user.photoURL} 
-                              alt={user.displayName}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          ) : (
-                            <User className="w-6 h-6 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 truncate">
-                            {user.displayName}
-                          </div>
-                          <div className="flex items-center text-xs text-gray-500">
-                            <Mail className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
-                            <span className="truncate">{user.email}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Role and Date */}
-                      <div className="flex items-center justify-between">
-                        <div 
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                          style={{ 
-                            backgroundColor: roleColors.bg,
-                            color: roleColors.text
-                          }}
-                        >
-                          {getRoleIcon(user.role)}
-                          <span className="ml-1 rtl:mr-1 rtl:ml-0">{user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}</span>
-                        </div>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
-                          {user.createdAt.toLocaleDateString()}
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      {user.uid !== currentUser?.uid && (
-                        <div className="flex space-x-2 rtl:space-x-reverse pt-2">
-                          <button
-                            onClick={() => openChangePasswordModal(user)}
-                            disabled={actionLoading}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
-                          >
-                            <Key className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
-                            {translations?.passwordAction || 'Password'}
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(user)}
-                            disabled={actionLoading}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
-                          >
-                            <Trash2 className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
-                            {translations?.deleteAction || 'Delete'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
       {/* TableModal Implementation */}
-      <TableModal
-        isOpen={showUserTableModal}
-        onClose={() => setShowUserTableModal(false)}
-        title={translations?.userManagement || 'User Management'}
-        subtitle={translations?.totalUsers?.replace('{count}', filteredUsers.length.toString()) || `Total users: ${filteredUsers.length}`}
-        columns={columns}
-        data={filteredUsers}
-        keyExtractor={(user) => user.uid}
-        loading={loading}
-        actions={tableActions}
-        searchable={true}
-        searchPlaceholder={translations?.searchUsers || 'Search users...'}
-        onSearch={setSearchQuery}
-        filters={[
-          {
-            id: 'role',
-            label: translations?.filterByRole || 'Filter by Role',
-            options: [
-              { value: 'all', label: translations?.allRoles || 'All Roles' },
-              { value: 'admin', label: translations?.adminRole || 'Admin' },
-              { value: 'user', label: translations?.userRole || 'User' }
-            ],
-            value: 'all',
-            onChange: (value) => console.log(`Filter by role: ${value}`)
-          }
-        ]}
-        emptyState={{
-          icon: <Users className="h-12 w-12 text-gray-400 mx-auto" />,
-          title: translations?.noUsersFound || 'No Users Found',
-          description: translations?.adjustSearchCriteriaUsers || 'Try adjusting your search criteria or filters'
-        }}
-      />
+      <div className="px-4 sm:px-6 py-4">
+        <TableModal
+          isOpen={true}
+          onClose={() => {}} // This is a dummy function since we're always showing the table
+          title={translations?.userManagement || 'User Management'}
+          subtitle={translations?.totalUsers?.replace('{count}', filteredUsers.length.toString()) || `Total users: ${filteredUsers.length}`}
+          columns={columns}
+          data={paginatedUsers}
+          keyExtractor={(user) => user.uid}
+          loading={loading}
+          actions={tableActions}
+          searchable={true}
+          searchPlaceholder={translations?.searchUsers || 'Search users...'}
+          onSearch={setSearchQuery}
+          pagination={{
+            currentPage,
+            totalPages,
+            onPageChange: setCurrentPage,
+            itemsPerPage,
+            totalItems: filteredUsers.length
+          }}
+          filters={[
+            {
+              id: 'role',
+              label: translations?.filterByRole || 'Filter by Role',
+              options: [
+                { value: 'all', label: translations?.allRoles || 'All Roles' },
+                { value: 'admin', label: translations?.adminRole || 'Admin' },
+                { value: 'user', label: translations?.userRole || 'User' }
+              ],
+              value: 'all',
+              onChange: (value) => console.log(`Filter by role: ${value}`)
+            }
+          ]}
+          emptyState={{
+            icon: <Users className="h-12 w-12 text-gray-400 mx-auto" />,
+            title: translations?.noUsersFound || 'No Users Found',
+            description: translations?.adjustSearchCriteriaUsers || 'Try adjusting your search criteria or filters'
+          }}
+        />
+      </div>
 
       {/* Add Admin Modal */}
       {showAddAdmin && (
