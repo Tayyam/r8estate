@@ -105,18 +105,5 @@ export const ar = {
   loginToAccessContent: 'الرجاء تسجيل الدخول',
   loginToContinue: 'الرجاء تسجيل الدخول للاستمرار إلى الصفحة التي تريدها',
   registerToAccessContent: 'قم بإنشاء حساب',
-  registerToContinue: 'الرجاء إنشاء حساب للاستمرار إلى الصفحة التي تريدها',
-  
-  // Table Modal translations
-  viewAllUsers: 'عرض جميع المستخدمين',
-  filterByRole: 'تصفية حسب الدور',
-  allRoles: 'جميع الأدوار',
-  adminRole: 'مسؤول',
-  userRole: 'مستخدم',
-  showingItems: 'عرض {start} إلى {end} من {total} عنصر',
-  previous: 'السابق',
-  next: 'التالي',
-  actions: 'الإجراءات',
-  noUsersFound: 'لم يتم العثور على مستخدمين',
-  adjustSearchCriteriaUsers: 'حاول تعديل معايير البحث أو الفلاتر'
+  registerToContinue: 'الرجاء إنشاء حساب للاستمرار إلى الصفحة التي تريدها'
 };
