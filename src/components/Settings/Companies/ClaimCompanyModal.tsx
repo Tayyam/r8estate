@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, AlertCircle, Lock, Mail, UserوBuilding2 } from 'lucide-react';
+import { UserPlus, AlertCircle, Lock, Mail, User,Building2 } from 'lucide-react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../../config/firebase';
