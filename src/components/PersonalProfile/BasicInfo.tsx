@@ -215,7 +215,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {translations?.emailAddress || 'البريد الإلكتروني'}
+              {translations?.emailAddressBasic || 'البريد الإلكتروني'}
             </label>
             
             <div className="flex flex-col lg:flex-row lg:items-center gap-4">
