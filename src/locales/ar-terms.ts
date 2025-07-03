@@ -16,5 +16,5 @@ export const arTerms = {
   disclaimers: '7. إخلاء المسؤولية',
   termsModifications: '8. التعديلات على الشروط',
   governingLaw: '9. القانون المطبق',
-  contactInformation: '10. معلومات الاتصال'
+  contactInformation: 'معلومات الاتصال'
 };
