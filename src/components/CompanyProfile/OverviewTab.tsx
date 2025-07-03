@@ -66,7 +66,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             {translations?.aboutCompany || 'About Company'}
           </h2>
           <p className="text-gray-700 leading-relaxed">
-            {company.description || (translations?.noDescriptionAvailable || 'No description available.')}
+            {company.description || (translations?.noDescriptionAvailable || 'No description availabيسبيبيسle.')}
           </p>
         </div>
 
