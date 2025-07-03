@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Search, Filter, Check, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, MoreHorizontal } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-export interface TableColumn<T> {
+interface TableColumn<T> {
   id: string;
   header: string;
   accessor: (row: T) => React.ReactNode;
@@ -12,7 +12,7 @@ export interface TableColumn<T> {
   align?: 'left' | 'center' | 'right';
 }
 
-export interface TablePagination {
+interface TablePagination {
   currentPage: number;
   totalPages: number;
   totalItems: number;
@@ -20,7 +20,7 @@ export interface TablePagination {
   onPageChange: (page: number) => void;
 }
 
-export interface TableAction<T> {
+interface TableAction<T> {
   label: string;
   onClick: (item: T) => void;
   icon?: React.ReactNode;
@@ -29,7 +29,7 @@ export interface TableAction<T> {
   show?: (item: T) => boolean;
 }
 
-export interface TableEmptyState {
+interface TableEmptyState {
   icon?: React.ReactNode;
   title: string;
   description: string;
@@ -39,7 +39,7 @@ export interface TableEmptyState {
   };
 }
 
-export interface TableFilter {
+interface TableFilter {
   id: string;
   label: string;
   options: { value: string; label: string }[];
@@ -47,7 +47,7 @@ export interface TableFilter {
   onChange: (value: string) => void;
 }
 
-export interface TableProps<T> {
+interface TableProps<T> {
   columns: TableColumn<T>[];
   data: T[];
   keyExtractor: (item: T) => string;

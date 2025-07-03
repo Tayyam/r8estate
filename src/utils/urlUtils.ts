@@ -19,7 +19,7 @@ export const getCompanySlug = (name: string): string => {
  * Gets a company's ID from Firestore by its slug
  * For future implementation if needed
  */
-export const getCompanyIdFromSlug = async (slug: string): Promise<string | null> => {
+const getCompanyIdFromSlug = async (slug: string): Promise<string | null> => {
   // This would be implemented to look up company ID by slug if needed
   // Currently we use ID directly in the URL alongside the slug
   return null;

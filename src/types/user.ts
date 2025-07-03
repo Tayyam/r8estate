@@ -12,7 +12,7 @@ export interface User {
   photoURL?: string;
 }
 
-export interface CompanyProfile {
+interface CompanyProfile {
   id: string;
   name: string;
   description: string;
@@ -27,7 +27,7 @@ export interface CompanyProfile {
 }
 
 // Type definition for votes
-export interface ReviewVote {
+interface ReviewVote {
   id?: string;
   userId: string;
   reviewId: string;
