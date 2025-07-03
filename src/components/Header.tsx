@@ -171,7 +171,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
     setIsMobileMenuOpen(false);
   };
 
-  // Handle my reviews navigation
+  // Handle my reviews navigation - only for regular users, not for admins
   const handleMyReviews = () => {
     if (setCurrentPage) {
       setCurrentPage('my-reviews');
@@ -417,8 +417,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                       </button>
                     )}
                     
-                    {/* My Reviews Link - Only for regular users */}
-                    {currentUser.role !== 'company' && currentUser.role !== 'admin' && (
+                    {/* My Reviews Link - Only for regular users, not for admins */}
+                    {currentUser.role === 'user' && (
                       <button
                         onClick={handleMyReviews}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
@@ -610,7 +610,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                       </button>
                     )}
 
-                    {/* Personal Profile for mobile - For all users */}
+                    {/* Personal Profile for mobile - For all users except company */}
                     {currentUser.role !== 'company' && (
                       <button
                         onClick={handlePersonalProfile}
@@ -621,8 +621,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                       </button>
                     )}
                     
-                    {/* My Reviews for mobile - Only for regular users */}
-                    {currentUser.role !== 'company' && currentUser.role !== 'admin' && (
+                    {/* My Reviews for mobile - Only for regular users, not for admins */}
+                    {currentUser.role === 'user' && (
                       <button
                         onClick={handleMyReviews}
                         className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"

@@ -46,6 +46,36 @@ export const ar = {
   ...arMyReviews,
   ...arSearch,
   
+  // Table/pagination translations
+  filterByRole: 'تصفية حسب الدور',
+  allRoles: 'جميع الأدوار',
+  adminRole: 'مسؤول',
+  userRole: 'مستخدم',
+  showingItems: 'عرض {start} إلى {end} من {total} عنصر',
+  showingUsers: 'عرض {current} من {total} مستخدم',
+  showingCategories: 'عرض {current} من {total} فئة',
+  previous: 'السابق',
+  next: 'التالي',
+  actions: 'الإجراءات',
+  noUsersFound: 'لم يتم العثور على مستخدمين',
+  adjustSearchCriteriaUsers: 'حاول تعديل معايير البحث أو الفلاتر',
+  
+  // User status translations
+  active: 'نشط',
+  suspended: 'موقوف',
+  userStatus: 'حالة المستخدم',
+  suspendUser: 'إيقاف المستخدم',
+  reactivateUser: 'تنشيط المستخدم',
+  userSuspendedSuccess: 'تم إيقاف المستخدم بنجاح',
+  userActivatedSuccess: 'تم تنشيط المستخدم بنجاح',
+  failedToUpdateUserStatus: 'فشل تحديث حالة المستخدم',
+  
+  // Suspended account page
+  accountSuspended: 'حسابك موقوف',
+  accountSuspendedMessage: 'تم إيقاف حسابك. يرجى التواصل مع الدعم الفني للمساعدة.',
+  accountSuspendedExplanation: 'إذا كنت تعتقد أن هذا خطأ، يرجى الاتصال بنا مباشرة.',
+  contactSupport: 'التواصل مع الدعم الفني',
+  
   // Review form specific translations
   communication: 'التواصل',
   valueForMoney: 'القيمة مقابل المال',

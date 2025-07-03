@@ -21,10 +21,24 @@ import SearchResults from './components/SearchResults';
 import Footer from './components/Footer';
 import NotificationContainer from './components/UI/NotificationContainer';
 import { getCompanySlug } from './utils/urlUtils';
+import { useAuth } from './contexts/AuthContext';
+import SuspendedUserView from './components/SuspendedUserView';
 
-function App() {
+// CheckUserStatus component that redirects suspended users
+const CheckUserStatus: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser } = useAuth();
+  
+  if (currentUser?.status === 'suspended') {
+    return <SuspendedUserView />;
+  }
+  
+  return <>{children}</>;
+};
+
+function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useState({
@@ -118,65 +132,127 @@ function App() {
     }
   };
 
+  // Check if user is suspended
+  if (currentUser?.status === 'suspended') {
+    // Only allow login page for suspended users
+    if (!location.pathname.includes('/login')) {
+      return <SuspendedUserView />;
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {shouldShowHeaderFooter && (
+        <Header 
+          currentPage={location.pathname.split('/')[1] || 'home'} 
+          setCurrentPage={handleNavigate} 
+        />
+      )}
+      <main>
+        <Routes>
+          <Route path="/" element={
+            <CheckUserStatus>
+              <Hero onNavigate={handleNavigate} />
+            </CheckUserStatus>
+          } />
+          <Route path="/categories" element={
+            <CheckUserStatus>
+              <Categories onNavigateToProfile={(companyId, companyName) => {
+                setSelectedCompanyId(companyId);
+                const companySlug = companyName ? getCompanySlug(companyName) : companyId;
+                navigate(`/company/${companySlug}/${companyId}/overview`);
+              }} />
+            </CheckUserStatus>
+          } />
+          <Route path="/categories/:categoryId" element={
+            <CheckUserStatus>
+              <Categories onNavigateToProfile={(companyId, companyName) => {
+                setSelectedCompanyId(companyId);
+                const companySlug = companyName ? getCompanySlug(companyName) : companyId;
+                navigate(`/company/${companySlug}/${companyId}/overview`);
+              }} />
+            </CheckUserStatus>
+          } />
+          <Route path="/about" element={
+            <CheckUserStatus>
+              <About />
+            </CheckUserStatus>
+          } />
+          <Route path="/pricing" element={
+            <CheckUserStatus>
+              <Pricing />
+            </CheckUserStatus>
+          } />
+          <Route path="/contact" element={
+            <CheckUserStatus>
+              <Contact onNavigate={handleNavigate} />
+            </CheckUserStatus>
+          } />
+          <Route path="/terms" element={
+            <CheckUserStatus>
+              <Terms onNavigate={handleNavigate} />
+            </CheckUserStatus>
+          } />
+          <Route path="/privacy" element={
+            <CheckUserStatus>
+              <Privacy onNavigate={handleNavigate} />
+            </CheckUserStatus>
+          } />
+          <Route path="/admin/settings" element={
+            <CheckUserStatus>
+              <Settings onNavigateToProfile={(companyId, companyName) => {
+                setSelectedCompanyId(companyId);
+                const companySlug = companyName ? getCompanySlug(companyName) : companyId;
+                navigate(`/company/${companySlug}/${companyId}/overview`);
+              }} />
+            </CheckUserStatus>
+          } />
+          <Route path="/login" element={<Login onNavigate={handleNavigate} />} />
+          <Route path="/register" element={<Register onNavigate={handleNavigate} />} />
+          <Route path="/company/:companySlug/:companyId/:tab" element={
+            <CheckUserStatus>
+              <CompanyProfile onNavigateBack={() => navigate(-1)} />
+            </CheckUserStatus>
+          } />
+          <Route path="/profile" element={
+            <CheckUserStatus>
+              <PersonalProfile onNavigate={handleNavigate} />
+            </CheckUserStatus>
+          } />
+          <Route path="/profile/reviews" element={
+            <CheckUserStatus>
+              <MyReviews onNavigate={handleNavigate} />
+            </CheckUserStatus>
+          } />
+          <Route path="/search" element={
+            <CheckUserStatus>
+              <SearchResults 
+                onNavigate={handleNavigate} 
+                onNavigateToProfile={(companyId, companyName) => {
+                  setSelectedCompanyId(companyId);
+                  const companySlug = companyName ? getCompanySlug(companyName) : companyId;
+                  navigate(`/company/${companySlug}/${companyId}/overview`);
+                }}
+                initialSearchQuery={searchParams.query}
+                initialCategoryFilter={searchParams.category}
+              />
+            </CheckUserStatus>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      {shouldShowHeaderFooter && <Footer onNavigate={handleNavigate} />}
+      <NotificationContainer />
+    </div>
+  );
+}
+
+function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
         <NotificationProvider>
-          <div className="min-h-screen bg-gray-50">
-            {shouldShowHeaderFooter && (
-              <Header 
-                currentPage={location.pathname.split('/')[1] || 'home'} 
-                setCurrentPage={handleNavigate} 
-              />
-            )}
-            <main>
-              <Routes>
-                <Route path="/" element={<Hero onNavigate={handleNavigate} />} />
-                <Route path="/categories" element={<Categories onNavigateToProfile={(companyId, companyName) => {
-                  setSelectedCompanyId(companyId);
-                  const companySlug = companyName ? getCompanySlug(companyName) : companyId;
-                  navigate(`/company/${companySlug}/${companyId}/overview`);
-                }} />} />
-                <Route path="/categories/:categoryId" element={<Categories onNavigateToProfile={(companyId, companyName) => {
-                  setSelectedCompanyId(companyId);
-                  const companySlug = companyName ? getCompanySlug(companyName) : companyId;
-                  navigate(`/company/${companySlug}/${companyId}/overview`);
-                }} />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/contact" element={<Contact onNavigate={handleNavigate} />} />
-                <Route path="/terms" element={<Terms onNavigate={handleNavigate} />} />
-                <Route path="/privacy" element={<Privacy onNavigate={handleNavigate} />} />
-                <Route path="/admin/settings" element={<Settings onNavigateToProfile={(companyId, companyName) => {
-                  setSelectedCompanyId(companyId);
-                  const companySlug = companyName ? getCompanySlug(companyName) : companyId;
-                  navigate(`/company/${companySlug}/${companyId}/overview`);
-                }} />} />
-                <Route path="/login" element={<Login onNavigate={handleNavigate} />} />
-                <Route path="/register" element={<Register onNavigate={handleNavigate} />} />
-                <Route path="/company/:companySlug/:companyId/:tab" element={
-                  <CompanyProfile onNavigateBack={() => navigate(-1)} />
-                } />
-                <Route path="/profile" element={<PersonalProfile onNavigate={handleNavigate} />} />
-                <Route path="/profile/reviews" element={<MyReviews onNavigate={handleNavigate} />} />
-                <Route path="/search" element={
-                  <SearchResults 
-                    onNavigate={handleNavigate} 
-                    onNavigateToProfile={(companyId, companyName) => {
-                      setSelectedCompanyId(companyId);
-                      const companySlug = companyName ? getCompanySlug(companyName) : companyId;
-                      navigate(`/company/${companySlug}/${companyId}/overview`);
-                    }}
-                    initialSearchQuery={searchParams.query}
-                    initialCategoryFilter={searchParams.category}
-                  />
-                } />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
-            {shouldShowHeaderFooter && <Footer onNavigate={handleNavigate} />}
-            <NotificationContainer />
-          </div>
+          <AppContent />
         </NotificationProvider>
       </AuthProvider>
     </LanguageProvider>

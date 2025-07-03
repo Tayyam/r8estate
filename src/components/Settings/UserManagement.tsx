@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Trash2, User, Shield, Mail, Calendar, AlertCircle, CheckCircle, Search, Key } from 'lucide-react';
+import { Users, Plus, Trash2, User, Shield, Mail, Calendar, AlertCircle, CheckCircle, Search, Key, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../config/firebase';
 import { User as UserType } from '../../types/user';
 
 const UserManagement = () => {
   const { currentUser } = useAuth();
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -19,6 +19,7 @@ const UserManagement = () => {
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [newUserData, setNewUserData] = useState({
     displayName: '',
@@ -26,6 +27,13 @@ const UserManagement = () => {
     password: ''
   });
   const [newPassword, setNewPassword] = useState('');
+  
+  // Pagination and filtering
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage] = useState(10);
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [suspendLoading, setSuspendLoading] = useState<string | null>(null);
 
   // Initialize the cloud functions
   const createUserFunction = httpsCallable(functions, 'createUser');
@@ -41,6 +49,7 @@ const UserManagement = () => {
       const usersData = usersSnapshot.docs.map(doc => ({
         uid: doc.id,
         ...doc.data(),
+        status: doc.data().status || 'active', // Default to active if not set
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date()
       })) as UserType[];
@@ -60,12 +69,27 @@ const UserManagement = () => {
     loadUsers();
   }, []);
 
-  // Filter users based on search query
-  const filteredUsers = users.filter(user => 
-    user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter users based on search query, role, and status
+  const filteredUsers = users.filter(user => {
+    // Search filter
+    const matchesSearch = 
+      user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Role filter
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    
+    // Status filter
+    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  // Pagination
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   // Delete user using cloud function
   const handleDeleteUser = async () => {
@@ -179,6 +203,53 @@ const UserManagement = () => {
     }
   };
 
+  // Suspend or reactivate a user
+  const handleToggleUserStatus = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      setSuspendLoading(selectedUser.uid);
+      setActionLoading(true);
+      
+      // Toggle the user's status
+      const newStatus = selectedUser.status === 'suspended' ? 'active' : 'suspended';
+      
+      // Update the user document in Firestore
+      const userRef = doc(db, 'users', selectedUser.uid);
+      await updateDoc(userRef, {
+        status: newStatus,
+        updatedAt: new Date()
+      });
+      
+      // Update local state
+      setUsers(users.map(user => 
+        user.uid === selectedUser.uid 
+          ? { ...user, status: newStatus } 
+          : user
+      ));
+      
+      // Show success message
+      setSuccess(
+        newStatus === 'active'
+          ? (translations?.userActivatedSuccess || 'User activated successfully')
+          : (translations?.userSuspendedSuccess || 'User suspended successfully')
+      );
+      
+      // Close modal and reset selected user
+      setShowSuspendModal(false);
+      setSelectedUser(null);
+      setTimeout(() => setSuccess(''), 3000);
+      
+    } catch (error: any) {
+      console.error('Error updating user status:', error);
+      setError(error.message || translations?.failedToUpdateUserStatus || 'Failed to update user status');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setSuspendLoading(null);
+      setActionLoading(false);
+    }
+  };
+
   // Open delete modal
   const openDeleteModal = (user: UserType) => {
     setSelectedUser(user);
@@ -192,11 +263,18 @@ const UserManagement = () => {
     setShowChangePasswordModal(true);
   };
 
-  // Close modals
+  // Open suspend/reactivate modal
+  const openSuspendModal = (user: UserType) => {
+    setSelectedUser(user);
+    setShowSuspendModal(true);
+  };
+
+  // Close all modals
   const closeModals = () => {
     setShowDeleteModal(false);
     setShowChangePasswordModal(false);
     setShowAddAdmin(false);
+    setShowSuspendModal(false);
     setSelectedUser(null);
     setNewPassword('');
     setNewUserData({ displayName: '', email: '', password: '' });
@@ -213,13 +291,20 @@ const UserManagement = () => {
     }
   };
 
-  // Get role icon
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return Shield;
+  // Get status badge color
+  const getStatusBadgeColor = (status: string = 'active') => {
+    switch (status) {
+      case 'suspended':
+        return { bg: 'rgba(239, 68, 68, 0.1)', text: '#dc2626' };
       default:
-        return User;
+        return { bg: 'rgba(16, 185, 129, 0.1)', text: '#10B981' };
+    }
+  };
+
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
     }
   };
 
@@ -278,16 +363,20 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Search Bar */}
+      {/* Search and Filters */}
       <div className="px-4 sm:px-8 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-          <div className="relative max-w-md">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+          {/* Search */}
+          <div className="relative">
             <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
               placeholder={translations?.searchUsers || 'Search users...'}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1); // Reset page when search changes
+              }}
               className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
               style={{ 
                 focusBorderColor: '#194866',
@@ -303,11 +392,54 @@ const UserManagement = () => {
               }}
             />
           </div>
-          {!loading && (
-            <div className="text-sm text-gray-600">
-              {translations?.showingUsers?.replace('{current}', filteredUsers.length.toString()).replace('{total}', users.length.toString()) || `Showing ${filteredUsers.length} of ${users.length} users`}
-            </div>
-          )}
+
+          {/* Role Filter */}
+          <div className="">
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                setCurrentPage(1); // Reset page when filter changes
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+              style={{ 
+                focusBorderColor: '#194866',
+                focusRingColor: '#194866'
+              }}
+            >
+              <option value="all">{translations?.allRoles || 'All Roles'}</option>
+              <option value="admin">{translations?.adminRole || 'Admin'}</option>
+              <option value="user">{translations?.userRole || 'User'}</option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div className="">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1); // Reset page when filter changes
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+              style={{ 
+                focusBorderColor: '#194866',
+                focusRingColor: '#194866'
+              }}
+            >
+              <option value="all">{translations?.allStatuses || 'All Statuses'}</option>
+              <option value="active">{translations?.active || 'Active'}</option>
+              <option value="suspended">{translations?.suspended || 'Suspended'}</option>
+            </select>
+          </div>
+
+          {/* Show results count */}
+          <div className="text-sm text-gray-600 lg:text-right">
+            {!loading && (
+              translations?.showingUsers?.replace('{current}', filteredUsers.length.toString()).replace('{total}', users.length.toString()) || 
+              `Showing ${filteredUsers.length} of ${users.length} users`
+            )}
+          </div>
         </div>
       </div>
 
@@ -317,7 +449,7 @@ const UserManagement = () => {
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
           </div>
-        ) : filteredUsers.length === 0 ? (
+        ) : currentUsers.length === 0 ? (
           <div className="text-center py-12">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">{translations?.noUsersFound || 'No users found'}</p>
@@ -336,6 +468,9 @@ const UserManagement = () => {
                       {translations?.role || 'Role'}
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                      {translations?.userStatus || 'Status'}
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.createdDate || 'Created'}
                     </th>
                     <th className="px-6 py-4 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
@@ -344,9 +479,10 @@ const UserManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => {
+                  {currentUsers.map((user) => {
                     const roleColors = getRoleBadgeColor(user.role);
-                    const RoleIcon = getRoleIcon(user.role);
+                    const statusColors = getStatusBadgeColor(user.status);
+                    const RoleIcon = user.role === 'admin' ? Shield : User;
                     
                     return (
                       <tr key={user.uid} className="hover:bg-gray-50 transition-colors duration-150">
@@ -387,7 +523,31 @@ const UserManagement = () => {
                               }}
                             >
                               <RoleIcon className="w-3 h-3 mr-1" />
-                              {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
+                              <span>
+                                {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-6 py-6">
+                          <div className="flex items-center">
+                            <div 
+                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize"
+                              style={{ 
+                                backgroundColor: statusColors.bg,
+                                color: statusColors.text
+                              }}
+                            >
+                              {user.status === 'suspended' ? (
+                                <AlertTriangle className="w-3 h-3 mr-1" />
+                              ) : (
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                              )}
+                              <span>
+                                {user.status === 'suspended' ? (translations?.suspended || 'Suspended') : (translations?.active || 'Active')}
+                              </span>
                             </div>
                           </div>
                         </td>
@@ -403,7 +563,32 @@ const UserManagement = () => {
                         {/* Actions */}
                         <td className="px-6 py-6 text-right">
                           {user.uid !== currentUser?.uid && (
-                            <div className="flex items-center justify-end space-x-2">
+                            <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
+                              {/* Suspend/Reactivate Button */}
+                              <button
+                                onClick={() => openSuspendModal(user)}
+                                disabled={actionLoading || suspendLoading === user.uid}
+                                className={`inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md transition-colors duration-150 disabled:opacity-50
+                                  ${user.status === 'suspended'
+                                    ? 'text-green-700 bg-green-100 hover:bg-green-200'
+                                    : 'text-red-700 bg-red-100 hover:bg-red-200'
+                                  }`}
+                                title={user.status === 'suspended'
+                                  ? (translations?.reactivateUser || 'Reactivate User')
+                                  : (translations?.suspendUser || 'Suspend User')
+                                }
+                              >
+                                {suspendLoading === user.uid ? (
+                                  <div className="w-3 h-3 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <AlertTriangle className="w-3 h-3 mr-1" />
+                                )}
+                                {user.status === 'suspended'
+                                  ? (translations?.reactivateUser || 'Reactivate')
+                                  : (translations?.suspendUser || 'Suspend')
+                                }
+                              </button>
+
                               {/* Change Password Button */}
                               <button
                                 onClick={() => openChangePasswordModal(user)}
@@ -438,9 +623,10 @@ const UserManagement = () => {
             {/* Mobile Card View */}
             <div className="lg:hidden">
               <div className="space-y-4 p-4">
-                {filteredUsers.map((user) => {
+                {currentUsers.map((user) => {
                   const roleColors = getRoleBadgeColor(user.role);
-                  const RoleIcon = getRoleIcon(user.role);
+                  const statusColors = getStatusBadgeColor(user.status);
+                  const RoleIcon = user.role === 'admin' ? Shield : User;
                   
                   return (
                     <div key={user.uid} className="bg-gray-50 rounded-xl p-4 space-y-3">
@@ -468,8 +654,8 @@ const UserManagement = () => {
                         </div>
                       </div>
 
-                      {/* Role and Date */}
-                      <div className="flex items-center justify-between">
+                      {/* Role, Status and Date */}
+                      <div className="flex items-center flex-wrap gap-2">
                         <div 
                           className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                           style={{ 
@@ -480,7 +666,23 @@ const UserManagement = () => {
                           <RoleIcon className="w-3 h-3 mr-1" />
                           {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
                         </div>
-                        <div className="flex items-center text-xs text-gray-500">
+                        
+                        <div 
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium capitalize"
+                          style={{ 
+                            backgroundColor: statusColors.bg,
+                            color: statusColors.text
+                          }}
+                        >
+                          {user.status === 'suspended' ? (
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                          ) : (
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                          )}
+                          {user.status === 'suspended' ? (translations?.suspended || 'Suspended') : (translations?.active || 'Active')}
+                        </div>
+                        
+                        <div className="flex items-center text-xs text-gray-500 ml-auto">
                           <Calendar className="w-3 h-3 mr-1" />
                           {user.createdAt.toLocaleDateString()}
                         </div>
@@ -488,7 +690,27 @@ const UserManagement = () => {
 
                       {/* Actions */}
                       {user.uid !== currentUser?.uid && (
-                        <div className="flex space-x-2 rtl:space-x-reverse pt-2">
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <button
+                            onClick={() => openSuspendModal(user)}
+                            disabled={actionLoading || suspendLoading === user.uid}
+                            className={`flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md transition-colors duration-150 disabled:opacity-50
+                              ${user.status === 'suspended'
+                                ? 'text-green-700 bg-green-100 hover:bg-green-200'
+                                : 'text-red-700 bg-red-100 hover:bg-red-200'
+                              }`}
+                          >
+                            {suspendLoading === user.uid ? (
+                              <div className="w-4 h-4 mr-1 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <AlertTriangle className="w-4 h-4 mr-1" />
+                            )}
+                            {user.status === 'suspended'
+                              ? (translations?.reactivateUser || 'Reactivate')
+                              : (translations?.suspendUser || 'Suspend')
+                            }
+                          </button>
+                          
                           <button
                             onClick={() => openChangePasswordModal(user)}
                             disabled={actionLoading}
@@ -497,6 +719,7 @@ const UserManagement = () => {
                             <Key className="w-4 h-4 mr-1" />
                             {translations?.passwordAction || 'Password'}
                           </button>
+                          
                           <button
                             onClick={() => openDeleteModal(user)}
                             disabled={actionLoading}
@@ -515,6 +738,80 @@ const UserManagement = () => {
           </>
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && filteredUsers.length > 0 && (
+        <div className="px-4 sm:px-8 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
+          {/* Mobile Pagination */}
+          <div className="flex w-full sm:hidden justify-between mb-4">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50"
+            >
+              {translations?.previous || 'Previous'}
+            </button>
+            <div className="px-4 py-2 text-gray-600">
+              {`${currentPage} / ${totalPages}`}
+            </div>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50"
+            >
+              {translations?.next || 'Next'}
+            </button>
+          </div>
+          
+          {/* Desktop Pagination */}
+          <div className="hidden sm:flex items-center justify-center sm:justify-end space-x-2 rtl:space-x-reverse">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              {translations?.previous || 'Previous'}
+            </button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => 
+                page === 1 || 
+                page === totalPages || 
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              )
+              .map((page, index, array) => {
+                // Add ellipsis
+                if (index > 0 && array[index - 1] !== page - 1) {
+                  return (
+                    <span key={`ellipsis-before-${page}`} className="px-2 py-1 text-gray-500">...</span>
+                  );
+                }
+                
+                return (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-3 py-1 border rounded-md ${
+                      currentPage === page
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              {translations?.next || 'Next'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add Admin Modal */}
       {showAddAdmin && (
@@ -696,6 +993,57 @@ const UserManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Suspend/Reactivate User Modal */}
+      {showSuspendModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full">
+            <div className="text-center">
+              <div className={`w-16 h-16 ${selectedUser.status === 'suspended' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                <AlertTriangle className={`h-8 w-8 ${selectedUser.status === 'suspended' ? 'text-green-500' : 'text-red-500'}`} />
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">
+                {selectedUser.status === 'suspended' 
+                  ? (translations?.reactivateUser || 'Reactivate User')
+                  : (translations?.suspendUser || 'Suspend User')
+                }
+              </h3>
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">
+                {selectedUser.status === 'suspended'
+                  ? (translations?.confirmReactivateUser?.replace('{name}', selectedUser.displayName) || `Are you sure you want to reactivate ${selectedUser.displayName}'s account?`)
+                  : (translations?.confirmSuspendUser?.replace('{name}', selectedUser.displayName) || `Are you sure you want to suspend ${selectedUser.displayName}'s account? They will not be able to access the platform until reactivated.`)
+                }
+              </p>
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
+                <button
+                  onClick={handleToggleUserStatus}
+                  disabled={actionLoading}
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 flex items-center justify-center text-white
+                    ${selectedUser.status === 'suspended' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                  `}
+                >
+                  {actionLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  ) : null}
+                  <span>
+                    {selectedUser.status === 'suspended'
+                      ? (translations?.reactivateUser || 'Reactivate User')
+                      : (translations?.suspendUser || 'Suspend User')
+                    }
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors duration-200"
+                >
+                  {translations?.cancel || 'Cancel'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
