@@ -151,7 +151,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         <div className="text-center mb-8 animate-slideInUp">
           <div className="flex items-center justify-center mb-6">
             <img 
-              src="https://i.ibb.co/YrNNbnz/R8-ESTATEORG.png" 
+              src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" 
               alt="R8ESTATE Logo" 
               className="w-12 h-12 object-contain rounded-full mr-3"
             />
