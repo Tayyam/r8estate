@@ -22,7 +22,7 @@ const Terms: React.FC<TermsProps> = ({ onNavigate }) => {
       section7Title: '7. إخلاء المسؤولية',
       section8Title: '8. التعديلات على الشروط',
       section9Title: '9. القانون المطبق',
-      section10Title: '10. معلومات الاتصال'
+      section10Title: 'معلومات الاتصال'
     },
     en: {
       title: 'Terms of Use',
