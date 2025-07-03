@@ -261,9 +261,16 @@ export const arCompanyProfile = {
   edited: '(مُعدل)',
   
   // Company Claim
+  claimCompany: 'المطالبة بالشركة',
   isThisYourCompany: 'هل هذه شركتك؟',
   claimCompanyExplanation: 'إذا كنت المالك أو ممثل هذه الشركة، يمكنك طلب ملكية هذا الملف الشخصي وإدارته مباشرة.',
   sendClaimRequest: 'إرسال طلب ملكية',
   companyAlreadyClaimed: 'الشركة مطالب بها بالفعل',
   claimedCompanyExplanation: 'تم المطالبة بملف الشركة هذا بالفعل ويتم إدارته من قبل مالك الشركة أو ممثلها.',
+  
+  // Login to claim
+  loginToClaimCompany: 'تسجيل الدخول للمطالبة بهذه الشركة',
+  
+  // Sign in to review
+  signInToReview: 'تسجيل الدخول لكتابة تقييم'
 };

@@ -49,13 +49,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   // Check if company is already claimed
   const isClaimed = company.claimed;
 
-  // Show claim button only for non-admin regular users and unclaimed companies
-  const showClaimButton = 
-    currentUser && 
-    currentUser.role === 'user' && 
-    !isOwnerOrAdmin && 
-    !isClaimed;
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left Column - Company Info */}
@@ -66,7 +59,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             {translations?.aboutCompany || 'About Company'}
           </h2>
           <p className="text-gray-700 leading-relaxed">
-            {company.description || (translations?.noDescriptionAvailable || 'No description availabيسبيبيسle.')}
+            {company.description || (translations?.noDescriptionAvailable || 'No description available.')}
           </p>
         </div>
 
@@ -82,35 +75,46 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           setError={setError}
           company={company}
         />
+      </div>
 
-        {/* Claim Request Button - for regular users, non-admins/owners and for unclaimed companies */}
-        {showClaimButton && (
-          <div className="bg-blue-50 rounded-2xl shadow-md p-6 border border-blue-100">
-            <div className="flex items-start space-x-4 rtl:space-x-reverse">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Building2 className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-blue-800 mb-2">
-                  {translations?.isThisYourCompany || 'Is this your company?'}
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  {translations?.claimCompanyExplanation || 
-                  'If you are the owner or representative of this company, you can request to claim this profile and manage it directly.'}
+      {/* Right Column - Contact & Stats */}
+      <div className="space-y-8">
+        <ContactInfo 
+          company={company} 
+          getGovernorateName={getGovernorateName}
+        />
+
+        {/* Claim Company Button - show for all users if company is not claimed */}
+        {!isClaimed && (
+          <div className="bg-white rounded-2xl shadow-md p-6 flex items-center justify-between border-l-4 border-blue-500">
+            <div>
+              <h3 className="font-semibold text-gray-900">
+                {translations?.claimCompany || 'Claim Company'}
+              </h3>
+              {currentUser ? null : (
+                <p className="text-sm text-gray-600 mt-1">
+                  {translations?.loginToClaimCompany || 'Login to claim this company'}
                 </p>
-                <button
-                  onClick={() => setShowClaimRequestModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  {translations?.sendClaimRequest || 'Send Claim Request'}
-                </button>
-              </div>
+              )}
             </div>
+            <button
+              onClick={() => {
+                if (currentUser) {
+                  setShowClaimRequestModal(true);
+                } else {
+                  // Redirect to login page with return URL
+                  window.location.href = `/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
+                }
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium"
+            >
+              {translations?.claimCompany || 'Claim Company'}
+            </button>
           </div>
         )}
 
         {/* Already Claimed Notice */}
-        {currentUser && !isOwnerOrAdmin && isClaimed && (
+        {isClaimed && !isOwnerOrAdmin && (
           <div className="bg-gray-50 rounded-2xl shadow-md p-6 border border-gray-200">
             <div className="flex items-start space-x-4 rtl:space-x-reverse">
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -128,14 +132,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Right Column - Contact & Stats */}
-      <div className="space-y-8">
-        <ContactInfo 
-          company={company} 
-          getGovernorateName={getGovernorateName}
-        />
       </div>
 
       {/* Claim Request Modal */}
