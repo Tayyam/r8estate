@@ -6,10 +6,11 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../config/firebase';
 import { User as UserType } from '../../types/user';
+import { TableModal } from '../UI';
 
 const UserManagement = () => {
   const { currentUser } = useAuth();
-  const { translations } = useLanguage();
+  const { translations, direction } = useLanguage();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -19,6 +20,7 @@ const UserManagement = () => {
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showUserTableModal, setShowUserTableModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [newUserData, setNewUserData] = useState({
     displayName: '',
@@ -217,11 +219,101 @@ const UserManagement = () => {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin':
-        return Shield;
+        return <Shield className="h-4 w-4 text-red-600" />;
       default:
-        return User;
+        return <User className="h-4 w-4 text-gray-600" />;
     }
   };
+
+  // Define table columns for the TableModal
+  const columns = [
+    {
+      id: 'user',
+      label: translations?.user || 'User',
+      accessor: (user: UserType) => (
+        <div className="flex items-center">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4 rtl:ml-4 rtl:mr-0" style={{ backgroundColor: '#194866' }}>
+            {user.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt={user.displayName}
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <User className="w-5 h-5 text-white" />
+            )}
+          </div>
+          <div>
+            <div className="text-sm font-medium text-gray-900">
+              {user.displayName}
+            </div>
+            <div className="flex items-center text-sm text-gray-500">
+              <Mail className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
+              {user.email}
+            </div>
+          </div>
+        </div>
+      ),
+      width: '40%'
+    },
+    {
+      id: 'role',
+      label: translations?.role || 'Role',
+      accessor: (user: UserType) => {
+        const roleColors = getRoleBadgeColor(user.role);
+        
+        return (
+          <div className="flex items-center">
+            <div 
+              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize"
+              style={{ 
+                backgroundColor: roleColors.bg,
+                color: roleColors.text
+              }}
+            >
+              {getRoleIcon(user.role)}
+              <span className="ml-1 rtl:mr-1 rtl:ml-0">
+                {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
+              </span>
+            </div>
+          </div>
+        );
+      },
+      width: '20%'
+    },
+    {
+      id: 'createdAt',
+      label: translations?.createdDate || 'Created',
+      accessor: (user: UserType) => (
+        <div className="flex items-center text-sm text-gray-500">
+          <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
+          {user.createdAt.toLocaleDateString()}
+        </div>
+      ),
+      sortable: true,
+      width: '20%'
+    }
+  ];
+
+  // Define actions for the TableModal
+  const tableActions = [
+    {
+      label: translations?.passwordAction || 'Password',
+      onClick: (user: UserType) => openChangePasswordModal(user),
+      icon: <Key className="h-4 w-4" />,
+      color: '#3B82F6',
+      show: (user: UserType) => user.uid !== currentUser?.uid,
+      disabled: (user: UserType) => actionLoading
+    },
+    {
+      label: translations?.deleteAction || 'Delete',
+      onClick: (user: UserType) => openDeleteModal(user),
+      icon: <Trash2 className="h-4 w-4" />,
+      color: '#EF4444',
+      show: (user: UserType) => user.uid !== currentUser?.uid,
+      disabled: (user: UserType) => actionLoading
+    }
+  ];
 
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -258,6 +350,22 @@ const UserManagement = () => {
             >
               <Plus className="h-4 w-4" />
               <span>{translations?.addAdmin || 'Add Admin'}</span>
+            </button>
+            
+            {/* View Users Table Button */}
+            <button
+              onClick={() => setShowUserTableModal(true)}
+              className="flex items-center justify-center space-x-2 rtl:space-x-reverse px-4 py-2 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg text-sm"
+              style={{ backgroundColor: '#194866' }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#0f3147';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#194866';
+              }}
+            >
+              <Users className="h-4 w-4" />
+              <span>{translations?.viewAllUsers || 'View All Users'}</span>
             </button>
           </div>
         </div>
@@ -311,7 +419,7 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Users List */}
+      {/* Users List - Legacy View */}
       <div className="overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -329,16 +437,16 @@ const UserManagement = () => {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-8 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-8 py-4 text-left rtl:text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.user || 'User'}
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left rtl:text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.role || 'Role'}
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left rtl:text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.createdDate || 'Created'}
                     </th>
-                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right rtl:text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       {translations?.actions || 'Actions'}
                     </th>
                   </tr>
@@ -353,7 +461,7 @@ const UserManagement = () => {
                         {/* User Info */}
                         <td className="px-8 py-6">
                           <div className="flex items-center">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4" style={{ backgroundColor: '#194866' }}>
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4 rtl:ml-4 rtl:mr-0" style={{ backgroundColor: '#194866' }}>
                               {user.photoURL ? (
                                 <img 
                                   src={user.photoURL} 
@@ -369,7 +477,7 @@ const UserManagement = () => {
                                 {user.displayName}
                               </div>
                               <div className="flex items-center text-sm text-gray-500">
-                                <Mail className="w-3 h-3 mr-1" />
+                                <Mail className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                                 {user.email}
                               </div>
                             </div>
@@ -386,8 +494,8 @@ const UserManagement = () => {
                                 color: roleColors.text
                               }}
                             >
-                              <RoleIcon className="w-3 h-3 mr-1" />
-                              {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
+                              {RoleIcon}
+                              <span className="ml-1 rtl:mr-1 rtl:ml-0">{user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}</span>
                             </div>
                           </div>
                         </td>
@@ -395,15 +503,15 @@ const UserManagement = () => {
                         {/* Created Date */}
                         <td className="px-6 py-6">
                           <div className="flex items-center text-sm text-gray-500">
-                            <Calendar className="w-3 h-3 mr-1" />
+                            <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                             {user.createdAt.toLocaleDateString()}
                           </div>
                         </td>
 
                         {/* Actions */}
-                        <td className="px-6 py-6 text-right">
+                        <td className="px-6 py-6 text-right rtl:text-left">
                           {user.uid !== currentUser?.uid && (
-                            <div className="flex items-center justify-end space-x-2">
+                            <div className="flex items-center justify-end rtl:justify-start space-x-2 rtl:space-x-reverse">
                               {/* Change Password Button */}
                               <button
                                 onClick={() => openChangePasswordModal(user)}
@@ -411,7 +519,7 @@ const UserManagement = () => {
                                 className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
                                 title={translations?.changePassword || 'Change Password'}
                               >
-                                <Key className="w-3 h-3 mr-1" />
+                                <Key className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                                 {translations?.passwordAction || 'Password'}
                               </button>
 
@@ -422,7 +530,7 @@ const UserManagement = () => {
                                 className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
                                 title={translations?.deleteUser || 'Delete User'}
                               >
-                                <Trash2 className="w-3 h-3 mr-1" />
+                                <Trash2 className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                                 {translations?.deleteAction || 'Delete'}
                               </button>
                             </div>
@@ -440,7 +548,6 @@ const UserManagement = () => {
               <div className="space-y-4 p-4">
                 {filteredUsers.map((user) => {
                   const roleColors = getRoleBadgeColor(user.role);
-                  const RoleIcon = getRoleIcon(user.role);
                   
                   return (
                     <div key={user.uid} className="bg-gray-50 rounded-xl p-4 space-y-3">
@@ -462,7 +569,7 @@ const UserManagement = () => {
                             {user.displayName}
                           </div>
                           <div className="flex items-center text-xs text-gray-500">
-                            <Mail className="w-3 h-3 mr-1" />
+                            <Mail className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                             <span className="truncate">{user.email}</span>
                           </div>
                         </div>
@@ -477,11 +584,11 @@ const UserManagement = () => {
                             color: roleColors.text
                           }}
                         >
-                          <RoleIcon className="w-3 h-3 mr-1" />
-                          {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
+                          {getRoleIcon(user.role)}
+                          <span className="ml-1 rtl:mr-1 rtl:ml-0">{user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}</span>
                         </div>
                         <div className="flex items-center text-xs text-gray-500">
-                          <Calendar className="w-3 h-3 mr-1" />
+                          <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                           {user.createdAt.toLocaleDateString()}
                         </div>
                       </div>
@@ -494,7 +601,7 @@ const UserManagement = () => {
                             disabled={actionLoading}
                             className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors duration-150 disabled:opacity-50"
                           >
-                            <Key className="w-4 h-4 mr-1" />
+                            <Key className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
                             {translations?.passwordAction || 'Password'}
                           </button>
                           <button
@@ -502,7 +609,7 @@ const UserManagement = () => {
                             disabled={actionLoading}
                             className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 transition-colors duration-150 disabled:opacity-50"
                           >
-                            <Trash2 className="w-4 h-4 mr-1" />
+                            <Trash2 className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
                             {translations?.deleteAction || 'Delete'}
                           </button>
                         </div>
@@ -515,6 +622,40 @@ const UserManagement = () => {
           </>
         )}
       </div>
+
+      {/* TableModal Implementation */}
+      <TableModal
+        isOpen={showUserTableModal}
+        onClose={() => setShowUserTableModal(false)}
+        title={translations?.userManagement || 'User Management'}
+        subtitle={translations?.totalUsers?.replace('{count}', filteredUsers.length.toString()) || `Total users: ${filteredUsers.length}`}
+        columns={columns}
+        data={filteredUsers}
+        keyExtractor={(user) => user.uid}
+        loading={loading}
+        actions={tableActions}
+        searchable={true}
+        searchPlaceholder={translations?.searchUsers || 'Search users...'}
+        onSearch={setSearchQuery}
+        filters={[
+          {
+            id: 'role',
+            label: translations?.filterByRole || 'Filter by Role',
+            options: [
+              { value: 'all', label: translations?.allRoles || 'All Roles' },
+              { value: 'admin', label: translations?.adminRole || 'Admin' },
+              { value: 'user', label: translations?.userRole || 'User' }
+            ],
+            value: 'all',
+            onChange: (value) => console.log(`Filter by role: ${value}`)
+          }
+        ]}
+        emptyState={{
+          icon: <Users className="h-12 w-12 text-gray-400 mx-auto" />,
+          title: translations?.noUsersFound || 'No Users Found',
+          description: translations?.adjustSearchCriteriaUsers || 'Try adjusting your search criteria or filters'
+        }}
+      />
 
       {/* Add Admin Modal */}
       {showAddAdmin && (
