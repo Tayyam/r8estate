@@ -73,7 +73,7 @@ export const arCategoriesManagement = {
   uploadingIcon: 'جاري رفع الأيقونة...',
   
   // Time and Date
-  createdDate: 'تاريخ الإنشاء: {date}',
+  createdDate: 'تاريخ الإنشاء',
   
   // Bulk Upload
   bulkUpload: 'رفع جماعي',
