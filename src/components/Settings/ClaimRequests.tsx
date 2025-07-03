@@ -25,8 +25,8 @@ const ClaimRequests: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ClaimRequest | null>(null);
-  const [showApproveModal, setShowApproveModal] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
+  const [accountPassword, setAccountPassword] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
 
   // Items per page for pagination
@@ -111,9 +111,14 @@ const ClaimRequests: React.FC = () => {
     }
   };
 
-  // Handle approve request
-  const handleApproveRequest = async () => {
+  // Handle create account
+  const handleCreateAccount = async () => {
     if (!selectedRequest) return;
+    
+    if (!accountPassword || accountPassword.length < 6) {
+      setError(translations?.passwordTooShort || 'Password must be at least 6 characters long');
+      return;
+    }
 
     try {
       setActionLoading(selectedRequest.id);
@@ -121,7 +126,7 @@ const ClaimRequests: React.FC = () => {
       // Create user account for the company
       const result = await createUserFunction({
         email: selectedRequest.supervisorEmail,
-        password: 'temppassword123', // This should be randomly generated in production
+        password: accountPassword,
         displayName: selectedRequest.companyName,
         role: 'company'
       });
@@ -153,46 +158,14 @@ const ClaimRequests: React.FC = () => {
         throw new Error(data.error || 'Failed to create user account');
       }
       
-      setShowApproveModal(false);
+      setShowCreateAccountModal(false);
       setSelectedRequest(null);
+      setAccountPassword('');
       setAdminNotes('');
       
     } catch (error: any) {
-      console.error('Error approving request:', error);
-      setError(error.message || (translations?.failedToApproveRequest || 'Failed to approve request'));
-      setTimeout(() => setError(''), 5000);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  // Handle reject request
-  const handleRejectRequest = async () => {
-    if (!selectedRequest) return;
-
-    try {
-      setActionLoading(selectedRequest.id);
-      
-      // Update request status
-      await updateDoc(doc(db, 'claimRequests', selectedRequest.id), {
-        status: 'rejected',
-        notes: adminNotes,
-        updatedAt: new Date()
-      });
-      
-      setSuccess(translations?.requestRejectedSuccess || 'Claim request rejected successfully');
-      setTimeout(() => setSuccess(''), 5000);
-      
-      // Reload data
-      loadClaimRequests();
-      
-      setShowRejectModal(false);
-      setSelectedRequest(null);
-      setAdminNotes('');
-      
-    } catch (error: any) {
-      console.error('Error rejecting request:', error);
-      setError(translations?.failedToRejectRequest || 'Failed to reject request');
+      console.error('Error creating account:', error);
+      setError(error.message || (translations?.failedToApproveRequest || 'Failed to create account'));
       setTimeout(() => setError(''), 5000);
     } finally {
       setActionLoading(null);
@@ -354,7 +327,11 @@ const ClaimRequests: React.FC = () => {
             {paginatedRequests.map(request => (
               <div 
                 key={request.id} 
-                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200"
+                className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200 ${
+                  request.status === 'pending' ? 'border-l-4 border-l-yellow-400' : 
+                  request.status === 'approved' ? 'border-l-4 border-l-green-400' : 
+                  'border-l-4 border-l-red-400'
+                }`}
               >
                 {/* Request Header */}
                 <div 
@@ -458,24 +435,24 @@ const ClaimRequests: React.FC = () => {
                         <button
                           onClick={() => {
                             setSelectedRequest(request);
-                            setShowApproveModal(true);
+                            setShowCreateAccountModal(true);
                           }}
                           disabled={actionLoading === request.id}
-                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
                         >
                           <Check className="h-4 w-4" />
-                          <span>{translations?.approve || 'Approve'}</span>
+                          <span>{translations?.createAccount || 'Create Account'}</span>
                         </button>
                         <button
                           onClick={() => {
                             setSelectedRequest(request);
-                            setShowRejectModal(true);
+                            setShowDeleteModal(true);
                           }}
                           disabled={actionLoading === request.id}
                           className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
                         >
-                          <X className="h-4 w-4" />
-                          <span>{translations?.reject || 'Reject'}</span>
+                          <Trash2 className="h-4 w-4" />
+                          <span>{translations?.deleteRequest || 'Delete Request'}</span>
                         </button>
                       </div>
                     ) : (
@@ -524,18 +501,99 @@ const ClaimRequests: React.FC = () => {
         )}
       </div>
 
-      {/* Approve Modal */}
-      {showApproveModal && selectedRequest && (
+      {/* Delete Request Modal */}
+      {showDeleteModal && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">{translations?.approveClaimRequest || 'Approve Claim Request'}</h3>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                {translations?.deleteRequest || 'Delete Request'}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {translations?.deleteRequestConfirmation?.replace('{company}', selectedRequest.companyName) || 
+                 `Are you sure you want to delete the claim request for ${selectedRequest.companyName}? This action cannot be undone.`}
+              </p>
+              
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
+                <button
+                  onClick={handleDeleteRequest}
+                  disabled={actionLoading === selectedRequest.id}
+                  className="w-full sm:w-auto flex-1 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center space-x-2 rtl:space-x-reverse"
+                >
+                  {actionLoading === selectedRequest.id ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-1" />
+                  )}
+                  <span>{translations?.deleteRequest || 'Delete Request'}</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setSelectedRequest(null);
+                  }}
+                  className="w-full sm:w-auto flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors duration-200"
+                >
+                  {translations?.cancel || 'Cancel'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Account Modal */}
+      {showCreateAccountModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">{translations?.createAccount || 'Create Account'}</h3>
             <p className="text-gray-600 mb-4">
-              {translations?.approveRequestConfirmation?.replace('{company}', selectedRequest.companyName) || 
-               `Are you sure you want to approve the claim request for ${selectedRequest.companyName}? This will create a company user account.`}
+              {translations?.createAccountForCompany?.replace('{company}', selectedRequest.companyName) || 
+               `Creating an account for ${selectedRequest.companyName} using the supervisor email: ${selectedRequest.supervisorEmail}`}
             </p>
             
-            {/* Admin Notes */}
+            {/* Email Display - Read Only */}
             <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {translations?.email || 'Email'}
+              </label>
+              <input
+                type="text"
+                value={selectedRequest.supervisorEmail}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {translations?.cantChangeEmail || 'Email cannot be changed'}
+              </p>
+            </div>
+            
+            {/* Password Field */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {translations?.setPassword || 'Set Password'} *
+              </label>
+              <input
+                type="password"
+                value={accountPassword}
+                onChange={(e) => setAccountPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={translations?.enterAccountPassword || 'Enter account password (min 6 characters)'}
+                minLength={6}
+              />
+              {accountPassword.length > 0 && accountPassword.length < 6 && (
+                <p className="text-xs text-red-500 mt-1">
+                  {translations?.passwordTooShort || 'Password must be at least 6 characters long'}
+                </p>
+              )}
+            </div>
+            
+            {/* Admin Notes */}
+            <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {translations?.adminNotes || 'Admin Notes'} ({translations?.optional || 'optional'})
               </label>
@@ -543,120 +601,34 @@ const ClaimRequests: React.FC = () => {
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-20"
-                placeholder={translations?.enterNotesForRequest || 'Enter any notes for this request...'}
+                placeholder={translations?.enterNotesForAccount || 'Enter any notes about this account...'}
               />
             </div>
             
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
               <button
-                onClick={() => {
-                  setShowApproveModal(false);
-                  setSelectedRequest(null);
-                  setAdminNotes('');
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700"
-              >
-                {translations?.cancel || 'Cancel'}
-              </button>
-              <button
-                onClick={handleApproveRequest}
-                disabled={actionLoading === selectedRequest.id}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center space-x-1 rtl:space-x-reverse"
+                onClick={handleCreateAccount}
+                disabled={actionLoading === selectedRequest.id || !accountPassword || accountPassword.length < 6}
+                className="w-full sm:w-auto flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center space-x-2 rtl:space-x-reverse"
               >
                 {actionLoading === selectedRequest.id ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                 ) : (
                   <Check className="h-4 w-4 mr-1" />
                 )}
-                <span>{translations?.approve || 'Approve'}</span>
+                <span>{translations?.createAccount || 'Create Account'}</span>
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Reject Modal */}
-      {showRejectModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">{translations?.rejectClaimRequest || 'Reject Claim Request'}</h3>
-            <p className="text-gray-600 mb-4">
-              {translations?.rejectRequestConfirmation?.replace('{company}', selectedRequest.companyName) || 
-               `Are you sure you want to reject the claim request for ${selectedRequest.companyName}?`}
-            </p>
-            
-            {/* Admin Notes */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.rejectReason || 'Rejection Reason'}
-              </label>
-              <textarea
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-20"
-                placeholder={translations?.enterReasonForRejection || 'Enter reason for rejection...'}
-              />
-            </div>
-            
-            <div className="flex justify-end space-x-3">
+              
               <button
                 onClick={() => {
-                  setShowRejectModal(false);
+                  setShowCreateAccountModal(false);
                   setSelectedRequest(null);
+                  setAccountPassword('');
                   setAdminNotes('');
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700"
+                className="w-full sm:w-auto flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors duration-200"
               >
                 {translations?.cancel || 'Cancel'}
-              </button>
-              <button
-                onClick={handleRejectRequest}
-                disabled={actionLoading === selectedRequest.id}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-1 rtl:space-x-reverse"
-              >
-                {actionLoading === selectedRequest.id ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                ) : (
-                  <X className="h-4 w-4 mr-1" />
-                )}
-                <span>{translations?.reject || 'Reject'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Modal */}
-      {showDeleteModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">{translations?.deleteRequest || 'Delete Request'}</h3>
-            <p className="text-gray-600 mb-6">
-              {translations?.deleteRequestConfirmation?.replace('{company}', selectedRequest.companyName) || 
-               `Are you sure you want to delete the claim request for ${selectedRequest.companyName}? This action cannot be undone.`}
-            </p>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setSelectedRequest(null);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700"
-              >
-                {translations?.cancel || 'Cancel'}
-              </button>
-              <button
-                onClick={handleDeleteRequest}
-                disabled={actionLoading === selectedRequest.id}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-1 rtl:space-x-reverse"
-              >
-                {actionLoading === selectedRequest.id ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                ) : (
-                  <Trash2 className="h-4 w-4 mr-1" />
-                )}
-                <span>{translations?.delete || 'Delete'}</span>
               </button>
             </div>
           </div>
