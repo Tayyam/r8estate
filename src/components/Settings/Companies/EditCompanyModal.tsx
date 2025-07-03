@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Edit, Building2, Mail, Phone, Globe, MapPin, Upload, X } from 'lucide-react';
+import { Edit, Building2, Mail, Phone, Globe, MapPin, Upload, X, CheckSquare, Square } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../../config/firebase';
@@ -30,7 +30,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     description: company.description || '',
     phone: company.phone || '',
     website: company.website || '',
-    verified: company.verified
+    claimed: company.claimed
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(company.logoUrl || null);
@@ -115,6 +115,14 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     }
   };
 
+  // Toggle claimed status
+  const toggleClaimedStatus = () => {
+    setFormData(prev => ({
+      ...prev,
+      claimed: !prev.claimed
+    }));
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +154,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
         description: formData.description,
         phone: formData.phone,
         website: formData.website,
-        verified: formData.verified,
+        claimed: formData.claimed,
         updatedAt: new Date()
       };
       
@@ -326,19 +334,28 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               </div>
             </div>
 
-            {/* Verification Status */}
+            {/* Claimed Status */}
             <div className="md:col-span-2">
-              <label className="flex items-center space-x-3 rtl:space-x-reverse">
-                <input
-                  type="checkbox"
-                  checked={formData.verified}
-                  onChange={(e) => handleInputChange('verified', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  {translations?.markAsVerified || 'Mark as verified company'}
-                </span>
-              </label>
+              <div 
+                className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
+                onClick={toggleClaimedStatus}
+              >
+                <div className="flex-shrink-0">
+                  {formData.claimed ? (
+                    <CheckSquare className="h-6 w-6 text-blue-600" />
+                  ) : (
+                    <Square className="h-6 w-6 text-gray-400" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">
+                    {translations?.companyIsClaimed || 'Company is claimed'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {translations?.claimedCompanyDesc || 'A claimed company has a user account that manages its profile'}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Description */}

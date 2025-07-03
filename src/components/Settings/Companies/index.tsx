@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Search, Filter, Download, Upload } from 'lucide-react';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company } from '../../../types/company';
@@ -12,6 +12,8 @@ import ViewCompanyModal from './ViewCompanyModal';
 import EditCompanyModal from './EditCompanyModal';
 import DeleteCompanyModal from './DeleteCompanyModal';
 import BulkUploadModal from './BulkUploadModal';
+import ClaimCompanyModal from './ClaimCompanyModal';
+import UnclaimCompanyModal from './UnclaimCompanyModal';
 
 interface CompaniesProps {
   onNavigateToProfile?: (companyId: string, companyName: string) => void;
@@ -32,6 +34,8 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [showUnclaimModal, setShowUnclaimModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -44,7 +48,7 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
       const companiesData = companiesSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        verified: doc.data().verified || false,
+        claimed: doc.data().claimed || false, // Use claimed instead of verified
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date()
       })) as Company[];
@@ -88,10 +92,10 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
     // Location filter
     const matchesLocation = locationFilter === 'all' || company.location === locationFilter;
     
-    // Verified status filter
+    // Status filter - Now based on claimed status
     const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'verified' && company.verified) ||
-                         (statusFilter === 'unverified' && !company.verified);
+                         (statusFilter === 'claimed' && company.claimed) ||
+                         (statusFilter === 'unclaimed' && !company.claimed);
     
     return matchesSearch && matchesCategory && matchesLocation && matchesStatus;
   });
@@ -118,6 +122,18 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
   const handleDeleteCompany = (company: Company) => {
     setSelectedCompany(company);
     setShowDeleteModal(true);
+  };
+  
+  // Handle claim company
+  const handleClaimCompany = (company: Company) => {
+    setSelectedCompany(company);
+    setShowClaimModal(true);
+  };
+  
+  // Handle unclaim company
+  const handleUnclaimCompany = (company: Company) => {
+    setSelectedCompany(company);
+    setShowUnclaimModal(true);
   };
 
   // Success/Error message handlers
@@ -263,7 +279,7 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
             </select>
           </div>
 
-          {/* Verified Status Filter */}
+          {/* Claimed Status Filter */}
           <div>
             <select
               value={statusFilter}
@@ -275,8 +291,8 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
               }}
             >
               <option value="all">{translations?.allStatuses || 'All Statuses'}</option>
-              <option value="verified">{translations?.verifiedStatus || 'Verified'}</option>
-              <option value="unverified">{translations?.unverifiedStatus || 'Unverified'}</option>
+              <option value="claimed">{translations?.claimed || 'Claimed'}</option>
+              <option value="unclaimed">{translations?.unclaimed || 'Unclaimed'}</option>
             </select>
           </div>
 
@@ -302,6 +318,8 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
         onViewCompany={handleViewCompany}
         onEditCompany={handleEditCompany}
         onDeleteCompany={handleDeleteCompany}
+        onClaimCompany={handleClaimCompany}
+        onUnclaimCompany={handleUnclaimCompany}
         onNavigateToProfile={onNavigateToProfile}
       />
 
@@ -373,6 +391,36 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
         <BulkUploadModal 
           categories={categories}
           onClose={() => setShowBulkUploadModal(false)}
+          onSuccess={(message) => {
+            handleSuccess(message);
+            loadCompanies();
+          }}
+          onError={handleError}
+        />
+      )}
+      
+      {showClaimModal && selectedCompany && (
+        <ClaimCompanyModal
+          company={selectedCompany}
+          onClose={() => {
+            setShowClaimModal(false);
+            setSelectedCompany(null);
+          }}
+          onSuccess={(message) => {
+            handleSuccess(message);
+            loadCompanies();
+          }}
+          onError={handleError}
+        />
+      )}
+      
+      {showUnclaimModal && selectedCompany && (
+        <UnclaimCompanyModal
+          company={selectedCompany}
+          onClose={() => {
+            setShowUnclaimModal(false);
+            setSelectedCompany(null);
+          }}
           onSuccess={(message) => {
             handleSuccess(message);
             loadCompanies();

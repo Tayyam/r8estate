@@ -19,7 +19,7 @@ export interface Company {
   description?: string;
   phone?: string;
   website?: string;
-  verified: boolean;
+  claimed: boolean; // Track if company is claimed by a user
   createdAt: Date;
   updatedAt: Date;
 }

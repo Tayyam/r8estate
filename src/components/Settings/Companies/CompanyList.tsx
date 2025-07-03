@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, Building2, MapPin, Star, Calendar, Shield, ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
+import { Edit, Trash2, Building2, MapPin, Star, Calendar, User, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, UserPlus, UserMinus } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
 
@@ -10,6 +10,8 @@ interface CompanyListProps {
   onViewCompany: (company: Company) => void;
   onEditCompany: (company: Company) => void;
   onDeleteCompany: (company: Company) => void;
+  onClaimCompany: (company: Company) => void;
+  onUnclaimCompany: (company: Company) => void;
   onNavigateToProfile?: (companyId: string, companyName: string) => void;
 }
 
@@ -22,6 +24,8 @@ const CompanyList: React.FC<CompanyListProps> = ({
   onViewCompany,
   onEditCompany,
   onDeleteCompany,
+  onClaimCompany,
+  onUnclaimCompany,
   onNavigateToProfile
 }) => {
   const { translations, direction, language } = useLanguage();
@@ -80,7 +84,7 @@ const CompanyList: React.FC<CompanyListProps> = ({
                     {translations?.location || 'Location'}
                   </th>
                   <th className="px-6 py-4 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
-                    {translations?.verified || 'Verified'}
+                    {translations?.claimed || 'Claimed'}
                   </th>
                   <th className="px-6 py-4 text-end text-sm font-medium text-gray-500 uppercase tracking-wider">
                     {translations?.createdDate || 'Created'}
@@ -122,13 +126,13 @@ const CompanyList: React.FC<CompanyListProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {company.verified ? (
+                      {company.claimed ? (
                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          {translations?.verifiedStatus || 'Verified'}
+                          {translations?.claimed || 'Claimed'}
                         </span>
                       ) : (
                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                          {translations?.unverifiedStatus || 'Unverified'}
+                          {translations?.notClaimed || 'Not Claimed'}
                         </span>
                       )}
                     </td>
@@ -140,6 +144,24 @@ const CompanyList: React.FC<CompanyListProps> = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-end">
                       <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
+                        {company.claimed ? (
+                          <button
+                            onClick={() => onUnclaimCompany(company)}
+                            className="text-orange-600 hover:text-orange-900 p-1"
+                            title={translations?.unclaimCompany || 'Unclaim Company'}
+                          >
+                            <UserMinus className="h-5 w-5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => onClaimCompany(company)}
+                            className="text-blue-600 hover:text-blue-900 p-1"
+                            title={translations?.claimCompany || 'Claim Company'}
+                          >
+                            <UserPlus className="h-5 w-5" />
+                          </button>
+                        )}
+                        
                         {onNavigateToProfile && (
                           <button
                             onClick={() => onNavigateToProfile(company.id, company.name)}
@@ -212,12 +234,12 @@ const CompanyList: React.FC<CompanyListProps> = ({
 
                       <div className="flex items-center">
                         <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center mr-1 rtl:ml-1 rtl:mr-0">
-                          <Shield className="h-3 w-3 text-gray-600" />
+                          <User className="h-3 w-3 text-gray-600" />
                         </div>
                         <span className="text-gray-600">
-                          {company.verified ? 
-                            (translations?.verifiedStatus || 'Verified') : 
-                            (translations?.unverifiedStatus || 'Unverified')}
+                          {company.claimed ? 
+                            (translations?.claimed || 'Claimed') : 
+                            (translations?.notClaimed || 'Not Claimed')}
                         </span>
                       </div>
 
@@ -230,15 +252,24 @@ const CompanyList: React.FC<CompanyListProps> = ({
                     </div>
 
                     <div className="flex justify-between border-t border-gray-100 pt-3">
-                      {onNavigateToProfile && (
+                      {company.claimed ? (
                         <button
-                          onClick={() => onNavigateToProfile(company.id, company.name)}
+                          onClick={() => onUnclaimCompany(company)}
+                          className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-orange-600 hover:bg-orange-50"
+                        >
+                          <UserMinus className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
+                          <span>{translations?.unclaim || 'Unclaim'}</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onClaimCompany(company)}
                           className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-blue-600 hover:bg-blue-50"
                         >
-                          <ExternalLink className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                          <span>{translations?.profile || 'Profile'}</span>
+                          <UserPlus className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
+                          <span>{translations?.claim || 'Claim'}</span>
                         </button>
                       )}
+                      
                       <button
                         onClick={() => onEditCompany(company)}
                         className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-orange-600 hover:bg-orange-50"

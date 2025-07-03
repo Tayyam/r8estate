@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Download, X, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db, functions } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -97,40 +97,67 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
         setProgressStatus(`${translations?.processingCompany || 'Processing company'} ${i + 1}/${totalCompanies}: ${company.name}`);
         
         try {
-          // Create user with email and password
-          const userCredential = await createUserWithEmailAndPassword(auth, company.email, company.password);
-          const userId = userCredential.user.uid;
-          
           // Get category ID by name
           const categoryObj = categories.find(cat => cat.name.toLowerCase() === company.categoryName.toLowerCase());
           const categoryId = categoryObj ? categoryObj.id : categories[0].id; // Default to first category if not found
           
-          // Store company data in Firestore
-          await setDoc(doc(db, 'companies', userId), {
-            id: userId,
-            name: company.name,
-            email: company.email,
-            categoryId: categoryId,
-            location: company.location,
-            description: company.description || '',
-            phone: company.phone || '',
-            website: company.website || '',
-            verified: false,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
+          // Determine if we should create a user account
+          const createAccount = company.email && company.password;
           
-          // Create user document
-          await setDoc(doc(db, 'users', userId), {
-            uid: userId,
-            email: company.email,
-            displayName: company.name,
-            role: 'company',
-            companyId: userId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            isEmailVerified: false
-          });
+          if (createAccount) {
+            // Create user with email and password
+            const userCredential = await createUserWithEmailAndPassword(auth, company.email, company.password);
+            const userId = userCredential.user.uid;
+            
+            // Store company data in Firestore
+            await setDoc(doc(db, 'companies', userId), {
+              id: userId,
+              name: company.name,
+              email: company.email,
+              categoryId: categoryId,
+              location: company.location,
+              description: company.description || '',
+              phone: company.phone || '',
+              website: company.website || '',
+              claimed: true,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+            
+            // Create user document
+            await setDoc(doc(db, 'users', userId), {
+              uid: userId,
+              email: company.email,
+              displayName: company.name,
+              role: 'company',
+              companyId: userId,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              isEmailVerified: false
+            });
+          } else {
+            // Create company without user account
+            const companyData = {
+              name: company.name,
+              email: company.email || '',
+              categoryId: categoryId,
+              location: company.location,
+              description: company.description || '',
+              phone: company.phone || '',
+              website: company.website || '',
+              claimed: false, // Not claimed by default
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            
+            // Add to Firestore with auto-generated ID
+            const docRef = await addDoc(collection(db, 'companies'), companyData);
+            
+            // Update with ID
+            await updateDoc(doc(db, 'companies', docRef.id), {
+              id: docRef.id
+            });
+          }
           
           successCount++;
         } catch (error) {
@@ -196,9 +223,10 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
             </h4>
             <ul className="list-disc list-inside text-sm text-blue-700 space-y-1 mr-6 rtl:ml-6 rtl:mr-0">
               <li>{translations?.downloadTemplateFirst || 'Download the template and fill in company details'}</li>
-              <li>{translations?.requiredFields || 'Name, Email, Password, Category, and Location are required'}</li>
-              <li>{translations?.passwordRequirements || 'Passwords must be at least 6 characters'}</li>
-              <li>{translations?.emailMustBeUnique || 'Each email address must be unique'}</li>
+              <li>{translations?.companyNameLocationRequired || 'Company Name, Category, and Location are required'}</li>
+              <li>{translations?.emailPasswordOptional || 'Email and Password are optional'}</li>
+              <li>{translations?.emailPasswordExplained || 'If Email and Password are provided, a user account will be created (claimed company)'}</li>
+              <li>{translations?.withoutEmailPassword || 'Companies without email and password will be marked as "unclaimed"'}</li>
             </ul>
           </div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Building2, MapPin, Globe, Phone, Mail, Calendar, Link2, ExternalLink } from 'lucide-react';
+import { Edit, Trash2, Building2, MapPin, Globe, Phone, Mail, Calendar, Link2, ExternalLink, User, CheckCircle, XCircle } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
 
@@ -104,8 +104,18 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{company.name}</h3>
                 
                 <div className="mb-4 flex flex-wrap justify-center sm:justify-start rtl:sm:justify-end gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${company.verified ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {company.verified ? (translations?.verifiedStatus || 'Verified') : (translations?.unverifiedStatus || 'Unverified')}
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${company.claimed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} flex items-center space-x-1 rtl:space-x-reverse`}>
+                    {company.claimed ? (
+                      <>
+                        <CheckCircle className="h-3 w-3" />
+                        <span>{translations?.claimed || 'Claimed'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-3 w-3" />
+                        <span>{translations?.notClaimed || 'Not Claimed'}</span>
+                      </>
+                    )}
                   </span>
                   
                   <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -201,6 +211,36 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+            
+            {/* Claimed Status Detail */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex items-start space-x-3 rtl:space-x-reverse">
+                <div className="mt-0.5">
+                  <User className="h-5 w-5 text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">{translations?.claimStatus || 'Claim Status'}</p>
+                  <div className="flex items-center space-x-1 rtl:space-x-reverse mt-1">
+                    {company.claimed ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-green-600 font-medium">{translations?.claimed || 'Claimed'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-4 w-4 text-gray-500" />
+                        <span className="text-gray-500 font-medium">{translations?.notClaimed || 'Not Claimed'}</span>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {company.claimed 
+                      ? (translations?.claimedCompanyExplanation || 'This company is managed by a user account')
+                      : (translations?.notClaimedCompanyExplanation || 'This company does not have a user account yet')}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

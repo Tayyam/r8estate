@@ -18,8 +18,8 @@ export const generateCompanyTemplate = (categories: { id: string; name: string }
   const templateData = [
     {
       'Company Name (Required)': 'Example Company Ltd',
-      'Email (Required)': 'info@example.com',
-      'Password (Required)': 'password123',
+      'Email (Optional)': 'info@example.com',
+      'Password (Optional)': 'password123',
       'Category (Required)': categories.length > 0 ? categories[0].name : 'Real Estate Developer',
       'Location (Required)': 'Cairo',
       'Description (Optional)': 'Leading real estate company...',
@@ -27,12 +27,12 @@ export const generateCompanyTemplate = (categories: { id: string; name: string }
       'Website (Optional)': 'https://example.com'
     },
     {
-      'Company Name (Required)': '',
-      'Email (Required)': '',
-      'Password (Required)': '',
-      'Category (Required)': '',
-      'Location (Required)': '',
-      'Description (Optional)': '',
+      'Company Name (Required)': 'Company Without Account',
+      'Email (Optional)': '',
+      'Password (Optional)': '',
+      'Category (Required)': categories.length > 1 ? categories[1].name : 'Real Estate Broker',
+      'Location (Required)': 'Alexandria',
+      'Description (Optional)': 'This company will be created without an account',
       'Phone (Optional)': '',
       'Website (Optional)': ''
     }
@@ -41,13 +41,15 @@ export const generateCompanyTemplate = (categories: { id: string; name: string }
   // Create instructions sheet
   const instructions = [
     { Field: 'Company Name', Description: 'Full company name (Required)', Example: 'ABC Real Estate Development' },
-    { Field: 'Email', Description: 'Company email address (Required)', Example: 'contact@abc-realestate.com' },
-    { Field: 'Password', Description: 'Login password, min 6 characters (Required)', Example: 'SecurePass123' },
+    { Field: 'Email', Description: 'Company email address (Optional)', Example: 'contact@abc-realestate.com' },
+    { Field: 'Password', Description: 'Login password, min 6 characters (Optional, required if email is provided)', Example: 'SecurePass123' },
     { Field: 'Category', Description: 'Company type from available categories (Required)', Example: 'Real Estate Developer' },
     { Field: 'Location', Description: 'Egyptian governorate (Required)', Example: 'Cairo' },
     { Field: 'Description', Description: 'Company description (Optional)', Example: 'Leading development company...' },
     { Field: 'Phone', Description: 'Contact phone number (Optional)', Example: '+20123456789' },
-    { Field: 'Website', Description: 'Company website URL (Optional)', Example: 'https://company.com' }
+    { Field: 'Website', Description: 'Company website URL (Optional)', Example: 'https://company.com' },
+    { Field: 'Note', Description: 'If email and password are provided, a user account will be created (claimed company)', Example: '' },
+    { Field: 'Note', Description: 'If email and password are empty, the company will be created without an account (unclaimed)', Example: '' }
   ];
 
   // Valid categories list
@@ -111,25 +113,19 @@ export const parseCompaniesExcel = (file: File, categories: { id: string; name: 
           const rowNumber = index + 2; // +2 because Excel is 1-indexed and we have headers
           
           // Skip empty rows
-          if (!row['Company Name (Required)'] && !row['Email (Required)']) {
+          if (!row['Company Name (Required)']) {
             return;
           }
           
           // Validate required fields
           const name = row['Company Name (Required)']?.toString().trim();
-          const email = row['Email (Required)']?.toString().trim();
-          const password = row['Password (Required)']?.toString().trim();
+          const email = row['Email (Optional)']?.toString().trim() || '';
+          const password = row['Password (Optional)']?.toString().trim() || '';
           const categoryName = row['Category (Required)']?.toString().trim();
           const location = row['Location (Required)']?.toString().trim();
           
           if (!name) {
             errors.push(`Row ${rowNumber}: Company Name is required`);
-          }
-          if (!email) {
-            errors.push(`Row ${rowNumber}: Email is required`);
-          }
-          if (!password) {
-            errors.push(`Row ${rowNumber}: Password is required`);
           }
           if (!categoryName) {
             errors.push(`Row ${rowNumber}: Category is required`);
@@ -138,13 +134,23 @@ export const parseCompaniesExcel = (file: File, categories: { id: string; name: 
             errors.push(`Row ${rowNumber}: Location is required`);
           }
           
-          // Validate email format
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (email && !emailRegex.test(email)) {
-            errors.push(`Row ${rowNumber}: Invalid email format`);
+          // Validate email and password consistency
+          if (email && !password) {
+            errors.push(`Row ${rowNumber}: Password is required when email is provided`);
+          }
+          if (password && !email) {
+            errors.push(`Row ${rowNumber}: Email is required when password is provided`);
           }
           
-          // Validate password length
+          // Validate email format if provided
+          if (email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+              errors.push(`Row ${rowNumber}: Invalid email format`);
+            }
+          }
+          
+          // Validate password length if provided
           if (password && password.length < 6) {
             errors.push(`Row ${rowNumber}: Password must be at least 6 characters`);
           }
@@ -159,8 +165,8 @@ export const parseCompaniesExcel = (file: File, categories: { id: string; name: 
             errors.push(`Row ${rowNumber}: Invalid location "${location}"`);
           }
           
-          // If no errors for this row, add to companies array
-          if (name && email && password && categoryName && location) {
+          // If no validation errors for required fields, add to companies array
+          if (name && categoryName && location) {
             companies.push({
               name,
               email,
