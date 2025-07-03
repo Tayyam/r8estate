@@ -408,24 +408,24 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
 
                     {/* Personal Profile Link - Only for regular users and admins */}
                     {currentUser.role !== 'company' && (
-                      <>
-                        <button
-                          onClick={handlePersonalProfile}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
-                        >
-                          <User className="w-4 h-4" />
-                          <span>{translations?.personalProfile || 'Personal Profile'}</span>
-                        </button>
-                        
-                        {/* My Reviews Link - Only for regular users and admins */}
-                        <button
-                          onClick={handleMyReviews}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                          <span>{translations?.myReviews || 'My Reviews'}</span>
-                        </button>
-                      </>
+                      <button
+                        onClick={handlePersonalProfile}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
+                      >
+                        <User className="w-4 h-4" />
+                        <span>{translations?.personalProfile || 'Personal Profile'}</span>
+                      </button>
+                    )}
+                    
+                    {/* My Reviews Link - Only for regular users */}
+                    {currentUser.role !== 'company' && currentUser.role !== 'admin' && (
+                      <button
+                        onClick={handleMyReviews}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>{translations?.myReviews || 'My Reviews'}</span>
+                      </button>
                     )}
 
                     {/* Settings link for admin users */}
@@ -610,25 +610,26 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                       </button>
                     )}
 
-                    {/* Personal Profile and My Reviews for mobile - Only for regular users and admins */}
+                    {/* Personal Profile for mobile - For all users */}
                     {currentUser.role !== 'company' && (
-                      <>
-                        <button
-                          onClick={handlePersonalProfile}
-                          className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
-                        >
-                          <User className="w-4 h-4" />
-                          <span>{translations?.personalProfile || 'Personal Profile'}</span>
-                        </button>
-                        
-                        <button
-                          onClick={handleMyReviews}
-                          className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                          <span>{translations?.myReviews || 'My Reviews'}</span>
-                        </button>
-                      </>
+                      <button
+                        onClick={handlePersonalProfile}
+                        className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
+                      >
+                        <User className="w-4 h-4" />
+                        <span>{translations?.personalProfile || 'Personal Profile'}</span>
+                      </button>
+                    )}
+                    
+                    {/* My Reviews for mobile - Only for regular users */}
+                    {currentUser.role !== 'company' && currentUser.role !== 'admin' && (
+                      <button
+                        onClick={handleMyReviews}
+                        className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>{translations?.myReviews || 'My Reviews'}</span>
+                      </button>
                     )}
                     
                     {/* Settings link for admin users in mobile */}
