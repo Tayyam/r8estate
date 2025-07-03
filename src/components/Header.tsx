@@ -248,7 +248,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
           {/* Logo */}
           <div className="flex items-center space-x-3 rtl:space-x-reverse flex-shrink-0 cursor-pointer" onClick={() => handleNavClick(navItems[0])}>
             <img 
-              src="https://i.ibb.co/YrNNbnz/R8-ESTATEORG.png" 
+              src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" 
               alt="R8ESTATE Logo" 
               className="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded-full"
               style={{ borderRadius: '20%' }}
