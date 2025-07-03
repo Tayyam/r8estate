@@ -685,7 +685,8 @@ const UserManagement = () => {
                         
                         <div className="flex items-center text-xs text-gray-500 ml-auto">
                           <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
-                          {user.createdAt.toLocaleDateString()}
+                          {new Date(user.createdAt.getTime() + 2 * 60 * 60 * 1000).toISOString().slice(0, 10).split('-').reverse().join('/')}
+
                         </div>
                       </div>
 
