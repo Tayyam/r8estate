@@ -21,6 +21,7 @@ import { arTerms } from './ar-terms';
 import { arPrivacy } from './ar-privacy';
 import { arMyReviews } from './ar-my-reviews';
 import { arSearch } from './ar-search';
+import { arClaimRequests } from './ar-claim-requests';
 
 export const ar = {
   ...arCommon,
@@ -45,6 +46,7 @@ export const ar = {
   ...arPrivacy,
   ...arMyReviews,
   ...arSearch,
+  ...arClaimRequests,
   
   // Table/pagination translations
   filterByRole: 'تصفية حسب الدور',
@@ -139,5 +141,8 @@ export const ar = {
   loginToAccessContent: 'الرجاء تسجيل الدخول',
   loginToContinue: 'الرجاء تسجيل الدخول للاستمرار إلى الصفحة التي تريدها',
   registerToAccessContent: 'قم بإنشاء حساب',
-  registerToContinue: 'الرجاء إنشاء حساب للاستمرار إلى الصفحة التي تريدها'
+  registerToContinue: 'الرجاء إنشاء حساب للاستمرار إلى الصفحة التي تريدها',
+  
+  // Claim requests tab
+  claimRequests: 'طلبات الملكية'
 };

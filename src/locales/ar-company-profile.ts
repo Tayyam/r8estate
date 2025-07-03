@@ -259,4 +259,11 @@ export const arCompanyProfile = {
   // Time and Date
   createdDate: 'تاريخ الإنشاء',
   edited: '(مُعدل)',
+  
+  // Company Claim
+  isThisYourCompany: 'هل هذه شركتك؟',
+  claimCompanyExplanation: 'إذا كنت المالك أو ممثل هذه الشركة، يمكنك طلب ملكية هذا الملف الشخصي وإدارته مباشرة.',
+  sendClaimRequest: 'إرسال طلب ملكية',
+  companyAlreadyClaimed: 'الشركة مطالب بها بالفعل',
+  claimedCompanyExplanation: 'تم المطالبة بملف الشركة هذا بالفعل ويتم إدارته من قبل مالك الشركة أو ممثلها.',
 };

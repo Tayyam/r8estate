@@ -24,6 +24,21 @@ export interface Company {
   updatedAt: Date;
 }
 
+export interface ClaimRequest {
+  id: string;
+  companyId: string;
+  companyName: string;
+  requesterId?: string; // User ID if logged in
+  requesterName?: string; // User name if logged in
+  contactPhone: string;
+  businessEmail: string;
+  supervisorEmail: string;
+  status: 'pending' | 'approved' | 'rejected';
+  notes?: string; // Admin notes about the request
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export const egyptianGovernorates = [
   { id: 'cairo', name: 'Cairo', nameAr: 'القاهرة' },
   { id: 'giza', name: 'Giza', nameAr: 'الجيزة' },
