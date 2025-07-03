@@ -21,6 +21,7 @@ import { arTerms } from './ar-terms';
 import { arPrivacy } from './ar-privacy';
 import { arMyReviews } from './ar-my-reviews';
 import { arSearch } from './ar-search';
+import { arTable } from './ar-table';
 
 export const ar = {
   ...arCommon,
@@ -45,6 +46,19 @@ export const ar = {
   ...arPrivacy,
   ...arMyReviews,
   ...arSearch,
+  ...arTable,
+  
+  // Table Modal translations
+  filterByRole: 'تصفية حسب الدور',
+  allRoles: 'جميع الأدوار',
+  adminRole: 'مسؤول',
+  userRole: 'مستخدم',
+  showingItems: 'عرض {start} إلى {end} من {total} عنصر',
+  previous: 'السابق',
+  next: 'التالي',
+  actions: 'الإجراءات',
+  noUsersFound: 'لم يتم العثور على مستخدمين',
+  adjustSearchCriteriaUsers: 'حاول تعديل معايير البحث أو الفلاتر',
   
   // Review form specific translations
   communication: 'التواصل',
