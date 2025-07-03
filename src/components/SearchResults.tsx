@@ -86,7 +86,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     loadCategories();
   }, []);
 
-  // Load companies based on search query - after categories are loaded
+  // Load companies based on search query
   useEffect(() => {
     if (categories.length > 0) {
       const q = searchParams.get('q') || '';
@@ -437,11 +437,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
   const ratingOptions = [
     { id: 'all', name: translations?.allRatings || 'All Ratings' },
-    { id: '5', name: translations?.rating5 || '5 Stars' },
-    { id: '4', name: translations?.rating4 || '4 Stars' },
-    { id: '3', name: translations?.rating3 || '3 Stars' },
-    { id: '2', name: translations?.rating2 || '2 Stars' },
-    { id: '1', name: translations?.rating1 || '1 Star' },
+    { id: '5', name: translations?.rating5 || '5 Stars', stars: 5 },
+    { id: '4', name: translations?.rating4 || '4 Stars', stars: 4 },
+    { id: '3', name: translations?.rating3 || '3 Stars', stars: 3 },
+    { id: '2', name: translations?.rating2 || '2 Stars', stars: 2 },
+    { id: '1', name: translations?.rating1 || '1 Star', stars: 1 },
   ];
 
   return (
@@ -598,74 +598,67 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               
               <div className="space-y-6">
                 {/* Category Filter */}
-                <div>
+                <div className="filter-group">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {translations?.category || 'Category'}
                   </label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none"
-                    style={{ 
-                      focusBorderColor: '#194866',
-                      focusRingColor: '#194866'
-                    }}
-                  >
-                    {categoryOptions.map(option => (
-                      <option key={option.id} value={option.id}>{option.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                    >
+                      {categoryOptions.map(option => (
+                        <option key={option.id} value={option.id}>{option.name}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Location Filter */}
-                <div>
+                <div className="filter-group">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {translations?.location || 'Location'}
                   </label>
-                  <select
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none"
-                    style={{ 
-                      focusBorderColor: '#194866',
-                      focusRingColor: '#194866'
-                    }}
-                  >
-                    {locationOptions.map(option => (
-                      <option key={option.id} value={option.id}>{option.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedLocation}
+                      onChange={(e) => setSelectedLocation(e.target.value)}
+                      className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                    >
+                      {locationOptions.map(option => (
+                        <option key={option.id} value={option.id}>{option.name}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </div>
                 </div>
                 
-                {/* Rating Filter */}
-                <div>
+                {/* Rating Filter - Converted to Dropdown */}
+                <div className="filter-group">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {translations?.rating || 'Rating'}
                   </label>
-                  <div className="space-y-2">
-                    {ratingOptions.map((option) => (
-                      <div key={option.id} className="flex items-center">
-                        <input
-                          type="radio"
-                          id={`rating-${option.id}`}
-                          name="rating"
-                          value={option.id}
-                          checked={selectedRating === option.id}
-                          onChange={() => setSelectedRating(option.id)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <label htmlFor={`rating-${option.id}`} className="ml-3 text-sm text-gray-700">
+                  <div className="relative">
+                    <select
+                      value={selectedRating}
+                      onChange={(e) => setSelectedRating(e.target.value)}
+                      className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                    >
+                      {ratingOptions.map(option => (
+                        <option key={option.id} value={option.id}>
                           {option.name}
-                          {option.id !== 'all' && (
-                            <div className="flex items-center ml-2">
-                              {Array.from({ length: parseInt(option.id) }).map((_, i) => (
-                                <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
-                              ))}
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                    ))}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    </div>
                   </div>
                 </div>
 
@@ -721,7 +714,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       )}
                       {selectedRating !== 'all' && (
                         <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
-                          <span>{ratingOptions.find(o => o.id === selectedRating)?.name}</span>
+                          <span className="flex items-center">
+                            {ratingOptions.find(o => o.id === selectedRating)?.name}
+                          </span>
                           <button 
                             onClick={() => setSelectedRating('all')}
                             className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
@@ -759,76 +754,113 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                   {/* Category Filter */}
-                  <div>
+                  <div className="filter-group">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {translations?.category || 'Category'}
                     </label>
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none"
-                      style={{ 
-                        focusBorderColor: '#194866',
-                        focusRingColor: '#194866'
-                      }}
-                    >
-                      {categoryOptions.map(option => (
-                        <option key={option.id} value={option.id}>{option.name}</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                      >
+                        {categoryOptions.map(option => (
+                          <option key={option.id} value={option.id}>{option.name}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Location Filter */}
-                  <div>
+                  <div className="filter-group">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {translations?.location || 'Location'}
                     </label>
-                    <select
-                      value={selectedLocation}
-                      onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white appearance-none"
-                      style={{ 
-                        focusBorderColor: '#194866',
-                        focusRingColor: '#194866'
-                      }}
-                    >
-                      {locationOptions.map(option => (
-                        <option key={option.id} value={option.id}>{option.name}</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={selectedLocation}
+                        onChange={(e) => setSelectedLocation(e.target.value)}
+                        className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                      >
+                        {locationOptions.map(option => (
+                          <option key={option.id} value={option.id}>{option.name}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                      </div>
+                    </div>
                   </div>
                   
-                  {/* Rating Filter */}
-                  <div>
+                  {/* Rating Filter - Converted to Dropdown */}
+                  <div className="filter-group">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {translations?.rating || 'Rating'}
                     </label>
-                    <div className="space-y-2">
-                      {ratingOptions.map((option) => (
-                        <div key={option.id} className="flex items-center">
-                          <input
-                            type="radio"
-                            id={`mobile-rating-${option.id}`}
-                            name="mobile-rating"
-                            value={option.id}
-                            checked={selectedRating === option.id}
-                            onChange={() => setSelectedRating(option.id)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <label htmlFor={`mobile-rating-${option.id}`} className="ml-3 text-sm text-gray-700">
+                    <div className="relative">
+                      <select
+                        value={selectedRating}
+                        onChange={(e) => setSelectedRating(e.target.value)}
+                        className="w-full appearance-none pl-4 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                      >
+                        {ratingOptions.map(option => (
+                          <option key={option.id} value={option.id}>
                             {option.name}
-                            {option.id !== 'all' && (
-                              <div className="flex items-center ml-2">
-                                {Array.from({ length: parseInt(option.id) }).map((_, i) => (
-                                  <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
-                                ))}
-                              </div>
-                            )}
-                          </label>
-                        </div>
-                      ))}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                      </div>
                     </div>
                   </div>
+                  
+                  {/* Active Filters Summary - Mobile */}
+                  {(selectedCategory !== 'all' || selectedLocation !== 'all' || selectedRating !== 'all') && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        {translations?.activeFilters || 'Active Filters'}:
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedCategory !== 'all' && (
+                          <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
+                            <span>{categoryOptions.find(o => o.id === selectedCategory)?.name}</span>
+                            <button 
+                              onClick={() => setSelectedCategory('all')}
+                              className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                        {selectedLocation !== 'all' && (
+                          <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
+                            <span>{locationOptions.find(o => o.id === selectedLocation)?.name}</span>
+                            <button 
+                              onClick={() => setSelectedLocation('all')}
+                              className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                        {selectedRating !== 'all' && (
+                          <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
+                            <span>{ratingOptions.find(o => o.id === selectedRating)?.name}</span>
+                            <button 
+                              onClick={() => setSelectedRating('all')}
+                              className="ml-1 p-0.5 hover:bg-blue-200 rounded-full"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="p-4 border-t border-gray-200">
@@ -1093,6 +1125,22 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Add custom style for better filter UI */}
+      <style jsx>{`
+        .filter-group {
+          position: relative;
+          transition: all 0.2s ease;
+        }
+        
+        .filter-group:hover {
+          transform: translateY(-1px);
+        }
+        
+        .filter-group select:focus {
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+      `}</style>
     </div>
   );
 };
