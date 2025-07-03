@@ -3,7 +3,7 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Globe, AlertCircl
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 interface RegisterProps {
   onNavigate: (page: string) => void;
@@ -12,7 +12,7 @@ interface RegisterProps {
 const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const { register, loginWithGoogle } = useAuth();
   const { translations, language, setLanguage } = useLanguage();
-  const { showSuccessToast, showErrorToast, showInfoToast } = useNotification();
+  const { showSuccessToast } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -30,24 +30,26 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+  const [registerError, setRegisterError] = useState('');
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegisterError('');
     
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      showErrorToast(
-        translations?.passwordMismatch || 'Password Mismatch',
-        translations?.passwordMismatchDesc || 'Passwords do not match. Please try again.'
-      );
+      setRegisterError(translations?.passwordMismatchDesc || 'Passwords do not match. Please try again.');
       return;
     }
 
     if (formData.password.length < 6) {
-      showErrorToast(
-        translations?.passwordTooShort || 'Password Too Short',
-        translations?.passwordTooShortDesc || 'Password must be at least 6 characters long.'
-      );
+      setRegisterError(translations?.passwordTooShortDesc || 'Password must be at least 6 characters long.');
+      return;
+    }
+    
+    if (!agreeToTerms) {
+      setRegisterError(translations?.termsAgreementRequired || 'You must agree to the Terms of Use to create an account.');
       return;
     }
 
@@ -71,13 +73,23 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         } else {
           navigate('/');
         }
-      }, 1000);
+      }, 500);
       
     } catch (error: any) {
-      showErrorToast(
-        translations?.registrationError || 'Registration Failed',
-        error.message || translations?.registrationErrorDesc || 'Failed to create account. Please try again.'
-      );
+      // Create user-friendly error messages
+      let errorMessage = translations?.registrationErrorDesc || 'Failed to create account. Please try again.';
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = translations?.emailAlreadyInUse || 'This email address is already in use by another account';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = translations?.invalidEmailFormat || 'Please enter a valid email address';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = translations?.passwordTooWeak || 'The password is too weak. Please choose a stronger password';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = translations?.networkError || 'Network error, please check your connection';
+      }
+      
+      setRegisterError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -91,12 +103,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const handleLanguageToggle = () => {
     const newLang = language === 'ar' ? 'en' : 'ar';
     setLanguage(newLang);
-    
-    showInfoToast(
-      'Language Changed',
-      `Switched to ${newLang === 'ar' ? 'Arabic' : 'English'}`,
-      2000
-    );
   };
 
   const handleBackToHome = () => {
@@ -111,14 +117,9 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const handleGoogleSignup = async () => {
     try {
       setSocialLoading('google');
+      setRegisterError('');
       
       await loginWithGoogle();
-      
-      // Show success toast and navigate
-      showSuccessToast(
-        translations?.accountCreated || 'Account Created Successfully!',
-        translations?.welcomeToR8Estate || 'Welcome to R8 Estate! Your account has been created and you are now logged in.'
-      );
       
       // Navigate to return URL if provided
       setTimeout(() => {
@@ -129,7 +130,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         } else {
           navigate('/');
         }
-      }, 1000);
+      }, 500);
       
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
@@ -137,26 +138,11 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         return;
       }
       
-      showErrorToast(
-        translations?.registrationError || 'Registration Failed',
-        error.message || `Failed to sign up with Google`
-      );
+      setRegisterError(translations?.socialLoginErrorDesc || 'Failed to sign up with Google');
     } finally {
       setSocialLoading(null);
     }
   };
-
-  // Auto-focus on form when component mounts
-  useEffect(() => {
-    if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
-      // Highlight that the user will be returned to previous page after registration
-      showInfoToast(
-        translations?.registerToAccessContent || 'Create an account',
-        translations?.registerToContinue || 'Please create an account to continue to your desired page',
-        4000
-      );
-    }
-  }, [returnTo]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -258,6 +244,13 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
 
         {/* Register Form */}
         <div className="bg-white rounded-2xl shadow-lg p-8 animate-slideInUp" style={{ animationDelay: '0.2s' }}>
+          {registerError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 rtl:space-x-reverse">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-600">{registerError}</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Display Name Field */}
             <div className="animate-slideInLeft" style={{ animationDelay: '0.3s' }}>
@@ -440,8 +433,39 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
               )}
             </div>
 
-            {/* Submit Button */}
+            {/* Terms and Conditions Checkbox */}
             <div className="animate-slideInUp" style={{ animationDelay: '0.7s' }}>
+              <div className="flex items-start">
+                <div className="flex items-center h-5">
+                  <input
+                    id="terms"
+                    name="terms"
+                    type="checkbox"
+                    checked={agreeToTerms}
+                    onChange={(e) => setAgreeToTerms(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    required
+                  />
+                </div>
+                <div className="ml-3 text-sm">
+                  <label htmlFor="terms" className="text-gray-600">
+                    {translations?.agreeToTerms || 'I agree to the'}{' '}
+                    <Link
+                      to="/terms"
+                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {translations?.termsOfService || 'Terms of Service'}
+                    </Link>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="animate-slideInUp" style={{ animationDelay: '0.75s' }}>
               <button
                 type="submit"
                 disabled={loading || socialLoading !== null}

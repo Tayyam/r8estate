@@ -13,7 +13,7 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const { login, resetPassword, loginWithGoogle } = useAuth();
   const { translations, language, setLanguage } = useLanguage();
-  const { showSuccessToast, showErrorToast, showInfoToast, showSuccessModal } = useNotification();
+  const { showSuccessModal } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -30,19 +30,15 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const [resetLoading, setResetLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError('');
 
     try {
       await login(formData.email, formData.password);
-      
-      // Show success toast and navigate
-      showSuccessToast(
-        translations?.loginSuccess || 'Login Successful!',
-        translations?.welcomeBack || 'Welcome back to R8 Estate'
-      );
       
       // Navigate to return URL if provided, otherwise to home
       setTimeout(() => {
@@ -53,14 +49,23 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         } else {
           navigate('/');
         }
-      }, 1000);
+      }, 500);
       
     } catch (error: any) {
-      // Show error toast
-      showErrorToast(
-        translations?.loginError || 'Login Failed',
-        error.message || translations?.loginErrorDesc || 'Please check your credentials and try again'
-      );
+      // Create user-friendly error messages
+      let errorMessage = translations?.loginErrorDesc || 'Please check your credentials and try again';
+      
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = translations?.loginErrorDesc || 'Email or password is incorrect';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = translations?.tooManyAttempts || 'Too many failed login attempts, please try again later';
+      } else if (error.code === 'auth/user-disabled') {
+        errorMessage = translations?.accountDisabled || 'This account has been disabled';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = translations?.networkError || 'Network error, please check your connection';
+      }
+      
+      setLoginError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -90,12 +95,6 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const handleLanguageToggle = () => {
     const newLang = language === 'ar' ? 'en' : 'ar';
     setLanguage(newLang);
-    
-    showInfoToast(
-      'Language Changed',
-      `Switched to ${newLang === 'ar' ? 'Arabic' : 'English'}`,
-      2000
-    );
   };
 
   const handleBackToHome = () => {
@@ -110,14 +109,9 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const handleGoogleLogin = async () => {
     try {
       setSocialLoading('google');
+      setLoginError('');
       
       await loginWithGoogle();
-      
-      // Show success toast and navigate
-      showSuccessToast(
-        translations?.loginSuccess || 'Login Successful!',
-        translations?.welcomeBack || 'Welcome back to R8 Estate'
-      );
       
       // Navigate to return URL if provided, otherwise to home
       setTimeout(() => {
@@ -128,7 +122,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         } else {
           navigate('/');
         }
-      }, 1000);
+      }, 500);
       
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
@@ -136,10 +130,8 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         return;
       }
       
-      showErrorToast(
-        translations?.loginError || 'Login Failed',
-        error.message || `Failed to login with Google`
-      );
+      // Create user-friendly error message
+      setLoginError(translations?.socialLoginErrorDesc || 'Failed to login with Google');
     } finally {
       setSocialLoading(null);
     }
@@ -148,12 +140,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   // Auto-focus on form when component mounts
   useEffect(() => {
     if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
-      // Highlight that the user will be returned to previous page after login
-      showInfoToast(
-        translations?.loginToAccessContent || 'Please log in',
-        translations?.loginToContinue || 'Please log in to continue to your desired page',
-        4000
-      );
+      // Don't show any toast, just render the page normally
     }
   }, [returnTo]);
 
@@ -257,6 +244,13 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
 
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-lg p-8 animate-slideInUp" style={{ animationDelay: '0.2s' }}>
+          {loginError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 rtl:space-x-reverse">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-600">{loginError}</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div className="animate-slideInLeft" style={{ animationDelay: '0.3s' }}>

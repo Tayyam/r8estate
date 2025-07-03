@@ -73,6 +73,23 @@ export const ar = {
   voteSuccess: 'تم تسجيل تصويتك',
   voteRemoved: 'تم إزالة تصويتك',
   
+  // Auth error messages
+  loginError: 'خطأ في تسجيل الدخول',
+  loginErrorDesc: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+  tooManyAttempts: 'عدد محاولات تسجيل الدخول كبير، يرجى المحاولة لاحقاً',
+  accountDisabled: 'تم تعطيل هذا الحساب',
+  networkError: 'خطأ في الشبكة، تحقق من اتصالك بالإنترنت',
+  registrationError: 'خطأ في التسجيل',
+  registrationErrorDesc: 'فشل في إنشاء الحساب، يرجى المحاولة مرة أخرى',
+  emailAlreadyInUse: 'هذا البريد الإلكتروني مستخدم بالفعل',
+  invalidEmailFormat: 'يرجى إدخال بريد إلكتروني صحيح',
+  passwordTooWeak: 'كلمة المرور ضعيفة جداً، يرجى اختيار كلمة مرور أقوى',
+  
+  // Terms agreement
+  agreeToTerms: 'أوافق على',
+  termsOfService: 'شروط الخدمة',
+  termsAgreementRequired: 'يجب الموافقة على شروط الخدمة لإنشاء حساب',
+  
   // Social login translations
   signInWithGoogle: 'تسجيل الدخول باستخدام جوجل',
   signUpWithGoogle: 'التسجيل باستخدام جوجل',
@@ -81,7 +98,7 @@ export const ar = {
   passwordStrengthGood: 'طول كلمة المرور جيد',
   passwordStrengthWeak: 'كلمة المرور ضعيفة جدًا',
   socialLoginError: 'فشل تسجيل الدخول',
-  socialLoginErrorDesc: 'فشل في تسجيل الدخول باستخدام هذه الطريقة، يرجى المحاولة مرة أخرى.',
+  socialLoginErrorDesc: 'فشل في تسجيل الدخول، يرجى المحاولة مرة أخرى.',
   
   // Return Navigation
   youWillBeRedirected: 'ستتم إعادة توجيهك إلى الصفحة السابقة بعد تسجيل الدخول',

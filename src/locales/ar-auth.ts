@@ -38,23 +38,26 @@ export const arAuth = {
   resetEmailDesc: 'لقد أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد واتباع التعليمات لإعادة تعيين كلمة المرور.',
   backToLogin: 'العودة لتسجيل الدخول',
   
+  // Auth error messages
+  loginError: 'خطأ في تسجيل الدخول',
+  loginErrorDesc: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+  tooManyAttempts: 'عدد محاولات تسجيل الدخول كبير، يرجى المحاولة لاحقاً',
+  accountDisabled: 'تم تعطيل هذا الحساب',
+  networkError: 'خطأ في الشبكة، تحقق من اتصالك بالإنترنت',
+  registrationError: 'خطأ في التسجيل',
+  registrationErrorDesc: 'فشل في إنشاء الحساب، يرجى المحاولة مرة أخرى',
+  emailAlreadyInUse: 'هذا البريد الإلكتروني مستخدم بالفعل',
+  invalidEmailFormat: 'يرجى إدخال بريد إلكتروني صحيح',
+  passwordTooWeak: 'كلمة المرور ضعيفة جداً، يرجى اختيار كلمة مرور أقوى',
+  missingEmail: 'البريد الإلكتروني مطلوب',
+  resetError: 'فشل في إعادة التعيين',
+  
+  // Terms agreement
+  termsAgreementRequired: 'يجب الموافقة على شروط الخدمة لإنشاء حساب',
+  
   // New Auth Messages
   loginSuccess: 'تم تسجيل الدخول بنجاح!',
   welcomeBack: 'مرحباً بعودتك إلى R8 Estate',
-  loginError: 'فشل في تسجيل الدخول',
-  loginErrorDesc: 'يرجى التحقق من بياناتك والمحاولة مرة أخرى',
-  registrationError: 'فشل في التسجيل',
-  registrationErrorDesc: 'فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى.',
-  resetError: 'فشل في إعادة التعيين',
-  missingEmail: 'البريد الإلكتروني مطلوب',
-  
-  // Social Login
-  signInWithGoogle: 'تسجيل الدخول باستخدام جوجل',
-  signUpWithGoogle: 'التسجيل باستخدام جوجل',
-  orContinueWith: 'أو أكمل باستخدام',
-  welcomeToR8Estate: 'مرحبًا بك في R8 Estate! تم إنشاء حسابك وتسجيل دخولك الآن.',
-  passwordStrengthGood: 'طول كلمة المرور جيد',
-  passwordStrengthWeak: 'كلمة المرور ضعيفة جدًا',
   
   // Forgot Password Modal
   forgotPasswordTitle: 'إعادة تعيين كلمة المرور',
