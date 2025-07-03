@@ -31,7 +31,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="lg:col-span-1 text-center md:text-right rtl:md:text-right ltr:md:text-left">
             <div className="flex items-center justify-center md:justify-start mb-4">
               <img 
-                src="https://i.ibb.co/YrNNbnz/R8-ESTATEORG.png" 
+                src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" 
                 alt="R8ESTATE Logo" 
                 className="w-8 h-8 object-contain mr-3 rounded-full"
                 style={{ borderRadius: '20%' }}
