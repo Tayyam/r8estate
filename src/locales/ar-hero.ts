@@ -8,6 +8,7 @@ export const arHero = {
   shareExperiencePrompt: 'لسه طالع من تجربة مع شركة؟',
   shareWithUs: 'شاركها معانا',
   search: 'بحث',
+  advancedSearch: 'بحث متقدم',
   explore: 'استكشف',
   
   // Top rated companies
