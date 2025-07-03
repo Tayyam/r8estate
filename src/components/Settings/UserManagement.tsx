@@ -556,7 +556,8 @@ const UserManagement = () => {
                         <td className="px-6 py-6">
                           <div className="flex items-center text-sm text-gray-500">
                             <Calendar className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
-                            {user.createdAt.toLocaleDateString()}
+                            {new Date(user.createdAt.getTime() + 2 * 60 * 60 * 1000).toISOString().slice(0, 10).split('-').reverse().join('/')}
+
                           </div>
                         </td>
 
