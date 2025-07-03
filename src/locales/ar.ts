@@ -62,6 +62,7 @@ export const ar = {
   loginToReview: 'يرجى تسجيل الدخول لكتابة تقييم',
   loginToReviewDesc: 'يجب عليك تسجيل الدخول لمشاركة تجربتك مع هذه الشركة',
   anonymousUser: 'مستخدم مجهول',
+  signInToReview: 'تسجيل الدخول للكتابة تقييم',
   
   // Review voting translations
   helpful: 'مفيد',
@@ -82,11 +83,10 @@ export const ar = {
   socialLoginError: 'فشل تسجيل الدخول',
   socialLoginErrorDesc: 'فشل في تسجيل الدخول باستخدام هذه الطريقة، يرجى المحاولة مرة أخرى.',
   
-  // Forgot Password Modal
-  forgotPasswordTitle: 'إعادة تعيين كلمة المرور',
-  forgotPasswordSubtitle: 'أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور',
-  resetPassword: 'إعادة تعيين كلمة المرور',
-  sending: 'جاري الإرسال...',
-  emailRequired: 'البريد الإلكتروني مطلوب',
-  invalidEmailFormat: 'يرجى إدخال عنوان بريد إلكتروني صالح'
+  // Return Navigation
+  youWillBeRedirected: 'ستتم إعادة توجيهك إلى الصفحة السابقة بعد تسجيل الدخول',
+  loginToAccessContent: 'الرجاء تسجيل الدخول',
+  loginToContinue: 'الرجاء تسجيل الدخول للاستمرار إلى الصفحة التي تريدها',
+  registerToAccessContent: 'قم بإنشاء حساب',
+  registerToContinue: 'الرجاء إنشاء حساب للاستمرار إلى الصفحة التي تريدها'
 };

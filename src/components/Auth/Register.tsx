@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Globe, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface RegisterProps {
   onNavigate: (page: string) => void;
@@ -11,7 +12,13 @@ interface RegisterProps {
 const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const { register, loginWithGoogle } = useAuth();
   const { translations, language, setLanguage } = useLanguage();
-  const { showSuccessModal, showErrorToast, showInfoToast } = useNotification();
+  const { showSuccessToast, showErrorToast, showInfoToast } = useNotification();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get return URL from query params
+  const searchParams = new URLSearchParams(location.search);
+  const returnTo = searchParams.get('returnTo') || '/';
   
   const [formData, setFormData] = useState({
     displayName: '',
@@ -49,14 +56,22 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     try {
       await register(formData.email, formData.password, formData.displayName, 'user');
       
-      // Show success toast and immediately navigate to home page
+      // Show success toast and immediately navigate
       showSuccessToast(
         translations?.accountCreated || 'Account Created Successfully!',
         translations?.welcomeToR8Estate || 'Welcome to R8 Estate! Your account has been created and you are now logged in.',
       );
       
-      // Directly navigate to home page
-      onNavigate('home');
+      // Navigate to return URL if provided
+      setTimeout(() => {
+        if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
+          navigate(returnTo);
+        } else if (onNavigate) {
+          onNavigate('home');
+        } else {
+          navigate('/');
+        }
+      }, 1000);
       
     } catch (error: any) {
       showErrorToast(
@@ -85,7 +100,11 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   };
 
   const handleBackToHome = () => {
-    onNavigate('home');
+    if (onNavigate) {
+      onNavigate('home');
+    } else {
+      navigate('/');
+    }
   };
   
   // Handle Google signup
@@ -101,8 +120,16 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         translations?.welcomeToR8Estate || 'Welcome to R8 Estate! Your account has been created and you are now logged in.'
       );
       
-      // Directly navigate to home page
-      onNavigate('home');
+      // Navigate to return URL if provided
+      setTimeout(() => {
+        if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
+          navigate(returnTo);
+        } else if (onNavigate) {
+          onNavigate('home');
+        } else {
+          navigate('/');
+        }
+      }, 1000);
       
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
@@ -118,6 +145,18 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       setSocialLoading(null);
     }
   };
+
+  // Auto-focus on form when component mounts
+  useEffect(() => {
+    if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
+      // Highlight that the user will be returned to previous page after registration
+      showInfoToast(
+        translations?.registerToAccessContent || 'Create an account',
+        translations?.registerToContinue || 'Please create an account to continue to your desired page',
+        4000
+      );
+    }
+  }, [returnTo]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -166,6 +205,13 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
           <p className="text-gray-600">
             {translations?.registerSubtitle || 'Join the R8 Estate community'}
           </p>
+          
+          {/* Return to Message */}
+          {returnTo && returnTo !== '/' && returnTo !== '/login' && returnTo !== '/register' && (
+            <p className="mt-2 text-sm text-blue-600 bg-blue-50 rounded-full px-4 py-2 inline-block">
+              {translations?.youWillBeRedirected || "You'll be redirected to your previous page after registration"}
+            </p>
+          )}
         </div>
 
         {/* Social Signup Buttons */}
@@ -241,6 +287,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                     e.target.style.boxShadow = 'none';
                   }}
                   placeholder={translations?.fullNamePlaceholder || 'Enter your full name'}
+                  autoFocus
                 />
               </div>
             </div>
@@ -428,7 +475,13 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             <p className="text-gray-600">
               {translations?.haveAccount || 'Already have an account?'}{' '}
               <button
-                onClick={() => onNavigate('login')}
+                onClick={() => {
+                  if (onNavigate) {
+                    onNavigate('login');
+                  } else {
+                    navigate('/login' + (returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''));
+                  }
+                }}
                 className="font-semibold transition-all duration-200 hover:scale-105"
                 style={{ color: '#194866' }}
                 onMouseEnter={(e) => {

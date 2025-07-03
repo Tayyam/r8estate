@@ -62,5 +62,16 @@ export const arAuth = {
   resetPassword: 'إعادة تعيين كلمة المرور',
   sending: 'جاري الإرسال...',
   emailRequired: 'البريد الإلكتروني مطلوب',
-  invalidEmailFormat: 'يرجى إدخال عنوان بريد إلكتروني صالح'
+  invalidEmailFormat: 'يرجى إدخال عنوان بريد إلكتروني صالح',
+  
+  // Return Navigation
+  youWillBeRedirected: 'ستتم إعادة توجيهك إلى الصفحة السابقة بعد تسجيل الدخول',
+  loginToAccessContent: 'الرجاء تسجيل الدخول',
+  loginToContinue: 'الرجاء تسجيل الدخول للاستمرار إلى الصفحة التي تريدها',
+  registerToAccessContent: 'قم بإنشاء حساب',
+  registerToContinue: 'الرجاء إنشاء حساب للاستمرار إلى الصفحة التي تريدها',
+  
+  // Review Auth
+  signInToReview: 'تسجيل الدخول للكتابة تقييم',
+  wantToLeaveReview: 'تريد كتابة تقييم؟'
 };

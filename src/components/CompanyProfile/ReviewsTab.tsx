@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { doc, deleteDoc, updateDoc, increment, collection, query, where, getDocs, orderBy, limit, startAfter, DocumentData } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../types/property';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
 import { User } from '../../types/user';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AddReviewModal from './AddReviewModal';
 import EditReviewModal from './EditReviewModal';
 import ReplyModal from './ReplyModal';
@@ -37,10 +37,12 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   currentUser
 }) => {
   const { translations } = useLanguage();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // State for pagination and lazy loading
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<DocumentData | null>(null);
   const [totalReviewsCount, setTotalReviewsCount] = useState(0);
@@ -57,7 +59,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   // UI state
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
 
-  // Check if current user can edit company (company owner or admin)
+  // Check if user can edit company (company owner or admin)
   const canEditCompany = currentUser && (
     currentUser.role === 'admin' || 
     (currentUser.role === 'company' && company?.email === currentUser.email)
@@ -346,6 +348,13 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     );
   };
 
+  // Handle login redirect for writing review
+  const handleLoginToReview = () => {
+    // Get the current URL to return after login
+    const returnUrl = location.pathname;
+    navigate(`/login?returnTo=${encodeURIComponent(returnUrl)}`);
+  };
+
   // Show loading placeholder
   const renderLoadingPlaceholder = () => {
     return (
@@ -407,10 +416,23 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
         {/* Login prompt for guests */}
         {!currentUser && (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-            <p className="text-gray-600 text-sm">
-              <span className="font-medium">{translations?.wantToLeaveReview || 'Want to leave a review?'}</span> {translations?.pleaseSignIn || 'Please sign in to share your experience.'}
-            </p>
+          <div className="bg-white border border-blue-200 rounded-xl p-6 shadow-md">
+            <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {translations?.wantToLeaveReview || 'Want to leave a review?'}
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  {translations?.pleaseSignIn || 'Please sign in to share your experience with this company.'}
+                </p>
+              </div>
+              <button 
+                onClick={handleLoginToReview}
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                {translations?.login || 'Sign In'}
+              </button>
+            </div>
           </div>
         )}
 
@@ -725,13 +747,23 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             {translations?.shareExperience?.replace('{company}', company.name) || 
              `Be the first to share your experience with ${company.name}. Your review will help others make informed decisions.`}
           </p>
-          {currentUser && !hasUserReviewed && !canEditCompany && (
+          {currentUser ? (
+            userCanReview && !hasUserReviewed && (
+              <button
+                onClick={() => setShowAddReview(true)}
+                className="inline-flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Plus className="h-5 w-5" />
+                <span>{translations?.writeFirstReview || 'Write First Review'}</span>
+              </button>
+            )
+          ) : (
             <button
-              onClick={() => setShowAddReview(true)}
+              onClick={handleLoginToReview}
               className="inline-flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-5 w-5" />
-              <span>{translations?.writeFirstReview || 'Write First Review'}</span>
+              <span>{translations?.signInToReview || 'Sign In to Write a Review'}</span>
             </button>
           )}
         </div>

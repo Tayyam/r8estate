@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft, Globe, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginProps {
@@ -13,6 +14,12 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const { login, resetPassword, loginWithGoogle } = useAuth();
   const { translations, language, setLanguage } = useLanguage();
   const { showSuccessToast, showErrorToast, showInfoToast, showSuccessModal } = useNotification();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get return URL from query params
+  const searchParams = new URLSearchParams(location.search);
+  const returnTo = searchParams.get('returnTo') || '/';
   
   const [formData, setFormData] = useState({
     email: '',
@@ -37,8 +44,15 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         translations?.welcomeBack || 'Welcome back to R8 Estate'
       );
       
+      // Navigate to return URL if provided, otherwise to home
       setTimeout(() => {
-        onNavigate('home');
+        if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
+          navigate(returnTo);
+        } else if (onNavigate) {
+          onNavigate('home');
+        } else {
+          navigate('/');
+        }
       }, 1000);
       
     } catch (error: any) {
@@ -85,7 +99,11 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   };
 
   const handleBackToHome = () => {
-    onNavigate('home');
+    if (onNavigate) {
+      onNavigate('home');
+    } else {
+      navigate('/');
+    }
   };
   
   // Handle Google login
@@ -101,8 +119,15 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         translations?.welcomeBack || 'Welcome back to R8 Estate'
       );
       
+      // Navigate to return URL if provided, otherwise to home
       setTimeout(() => {
-        onNavigate('home');
+        if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
+          navigate(returnTo);
+        } else if (onNavigate) {
+          onNavigate('home');
+        } else {
+          navigate('/');
+        }
       }, 1000);
       
     } catch (error: any) {
@@ -119,6 +144,18 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
       setSocialLoading(null);
     }
   };
+
+  // Auto-focus on form when component mounts
+  useEffect(() => {
+    if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
+      // Highlight that the user will be returned to previous page after login
+      showInfoToast(
+        translations?.loginToAccessContent || 'Please log in',
+        translations?.loginToContinue || 'Please log in to continue to your desired page',
+        4000
+      );
+    }
+  }, [returnTo]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -167,6 +204,13 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
           <p className="text-gray-600">
             {translations?.loginSubtitle || 'Welcome back'}
           </p>
+          
+          {/* Return to Message */}
+          {returnTo && returnTo !== '/' && returnTo !== '/login' && returnTo !== '/register' && (
+            <p className="mt-2 text-sm text-blue-600 bg-blue-50 rounded-full px-4 py-2 inline-block">
+              {translations?.youWillBeRedirected || "You'll be redirected to your previous page after login"}
+            </p>
+          )}
         </div>
 
         {/* Social Login Buttons */}
@@ -242,6 +286,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
                     e.target.style.boxShadow = 'none';
                   }}
                   placeholder={translations?.emailPlaceholder || 'Enter your email'}
+                  autoFocus
                 />
               </div>
             </div>
@@ -350,7 +395,13 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
             <p className="text-gray-600">
               {translations?.noAccount || 'Don\'t have an account?'}{' '}
               <button
-                onClick={() => onNavigate('register')}
+                onClick={() => {
+                  if (onNavigate) {
+                    onNavigate('register');
+                  } else {
+                    navigate('/register' + (returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''));
+                  }
+                }}
                 className="font-semibold transition-all duration-200 hover:scale-105"
                 style={{ color: '#194866' }}
                 onMouseEnter={(e) => {
