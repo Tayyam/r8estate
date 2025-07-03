@@ -13,7 +13,7 @@ interface BasicInfoProps {
 
 const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
   const { currentUser, firebaseUser } = useAuth();
-  const { translations, language, direction } = useLanguage();
+  const { translations } = useLanguage();
   
   const [loading, setLoading] = useState(false);
   const [verificationLoading, setVerificationLoading] = useState(false);
@@ -215,7 +215,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {translations?.emailAddressBasic || 'البريد الإلكتروني'}
+              {translations?.emailAddress || 'Email Address'}
             </label>
             
             <div className="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -226,20 +226,20 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
                     type="email"
                     value={currentUser?.email || ''}
                     disabled
-                    className="w-full pl-12 rtl:pr-12 rtl:pl-4 pr-16 rtl:pl-16 rtl:pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-700"
+                    className="w-full pl-12 rtl:pr-12 rtl:pl-4 pr-16 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-700"
                     readOnly
                   />
-                  {/* Email Verification Badge - RTL-aware positioning */}
-                  <div className={`absolute ${direction === 'rtl' ? 'left-3' : 'right-3'} top-1/2 transform -translate-y-1/2`}>
+                  {/* Email Verification Badge */}
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     {currentUser?.isEmailVerified ? (
                       <div className="bg-green-100 text-green-600 text-xs font-medium px-2 py-1 rounded-full flex items-center">
-                        <CheckCircle className={`h-3 w-3 ${direction === 'rtl' ? 'ml-1' : 'mr-1'}`} />
-                        <span>{translations?.verified || 'Verified'}</span>
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        {translations?.verified || 'Verified'}
                       </div>
                     ) : (
                       <div className="bg-yellow-100 text-yellow-600 text-xs font-medium px-2 py-1 rounded-full flex items-center">
-                        <AlertCircle className={`h-3 w-3 ${direction === 'rtl' ? 'ml-1' : 'mr-1'}`} />
-                        <span>{translations?.notVerified || 'Not Verified'}</span>
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {translations?.notVerified || 'Not Verified'}
                       </div>
                     )}
                   </div>
@@ -290,7 +290,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
                         type={showCurrentPassword ? 'text' : 'password'}
                         value={formData.currentPasswordForEmail}
                         onChange={(e) => setFormData({ ...formData, currentPasswordForEmail: e.target.value })}
-                        className="w-full pl-4 pr-10 rtl:pr-4 rtl:pl-10 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                        className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
                         style={{ 
                           focusBorderColor: '#194866',
                           focusRingColor: '#194866'
@@ -308,7 +308,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
                       <button
                         type="button"
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className={`absolute ${direction === 'rtl' ? 'left-3' : 'right-3'} top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-all duration-200`}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-all duration-200"
                       >
                         {showCurrentPassword ? (
                           <EyeOff className="h-5 w-5" />

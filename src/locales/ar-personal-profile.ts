@@ -23,7 +23,7 @@ export const arPersonalProfile = {
   basicInformation: 'المعلومات الأساسية',
   fullNameLabel: 'الاسم الكامل *',
   fullNamePlaceholder: 'أدخل اسمك الكامل',
-  emailAddressBasic: 'عنوان البريد الإلكتروني',
+  emailAddress: 'عنوان البريد الإلكتروني',
   emailVerification: 'التحقق من البريد الإلكتروني',
   verified: 'تم التحقق',
   notVerified: 'لم يتم التحقق',
