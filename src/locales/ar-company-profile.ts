@@ -257,6 +257,6 @@ export const arCompanyProfile = {
   allowedFormats: 'التنسيقات: {formats}',
   
   // Time and Date
-  createdDate: 'تاريخ الإنشاء: {date}',
+  createdDate: 'تاريخ الإنشاء',
   edited: '(مُعدل)',
 };
