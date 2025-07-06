@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -27,6 +27,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const params = useParams<{ companySlug: string; companyId: string; tab: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const [company, setCompany] = useState<CompanyProfileType | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -45,7 +46,11 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   useEffect(() => {
     if (company && activeTab && params.tab !== activeTab) {
       const companySlug = getCompanySlug(company.name);
-      navigate(`/company/${companySlug}/${company.id}/${activeTab}`, { replace: true });
+      
+      // Get existing query parameters if any
+      const searchParams = new URLSearchParams(location.search);
+      
+      navigate(`/company/${companySlug}/${company.id}/${activeTab}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`, { replace: true });
     }
   }, [activeTab, company, navigate, params.tab]);
 
@@ -222,6 +227,28 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   useEffect(() => {
     if (params.tab) {
       setActiveTab(params.tab);
+    }
+    
+    // Check if there's a specific review to scroll to
+    const searchParams = new URLSearchParams(location.search);
+    const reviewId = searchParams.get('review');
+    
+    if (reviewId && params.tab === 'reviews') {
+      setTimeout(() => {
+        const reviewElement = document.getElementById(`review-${reviewId}`);
+        if (reviewElement) {
+          reviewElement.scrollIntoView({ behavior: 'smooth' });
+          // Add a highlight class that will fade out
+          reviewElement.classList.add('bg-yellow-100');
+          setTimeout(() => {
+            reviewElement.classList.remove('bg-yellow-100');
+            reviewElement.classList.add('bg-yellow-50');
+            setTimeout(() => {
+              reviewElement.classList.remove('bg-yellow-50');
+            }, 2000);
+          }, 2000);
+        }
+      }, 1000);
     }
   }, [params.tab]);
 

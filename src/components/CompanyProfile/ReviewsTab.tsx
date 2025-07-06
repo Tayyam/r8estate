@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check, Share2 } from 'lucide-react';
 import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, increment, DocumentData } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useNotification } from '../../contexts/NotificationContext';
 import { Review } from '../../types/property';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
 import { User } from '../../types/user';
@@ -12,6 +13,7 @@ import EditReviewModal from './EditReviewModal';
 import ReplyModal from './ReplyModal';
 import ReviewVotingButtons from './ReviewVotingButtons';
 import WriteReviewTab from './WriteReviewTab';
+import { getCompanySlug } from '../../utils/urlUtils';
 
 interface ReviewsTabProps {
   reviews: Review[];
@@ -39,6 +41,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const { translations } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const { showSuccessToast, showErrorToast } = useNotification();
   
   // State for pagination and lazy loading
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -601,11 +604,38 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
               
               {/* Review Voting Buttons */}
               <div className="flex justify-end mb-4">
-                <ReviewVotingButtons 
-                  reviewId={review.id} 
-                  reviewUserId={review.userId} 
-                  contentType="review"
-                />
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                  <button
+                    onClick={() => {
+                      const reviewUrl = `https://r8estate.netlify.app/company/${getCompanySlug(company.name)}/${company.id}/reviews?review=${review.id}`;
+                      navigator.clipboard.writeText(reviewUrl)
+                        .then(() => {
+                          showSuccessToast(
+                            translations?.linkCopied || 'Link Copied',
+                            translations?.reviewLinkCopiedDesc || 'Review link has been copied to clipboard'
+                          );
+                        })
+                        .catch(err => {
+                          console.error('Could not copy text: ', err);
+                          showErrorToast(
+                            translations?.error || 'Error',
+                            translations?.couldNotCopyLink || 'Could not copy link to clipboard'
+                          );
+                        });
+                    }}
+                    className="flex items-center space-x-1 rtl:space-x-reverse px-2 py-1 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
+                    title={translations?.shareReview || 'Share this review'}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span>{translations?.share || 'Share'}</span>
+                  </button>
+                  
+                  <ReviewVotingButtons 
+                    reviewId={review.id} 
+                    reviewUserId={review.userId} 
+                    contentType="review"
+                  />
+                </div>
               </div>
               
               {/* Company Reply */}
