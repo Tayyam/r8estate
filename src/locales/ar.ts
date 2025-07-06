@@ -218,7 +218,7 @@ export const ar = {
   reportRejectedSuccess: 'تم رفض البلاغ بنجاح',
   failedToAcceptReport: 'فشل في قبول البلاغ',
   failedToRejectReport: 'فشل في رفض البلاغ',
-  failedToLoadReports: 'فشل في تحميل البلاغات'
+  failedToLoadReports: 'فشل في تحميل البلاغات',
   
   // Notifications
   notifications: 'الإشعارات',
