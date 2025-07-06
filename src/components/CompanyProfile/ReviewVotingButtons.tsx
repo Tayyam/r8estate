@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, Flag, Share2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Flag } from 'lucide-react';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,7 +22,7 @@ interface Vote {
 }
 
 const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({ 
-  reviewId,
+  reviewId, 
   reviewUserId, 
   contentType = 'review',
   replyId
@@ -162,7 +162,6 @@ const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({
   
   return (
     <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
-      
       {/* Helpful Button */}
       <button
         onClick={() => handleVote(true)}

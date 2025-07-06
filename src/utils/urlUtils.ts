@@ -24,16 +24,3 @@ export const getCompanyIdFromSlug = async (slug: string): Promise<string | null>
   // Currently we use ID directly in the URL alongside the slug
   return null;
 };
-
-/**
- * Creates a shareable review URL
- * 
- * @param companyName The name of the company
- * @param companyId The company ID
- * @param reviewId The review ID to highlight
- * @returns A complete URL that can be shared
- */
-export const createShareableReviewUrl = (companyName: string, companyId: string, reviewId: string): string => {
-  const companySlug = getCompanySlug(companyName);
-  return `https://r8estate.netlify.app/company/${companySlug}/${companyId}/reviews?review=${reviewId}`;
-};

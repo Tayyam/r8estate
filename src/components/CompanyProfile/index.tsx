@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { db } from '../../config/firebase'; 
+import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
@@ -48,12 +48,11 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
       const companySlug = getCompanySlug(company.name);
       
       // Get existing query parameters if any
-      // Keep the query parameters when changing tabs
-      const searchParams = new URLSearchParams(window.location.search);
+      const searchParams = new URLSearchParams(location.search);
       
       navigate(`/company/${companySlug}/${company.id}/${activeTab}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`, { replace: true });
     }
-  }, [activeTab, company, navigate, params.tab, location.search]);
+  }, [activeTab, company, navigate, params.tab]);
 
   // Check if user can edit (admin or company owner)
   const canEdit = currentUser && (
@@ -227,19 +226,46 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   // Update active tab when URL tab param changes
   useEffect(() => {
     if (params.tab) {
-      // If there's a review param in the URL, force the active tab to be 'reviews'
-      const searchParams = new URLSearchParams(location.search);
-      const hasReviewParam = searchParams.has('review');
-      
-      if (hasReviewParam && params.tab !== 'reviews') {
-        // If we have a review param but we're not on the reviews tab, switch to it
-        setActiveTab('reviews');
-      } else {
-        // Otherwise, just set the tab from the URL
-        setActiveTab(params.tab);
-      }
+      setActiveTab(params.tab);
     }
-  }, [params.tab, location.search]);
+    
+    // Check if there's a specific review to scroll to
+    const searchParams = new URLSearchParams(location.search);
+    const highlightedReviewId = searchParams.get('review');
+    
+    if (highlightedReviewId && params.tab === 'reviews') {
+      setTimeout(() => {
+        const reviewElement = document.getElementById(`review-${highlightedReviewId}`);
+        if (reviewElement) {
+          // Scroll to the element with offset to center it in the viewport
+          const elementRect = reviewElement.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          const middle = absoluteElementTop - (window.innerHeight / 3);
+          window.scrollTo({
+            top: middle,
+            behavior: 'smooth'
+          });
+          
+          // Add a highlight class that will fade out
+          reviewElement.classList.add('highlight-review');
+          
+          // Temporarily move focus to the review for accessibility
+          reviewElement.setAttribute('tabindex', '-1');
+          reviewElement.focus();
+          
+          // Remove the highlight effect after some time
+          setTimeout(() => {
+            reviewElement.classList.remove('highlight-review');
+            reviewElement.classList.add('highlight-review-fading');
+            setTimeout(() => {
+              reviewElement.classList.remove('highlight-review-fading');
+              reviewElement.removeAttribute('tabindex');
+            }, 2500);
+          }, 2500);
+        }
+      }, 500);
+    }
+  }, [params.tab]);
 
   if (loading) {
     return (
