@@ -1,6 +1,5 @@
 Here's the fixed version with all missing closing brackets added:
 
-```typescript
 import React, { useState, useEffect } from 'react';
 import { Globe, ChevronDown, User, UserPlus, Menu, X, LogOut, Settings as SettingsIcon, Building2, MessageSquare } from 'lucide-react';
 import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
