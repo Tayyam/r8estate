@@ -55,8 +55,8 @@ const UserManagement = () => {
       })) as UserType[];
       
       // Filter out company users - only show admin and regular users
-      const filteredUsers = usersData.filter(user => user.role !== 'company');
-      setUsers(filteredUsers);
+      // Removed filter to show all types of users
+      setUsers(usersData);
     } catch (error) {
       console.error('Error loading users:', error);
       setError(translations?.failedToLoadUsers || 'Failed to load users');
