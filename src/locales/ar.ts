@@ -22,7 +22,6 @@ import { arPrivacy } from './ar-privacy';
 import { arMyReviews } from './ar-my-reviews';
 import { arSearch } from './ar-search';
 import { arClaimRequests } from './ar-claim-requests';
-import { arReports } from './ar-reports';
 
 export const ar = {
   ...arCommon,
@@ -48,7 +47,6 @@ export const ar = {
   ...arMyReviews,
   ...arSearch,
   ...arClaimRequests,
-  ...arReports,
   
   // Table/pagination translations
   filterByRole: 'تصفية حسب الدور',

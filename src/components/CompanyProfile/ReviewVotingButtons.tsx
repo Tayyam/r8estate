@@ -4,12 +4,10 @@ import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, dele
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import ReportButton from './ReportButton';
 
 interface ReviewVotingButtonsProps {
   reviewId: string;
   reviewUserId: string;
-  companyId: string; // Add companyId prop
 }
 
 interface Vote {
@@ -20,11 +18,7 @@ interface Vote {
   createdAt: Date;
 }
 
-const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({ 
-  reviewId, 
-  reviewUserId,
-  companyId
-}) => {
+const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({ reviewId, reviewUserId }) => {
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const [helpfulCount, setHelpfulCount] = useState(0);
@@ -190,14 +184,6 @@ const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({
         </span>
       </button>
     </div>
-    
-    {/* Report button will only render if user meets criteria */}
-    <ReportButton
-      contentType="review"
-      contentId={reviewId}
-      contentOwnerId={reviewUserId}
-      companyId={companyId}
-    />
   );
 };
 
