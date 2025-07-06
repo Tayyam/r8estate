@@ -143,7 +143,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
         description: formData.description || '',
         phone: formData.phone || '',
         website: formData.website || '',
-        claimed: true, // Always set to true
+        claimed: false, // Always set to true
         createdAt: new Date(),
         updatedAt: new Date()
       };
