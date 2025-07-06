@@ -30,7 +30,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     description: company.description || '',
     phone: company.phone || '',
     website: company.website || '',
-    claimed: true // Always set to true
+    claimed: company.claimed || false
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(company.logoUrl || null);
