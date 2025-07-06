@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check, Share2 } from 'lucide-react';
 import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, increment, DocumentData } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db } from '../../config/firebase'; 
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { Review } from '../../types/property';
@@ -11,9 +11,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AddReviewModal from './AddReviewModal';
 import EditReviewModal from './EditReviewModal';
 import ReplyModal from './ReplyModal';
-import ReviewVotingButtons from './ReviewVotingButtons';
+import ReviewVotingButtons from './ReviewVotingButtons'; 
 import WriteReviewTab from './WriteReviewTab';
 import { getCompanySlug } from '../../utils/urlUtils';
+import { useLocation } from 'react-router-dom';
 
 interface ReviewsTabProps {
   reviews: Review[];
@@ -41,6 +42,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const { translations } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const reviewsRef = useRef<HTMLDivElement>(null);
   const { showSuccessToast, showErrorToast } = useNotification();
   
   // State for pagination and lazy loading
@@ -157,6 +159,47 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       setReviewsLoaded(true);
     }
   }, [initialReviews, currentUser, reviewsLoaded]);
+  
+  // Handle highlighting a specific review if it's in the URL
+  useEffect(() => {
+    // Check if there's a specific review to scroll to
+    const searchParams = new URLSearchParams(location.search);
+    const highlightedReviewId = searchParams.get('review');
+    
+    if (highlightedReviewId && reviewsLoaded && reviews.length > 0) {
+      // Small delay to ensure DOM has updated
+      setTimeout(() => {
+        const reviewElement = document.getElementById(`review-${highlightedReviewId}`);
+        if (reviewElement) {
+          // Scroll to the element with offset to center it in the viewport
+          const elementRect = reviewElement.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          const middle = absoluteElementTop - (window.innerHeight / 3);
+          window.scrollTo({
+            top: middle,
+            behavior: 'smooth'
+          });
+          
+          // Add a highlight class that will fade out
+          reviewElement.classList.add('highlight-review');
+          
+          // Temporarily move focus to the review for accessibility
+          reviewElement.setAttribute('tabindex', '-1');
+          reviewElement.focus();
+          
+          // Remove the highlight effect after some time
+          setTimeout(() => {
+            reviewElement.classList.remove('highlight-review');
+            reviewElement.classList.add('highlight-review-fading');
+            setTimeout(() => {
+              reviewElement.classList.remove('highlight-review-fading');
+              reviewElement.removeAttribute('tabindex');
+            }, 2500);
+          }, 2500);
+        }
+      }, 500);
+    }
+  }, [location.search, reviewsLoaded, reviews.length]);
 
   // Calculate average rating
   const averageRating = totalReviewsCount > 0 && reviews.length > 0
@@ -505,7 +548,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       ) : null}
 
       {/* Reviews List */}
-      {loading && !reviewsLoaded ? (
+      <div className="space-y-6" ref={reviewsRef}>
         renderLoadingPlaceholder()
       ) : reviews.length > 0 ? (
         <div className="space-y-6">
