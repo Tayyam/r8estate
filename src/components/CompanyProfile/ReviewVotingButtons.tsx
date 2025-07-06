@@ -153,55 +153,51 @@ const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({
   };
   
   return (
-    <>
-    <>
-      <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
-        {/* Helpful Button */}
-        <button
-          onClick={() => handleVote(true)}
-          disabled={!canVote || loading || votesLoading}
-          className={`flex items-center space-x-1 rtl:space-x-reverse px-2 py-1 rounded-lg text-sm ${
-            userVote?.helpful === true 
-              ? 'bg-green-100 text-green-700' 
-              : 'text-gray-600 hover:bg-gray-100'
-          } transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed`}
-          title={canVote ? (translations?.markAsHelpful || 'Mark as helpful') : (translations?.cannotVote || 'You cannot vote')}
-        >
-          <ThumbsUp className={`h-4 w-4 ${userVote?.helpful === true ? 'fill-current' : ''}`} />
-          <span>
-            {translations?.helpful || 'Helpful'} 
-            {helpfulCount > 0 && ` (${helpfulCount})`}
-          </span>
-        </button>
+    <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
+      {/* Helpful Button */}
+      <button
+        onClick={() => handleVote(true)}
+        disabled={!canVote || loading || votesLoading}
+        className={`flex items-center space-x-1 rtl:space-x-reverse px-2 py-1 rounded-lg text-sm ${
+          userVote?.helpful === true 
+            ? 'bg-green-100 text-green-700' 
+            : 'text-gray-600 hover:bg-gray-100'
+        } transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed`}
+        title={canVote ? (translations?.markAsHelpful || 'Mark as helpful') : (translations?.cannotVote || 'You cannot vote')}
+      >
+        <ThumbsUp className={`h-4 w-4 ${userVote?.helpful === true ? 'fill-current' : ''}`} />
+        <span>
+          {translations?.helpful || 'Helpful'} 
+          {helpfulCount > 0 && ` (${helpfulCount})`}
+        </span>
+      </button>
 
-        {/* Not Helpful Button */}
-        <button
-          onClick={() => handleVote(false)}
-          disabled={!canVote || loading || votesLoading}
-          className={`flex items-center space-x-1 rtl:space-x-reverse px-2 py-1 rounded-lg text-sm ${
-            userVote?.helpful === false 
-              ? 'bg-red-100 text-red-700' 
-              : 'text-gray-600 hover:bg-gray-100'
-          } transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed`}
-          title={canVote ? (translations?.markAsNotHelpful || 'Mark as not helpful') : (translations?.cannotVote || 'You cannot vote')}
-        >
-          <ThumbsDown className={`h-4 w-4 ${userVote?.helpful === false ? 'fill-current' : ''}`} />
-          <span>
-            {translations?.notHelpful || 'Not Helpful'}
-            {notHelpfulCount > 0 && ` (${notHelpfulCount})`}
-          </span>
-        </button>
-      </div>
-      
-      {/* Report button will only render if user meets criteria */}
-      <ReportButton
-        contentType="review"
-        contentId={reviewId}
-        contentOwnerId={reviewUserId}
-        companyId={companyId}
-      />
-    </>
-    </>
+      {/* Not Helpful Button */}
+      <button
+        onClick={() => handleVote(false)}
+        disabled={!canVote || loading || votesLoading}
+        className={`flex items-center space-x-1 rtl:space-x-reverse px-2 py-1 rounded-lg text-sm ${
+          userVote?.helpful === false 
+            ? 'bg-red-100 text-red-700' 
+            : 'text-gray-600 hover:bg-gray-100'
+        } transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed`}
+        title={canVote ? (translations?.markAsNotHelpful || 'Mark as not helpful') : (translations?.cannotVote || 'You cannot vote')}
+      >
+        <ThumbsDown className={`h-4 w-4 ${userVote?.helpful === false ? 'fill-current' : ''}`} />
+        <span>
+          {translations?.notHelpful || 'Not Helpful'}
+          {notHelpfulCount > 0 && ` (${notHelpfulCount})`}
+        </span>
+      </button>
+    </div>
+    
+    {/* Report button will only render if user meets criteria */}
+    <ReportButton
+      contentType="review"
+      contentId={reviewId}
+      contentOwnerId={reviewUserId}
+      companyId={companyId}
+    />
   );
 };
 
