@@ -11,6 +11,7 @@ import AddReviewModal from './AddReviewModal';
 import EditReviewModal from './EditReviewModal';
 import ReplyModal from './ReplyModal';
 import ReviewVotingButtons from './ReviewVotingButtons';
+import ReportButton from './ReportButton';
 import WriteReviewTab from './WriteReviewTab';
 
 interface ReviewsTabProps {
@@ -601,7 +602,11 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
               
               {/* Review Voting Buttons */}
               <div className="flex justify-end mb-4">
-                <ReviewVotingButtons reviewId={review.id} reviewUserId={review.userId} />
+                <ReviewVotingButtons 
+                  reviewId={review.id} 
+                  reviewUserId={review.userId} 
+                  companyId={company.id}
+                />
               </div>
               
               {/* Company Reply */}
@@ -659,6 +664,18 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                       </p>
                     )}
                   </div>
+                  
+                  {/* Add Report button for company replies */}
+                  {currentUser && review.companyReply && (
+                    <div className="mt-2 flex justify-end">
+                      <ReportButton 
+                        contentType="reply"
+                        contentId={review.id}
+                        contentOwnerId={review.companyReply.repliedBy}
+                        companyId={company.id}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
