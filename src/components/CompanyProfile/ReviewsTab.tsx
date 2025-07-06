@@ -595,13 +595,17 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                   )}
                 </div>
               </div>
-              
+
               <h4 className="font-semibold text-gray-900 mb-3 text-lg">{review.title}</h4>
               <p className="text-gray-700 leading-relaxed mb-6">{review.content}</p>
               
               {/* Review Voting Buttons */}
               <div className="flex justify-end mb-4">
-                <ReviewVotingButtons reviewId={review.id} reviewUserId={review.userId} />
+                <ReviewVotingButtons 
+                  reviewId={review.id} 
+                  reviewUserId={review.userId} 
+                  contentType="review"
+                />
               </div>
               
               {/* Company Reply */}
@@ -647,7 +651,19 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                     <div className={`transition-all duration-300 ${
                       expandedReplies.has(review.id) ? 'block' : 'hidden'
                     }`}>
-                      <p className="text-gray-700 leading-relaxed">{review.companyReply.content}</p>
+                      <div className="space-y-4">
+                        <p className="text-gray-700 leading-relaxed">{review.companyReply.content}</p>
+                        
+                        {/* Reply Voting/Report Buttons */}
+                        <div className="flex justify-end">
+                          <ReviewVotingButtons 
+                            reviewId={review.id} 
+                            reviewUserId={review.companyReply.repliedBy} 
+                            contentType="reply"
+                            replyId={review.id} // Using review ID as reply ID since replies are embedded
+                          />
+                        </div>
+                      </div>
                     </div>
                     
                     {!expandedReplies.has(review.id) && (

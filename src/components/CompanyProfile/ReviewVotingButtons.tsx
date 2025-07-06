@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Flag } from 'lucide-react';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import ReportModal from './ReportModal';
 
 interface ReviewVotingButtonsProps {
   reviewId: string;
   reviewUserId: string;
+  contentType?: 'review' | 'reply';
+  replyId?: string;
 }
 
 interface Vote {
@@ -18,7 +21,12 @@ interface Vote {
   createdAt: Date;
 }
 
-const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({ reviewId, reviewUserId }) => {
+const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({ 
+  reviewId, 
+  reviewUserId, 
+  contentType = 'review',
+  replyId
+}) => {
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const [helpfulCount, setHelpfulCount] = useState(0);
@@ -26,11 +34,17 @@ const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({ reviewId, rev
   const [userVote, setUserVote] = useState<Vote | null>(null);
   const [loading, setLoading] = useState(false);
   const [votesLoading, setVotesLoading] = useState(true);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Check if user can vote (not admin, not company, not own review)
   const canVote = currentUser && 
                  currentUser.role === 'user' && 
                  currentUser.uid !== reviewUserId;
+                
+  // Check if user can report (any logged in user except admin and not own content)
+  const canReport = currentUser && 
+                  currentUser.uid !== reviewUserId &&
+                  currentUser.role !== 'admin';
 
   // Load votes for this review
   useEffect(() => {
@@ -183,6 +197,27 @@ const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({ reviewId, rev
           {notHelpfulCount > 0 && ` (${notHelpfulCount})`}
         </span>
       </button>
+      
+      {/* Report Button */}
+      {canReport && (
+        <button
+          onClick={() => setShowReportModal(true)}
+          className="flex items-center space-x-1 rtl:space-x-reverse px-2 py-1 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+          title={translations?.reportContent || 'Report content'}
+        >
+          <Flag className="h-4 w-4" />
+          <span>{translations?.report || 'Report'}</span>
+        </button>
+      )}
+      
+      {/* Report Modal */}
+      {showReportModal && (
+        <ReportModal
+          contentId={contentType === 'review' ? reviewId : replyId || ''}
+          contentType={contentType}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
     </div>
   );
 };
