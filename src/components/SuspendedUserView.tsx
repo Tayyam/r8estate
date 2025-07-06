@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertOctagon, Mail } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import GlobalHeader from './GlobalHeader';
 
 const SuspendedUserView = () => {
   const { translations } = useLanguage();
@@ -17,6 +18,8 @@ const SuspendedUserView = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <GlobalHeader />
+      
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
         <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <AlertOctagon className="h-10 w-10 text-red-600" />
