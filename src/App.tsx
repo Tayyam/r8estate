@@ -13,6 +13,7 @@ import Terms from './components/Terms';
 import Privacy from './components/Privacy';
 import Settings from './components/Settings';
 import NotificationsPage from './components/Notifications/NotificationsPage';
+import CompanyDashboard from './components/CompanyDashboard';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import CompanyProfile from './components/CompanyProfile';
@@ -128,6 +129,9 @@ function AppContent() {
       case 'register':
         navigate('/register');
         break;
+      case 'company-dashboard':
+        navigate('/company-dashboard');
+        break;
       case 'search-results':
         navigate(`/search?q=${encodeURIComponent(searchParams.query || '')}&category=${searchParams.category || 'all'}`);
         break;
@@ -229,6 +233,11 @@ function AppContent() {
           <Route path="/profile/reviews" element={
             <CheckUserStatus>
               <MyReviews onNavigate={handleNavigate} />
+            </CheckUserStatus>
+          } />
+          <Route path="/company-dashboard" element={
+            <CheckUserStatus>
+              <CompanyDashboard />
             </CheckUserStatus>
           } />
           <Route path="/search" element={

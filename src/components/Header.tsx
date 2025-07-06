@@ -388,7 +388,14 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                     {/* Company Profile Link */}
                     {currentUser.role === 'company' && (
                       <button
-                        onClick={handleCompanyProfile}
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          if (setCurrentPage) {
+                            setCurrentPage('company-dashboard');
+                          } else {
+                            navigate('/company-dashboard');
+                          }
+                        }}
                         disabled={loadingCompanyId || !userCompanyId}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -598,19 +605,26 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                     {/* Company Profile for mobile */}
                     {currentUser.role === 'company' && (
                       <button
-                        onClick={handleCompanyProfile}
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          if (setCurrentPage) {
+                            setCurrentPage('company-dashboard');
+                          } else {
+                            navigate('/company-dashboard');
+                          }
+                        }}
                         disabled={loadingCompanyId || !userCompanyId}
                         className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {loadingCompanyId ? (
                           <>
                             <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                            <span>{translations?.loadingCompany || 'Loading Company...'}</span>
+                            <span>{translations?.loadingDashboard || 'Loading Dashboard...'}</span>
                           </>
                         ) : userCompanyId ? (
                           <>
-                            <Building2 className="w-4 h-4" />
-                            <span>{translations?.companyProfile || 'Company Profile'}</span>
+                            <Building2 className="w-4 h-4 text-blue-600" />
+                            <span>{translations?.companyDashboard || 'Company Dashboard'}</span>
                           </>
                         ) : (
                           <>

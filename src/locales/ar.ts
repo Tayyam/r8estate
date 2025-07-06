@@ -253,6 +253,107 @@ export const ar = {
   reviewVotesNotificationTitle: 'تفاعل مع تقييمك',
   reviewVotesNotificationMessage: 'حصل تقييمك على 5 تصويتات',
   
+  // Company Dashboard
+  companyDashboard: 'لوحة تحكم الشركة',
+  companyDashboardAccessDenied: 'يمكن للحسابات من نوع شركة فقط الوصول إلى لوحة التحكم.',
+  companyDashboardNotFound: 'تعذر العثور على الشركة المرتبطة بحسابك.',
+  loadingDashboard: 'جاري تحميل لوحة التحكم...',
+  viewPublicProfile: 'عرض الملف العام',
+  
+  // Dashboard Tabs
+  overview: 'نظرة عامة',
+  reviews: 'التقييمات',
+  gallery: 'معرض الصور',
+  projects: 'المشاريع',
+  profileManagement: 'إدارة الملف الشخصي',
+  plan: 'الخطة',
+  
+  // Overview Tab
+  totalReviews: 'إجمالي التقييمات',
+  averageRating: 'متوسط التقييم',
+  newReviewsThisMonth: 'تقييمات جديدة هذا الشهر',
+  responseRate: 'معدل الاستجابة',
+  latestReviews: 'أحدث التقييمات',
+  needsResponse: 'يحتاج للرد',
+  yourReply: 'ردك',
+  noReviewsYet: 'لا توجد تقييمات حتى الآن',
+  reviewsWillAppearHere: 'ستظهر التقييمات هنا بمجرد أن يترك العملاء ملاحظاتهم.',
+  recentActivity: 'النشاط الأخير',
+  increase: 'زيادة',
+  decrease: 'انخفاض',
+  
+  // Reviews Tab
+  allRatings: 'جميع التقييمات',
+  allResponses: 'جميع الردود',
+  responded: 'تم الرد',
+  notResponded: 'لم يتم الرد',
+  newest: 'الأحدث',
+  oldest: 'الأقدم',
+  highestRating: 'الأعلى تقييماً',
+  lowestRating: 'الأقل تقييماً',
+  noReviewsFound: 'لم يتم العثور على تقييمات',
+  noReviewsMatchFilters: 'لا توجد تقييمات تطابق المرشحات المحددة. حاول تغيير المرشحات أو تحقق لاحقاً من التقييمات الجديدة.',
+  
+  // Gallery Tab
+  uploadGalleryImages: 'رفع صور للمعرض',
+  dragDropImages: 'اسحب وأفلت الصور هنا، أو انقر للاستعراض',
+  acceptedFormats: 'الصيغ المقبولة: JPG، JPEG، PNG، GIF، WEBP',
+  uploadingImages: 'جاري رفع الصور...',
+  pleaseWait: 'يرجى الانتظار أثناء معالجة صورك',
+  noGalleryImages: 'لا توجد صور في المعرض',
+  addImagesToShowcase: 'أضف صوراً لعرض شركتك ومشاريعك وعقاراتك للعملاء المحتملين.',
+  imagesUploadedSuccess: 'تم رفع الصور بنجاح',
+  imageDeletedSuccess: 'تم حذف الصورة بنجاح',
+  failedToLoadGallery: 'فشل في تحميل صور المعرض',
+  failedToUploadImages: 'فشل في رفع الصور',
+  failedToDeleteImage: 'فشل في حذف الصورة',
+  
+  // Projects Tab
+  manageYourProjects: 'إدارة مشاريعك وعقاراتك',
+  propertiesInProject: '{count} عقار في هذا المشروع',
+  addFirstProperty: 'إضافة أول عقار',
+  addPropertiesToShowcase: 'أضف عقارات لعرض مشاريعك للعملاء المحتملين.',
+  
+  // Profile Management Tab
+  companyImages: 'صور الشركة',
+  companyInformation: 'معلومات الشركة',
+  companyName: 'اسم الشركة',
+  companyEmail: 'البريد الإلكتروني للشركة',
+  companyPhone: 'رقم الهاتف',
+  companyWebsite: 'الموقع الإلكتروني',
+  companyDescription: 'الوصف',
+  locationInformation: 'معلومات الموقع',
+  contactAdminLocation: 'اتصل بمسؤول لتغيير موقع شركتك',
+  uploadLogo: 'رفع شعار',
+  changeLogo: 'تغيير الشعار',
+  uploadCover: 'رفع صورة غلاف',
+  changeCover: 'تغيير الغلاف',
+  recommendedSize: 'الحجم الموصى به: 400×400 بكسل',
+  recommendedCoverSize: 'الحجم الموصى به: 1200×400 بكسل',
+  saveChanges: 'حفظ التغييرات',
+  saving: 'جاري الحفظ...',
+  profileUpdatedSuccess: 'تم تحديث الملف الشخصي بنجاح',
+  failedToUpdateProfile: 'فشل في تحديث الملف الشخصي',
+  descriptionInfo: 'سيتم عرض هذا الوصف في ملفك الشخصي العام',
+  
+  // Plan Tab
+  currentPlan: 'الخطة الحالية',
+  yourSubscriptionDetails: 'تفاصيل اشتراكك والمزايا',
+  activePlan: 'خطة نشطة',
+  inactivePlan: 'خطة غير نشطة',
+  includedFeatures: 'الميزات المضمنة',
+  upgradeToProPlan: 'الترقية إلى الخطة الاحترافية',
+  unlockPremiumFeatures: 'افتح الميزات المتميزة وارتق بملف شركتك إلى المستوى التالي',
+  upgradeNow: 'الترقية الآن',
+  billingHistory: 'سجل الفواتير',
+  billingHistoryComingSoon: 'سجل الفواتير وإدارة الفواتير قريباً',
+  
+  // Dashboard Common
+  comingSoon: 'قريباً',
+  view: 'عرض',
+  filters: 'المرشحات',
+  viewAll: 'عرض الكل'
+  
   replyVotesNotificationTitle: 'تفاعل مع ردك',
   replyVotesNotificationMessage: 'حصل ردك على 5 تصويتات',
   
