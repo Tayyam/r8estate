@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Building2, Mail, Phone, Globe, MapPin, Upload, X, CheckSquare, Square } from 'lucide-react';
+import { Plus, Building2, Mail, Phone, Globe, MapPin, Upload, X } from 'lucide-react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, doc, setDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -32,9 +32,10 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
     phone: '',
     website: ''
   });
+  
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [createAccount, setCreateAccount] = useState(false);
+  const [createAccount, setCreateAccount] = useState(true); // Always create account (claimed)
 
   // Handle form input changes
   const handleInputChange = (field: string, value: string) => {
@@ -42,11 +43,6 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
       ...formData,
       [field]: value
     });
-  };
-
-  // Toggle account creation
-  const toggleCreateAccount = () => {
-    setCreateAccount(!createAccount);
   };
 
   // Handle logo file selection
@@ -98,28 +94,26 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
     // Validate form data
     if (!formData.name || !formData.categoryId || !formData.location) {
       onError(translations?.fillAllRequiredFields || 'Please fill in all required fields');
+      return;  
+    }
+    
+    // Validate email and password
+    if (!formData.email || !formData.password) {
+      onError(translations?.emailPasswordRequired || 'Email and password are required');
       return;
     }
     
-    // If creating account, validate email and password
-    if (createAccount) {
-      if (!formData.email || !formData.password) {
-        onError(translations?.emailPasswordRequired || 'Email and password are required when creating an account');
-        return;
-      }
-      
-      // Validate password length
-      if (formData.password.length < 6) {
-        onError(translations?.passwordMinLength || 'Password must be at least 6 characters long');
-        return;
-      }
-      
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        onError(translations?.invalidEmailFormat || 'Please enter a valid email address');
-        return;
-      }
+    // Validate password length
+    if (formData.password.length < 6) {
+      onError(translations?.passwordMinLength || 'Password must be at least 6 characters long');
+      return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      onError(translations?.invalidEmailFormat || 'Please enter a valid email address');
+      return;
     }
     
     // Validate website URL if provided
@@ -136,65 +130,38 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
       let companyId: string;
       let companyData: any;
       
-      if (createAccount) {
-        // Create the user account with Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        companyId = userCredential.user.uid;
-        
-        companyData = {
-          id: companyId,
-          name: formData.name,
-          email: formData.email,
-          categoryId: formData.categoryId,
-          location: formData.location,
-          description: formData.description || '',
-          phone: formData.phone || '',
-          website: formData.website || '',
-          claimed: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        
-        // Create user document in users collection
-        await setDoc(doc(db, 'users', companyId), {
-          uid: companyId,
-          email: formData.email,
-          displayName: formData.name,
-          role: 'company',
-          companyId: companyId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isEmailVerified: false
-        });
-        
-        // Create company document with matching UID
-        await setDoc(doc(db, 'companies', companyId), companyData);
-      } else {
-        // Create company without user account
-        companyData = {
-          name: formData.name,
-          email: formData.email || '',
-          categoryId: formData.categoryId,
-          location: formData.location,
-          description: formData.description || '',
-          phone: formData.phone || '',
-          website: formData.website || '',
-          claimed: false,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        
-        // Add company to Firestore with auto-generated ID
-        const docRef = await addDoc(collection(db, 'companies'), companyData);
-        companyId = docRef.id;
-        
-        // Update the document with its ID
-        await updateDoc(doc(db, 'companies', companyId), {
-          id: companyId
-        });
-        
-        companyData.id = companyId;
-      }
+      // Create the user account with Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      companyId = userCredential.user.uid;
+      
+      companyData = {
+        id: companyId,
+        name: formData.name,
+        email: formData.email,
+        categoryId: formData.categoryId,
+        location: formData.location,
+        description: formData.description || '',
+        phone: formData.phone || '',
+        website: formData.website || '',
+        claimed: true, // Always set to true
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      // Create user document in users collection
+      await setDoc(doc(db, 'users', companyId), {
+        uid: companyId,
+        email: formData.email,
+        displayName: formData.name,
+        role: 'company',
+        companyId: companyId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isEmailVerified: false
+      });
+      
+      // Create company document with matching UID
+      await setDoc(doc(db, 'companies', companyId), companyData);
       
       // Upload logo if selected
       if (logoFile) {
@@ -241,28 +208,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6">
           {/* Account Creation Toggle */}
-          <div className="mb-6 border-b border-gray-200 pb-6">
-            <div 
-              className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
-              onClick={toggleCreateAccount}
-            >
-              <div className="flex-shrink-0">
-                {createAccount ? (
-                  <CheckSquare className="h-6 w-6 text-blue-600" />
-                ) : (
-                  <Square className="h-6 w-6 text-gray-400" />
-                )}
-              </div>
-              <div>
-                <p className="text-base font-medium text-gray-900">
-                  {translations?.createCompanyAccount || 'Create company account'}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {translations?.createAccountDesc || 'Allow this company to log in and manage their profile'}
-                </p>
-              </div>
-            </div>
-          </div>
+          <div className="mb-6 border-b border-gray-200 pb-6"></div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Company Name */}
@@ -286,41 +232,39 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.companyEmail || 'Company Email'} {createAccount ? '*' : ''}
+                {translations?.companyEmail || 'Company Email'} *
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
-                  required={createAccount}
+                  required
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${!createAccount && 'bg-gray-50'}`}
+                  className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder={translations?.enterCompanyEmail || 'Enter company email'}
                 />
               </div>
             </div>
 
             {/* Password */}
-            {createAccount && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {translations?.companyPassword || 'Password'} *
-                </label>
-                <input
-                  type="password"
-                  required={createAccount}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder={translations?.enterCompanyPassword || 'Enter password (min. 6 characters)'}
-                  minLength={6}
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {translations?.companyPassword || 'Password'} *
+              </label>
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={translations?.enterCompanyPassword || 'Enter password (min. 6 characters)'}
+                minLength={6}
+              />
+            </div>
 
             {/* Category */}
-            <div className={createAccount ? "" : "md:col-span-2"}>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {translations?.companyCategory || 'Category'} *
               </label>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Edit, Building2, Mail, Phone, Globe, MapPin, Upload, X, CheckSquare, Square } from 'lucide-react';
+import { Edit, Building2, Mail, Phone, Globe, MapPin, Upload, X } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../../config/firebase';
@@ -30,7 +30,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     description: company.description || '',
     phone: company.phone || '',
     website: company.website || '',
-    claimed: company.claimed
+    claimed: true // Always set to true
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(company.logoUrl || null);
@@ -113,14 +113,6 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
       console.error('Error deleting logo:', error);
       // Don't throw error for delete operations as it might be already deleted
     }
-  };
-
-  // Toggle claimed status
-  const toggleClaimedStatus = () => {
-    setFormData(prev => ({
-      ...prev,
-      claimed: !prev.claimed
-    }));
   };
 
   // Handle form submission
@@ -331,30 +323,6 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                   className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   placeholder={translations?.enterWebsite || 'Enter website URL'}
                 />
-              </div>
-            </div>
-
-            {/* Claimed Status */}
-            <div className="md:col-span-2">
-              <div 
-                className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer"
-                onClick={toggleClaimedStatus}
-              >
-                <div className="flex-shrink-0">
-                  {formData.claimed ? (
-                    <CheckSquare className="h-6 w-6 text-blue-600" />
-                  ) : (
-                    <Square className="h-6 w-6 text-gray-400" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700">
-                    {translations?.companyIsClaimed || 'Company is claimed'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {translations?.claimedCompanyDesc || 'A claimed company has a user account that manages its profile'}
-                  </p>
-                </div>
               </div>
             </div>
 
