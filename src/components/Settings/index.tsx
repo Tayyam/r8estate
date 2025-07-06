@@ -38,9 +38,6 @@
  import Companies from './Companies';
  import Categories from './Categories';
 -import ClaimRequests from './ClaimRequests';
-import ClaimRequests from './ClaimRequests';
-import Reports from './Reports';
-import { Flag } from 'lucide-react';
 +import ClaimRequests from './ClaimRequests'; 
 +import Reports from './Reports';
 +import { Flag } from 'lucide-react';
@@ -51,12 +48,6 @@ import { Flag } from 'lucide-react';
        name: translations?.claimRequests || 'Claim Requests',
        icon: FileText,
 -      component: ClaimRequests
-    },
-    {
-      id: 'reports',
-      name: translations?.reportsManagement || 'Reports Management',
-      icon: Flag,
-      component: Reports
 +      component: ClaimRequests  
 +    },
 +    {
