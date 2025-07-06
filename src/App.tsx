@@ -142,12 +142,10 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {shouldShowHeaderFooter && (
-        <Header 
-          currentPage={location.pathname.split('/')[1] || 'home'} 
-          setCurrentPage={handleNavigate} 
-        />
-      )}
+      <Header 
+        currentPage={location.pathname.split('/')[1] || 'home'} 
+        setCurrentPage={handleNavigate} 
+      />
       <main>
         <Routes>
           <Route path="/" element={
@@ -241,6 +239,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      {/* Only conditionally show the Footer */}
       {shouldShowHeaderFooter && <Footer onNavigate={handleNavigate} />}
       <NotificationContainer />
     </div>
