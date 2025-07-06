@@ -10,9 +10,10 @@ import { getCompanySlug } from '../utils/urlUtils';
 interface HeaderProps {
   currentPage?: string;
   setCurrentPage?: (page: string) => void;
+  isAuthPage?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage }) => {
+const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, isAuthPage = false }) => {
   const { language, translations, setLanguage, direction } = useLanguage();
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
@@ -260,35 +261,37 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
           </div>
 
           {/* Desktop Navigation Menu */}
-          <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8 rtl:space-x-reverse">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item)}
-                className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 text-sm xl:text-base ${
-                  activePage === item.id
-                    ? 'bg-opacity-10'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                style={{
-                  color: activePage === item.id ? '#194866' : '',
-                  backgroundColor: activePage === item.id ? 'rgba(25, 72, 102, 0.1)' : ''
-                }}
-                onMouseEnter={(e) => {
-                  if (activePage !== item.id) {
-                    e.target.style.color = '#194866';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activePage !== item.id) {
-                    e.target.style.color = '#374151';
-                  }
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
+          {!isAuthPage && (
+            <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8 rtl:space-x-reverse">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item)}
+                  className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 text-sm xl:text-base ${
+                    activePage === item.id
+                      ? 'bg-opacity-10'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                  style={{
+                    color: activePage === item.id ? '#194866' : '',
+                    backgroundColor: activePage === item.id ? 'rgba(25, 72, 102, 0.1)' : ''
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activePage !== item.id) {
+                      e.target.style.color = '#194866';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activePage !== item.id) {
+                      e.target.style.color = '#374151';
+                    }
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          )}
 
           {/* Desktop Right side - Language, Profile, Sign Up */}
           <div className="hidden md:flex items-center space-x-2 lg:space-x-4 rtl:space-x-reverse">
@@ -331,34 +334,36 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
               )}
             </div>
 
-            {/* User Profile (when logged in) */}
-            {currentUser ? (
-              <div className="relative" id="user-menu">
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200"
-                >
-                  <div className="flex items-center justify-center w-8 h-8 lg:w-10 lg:h-10 rounded-full shadow-md" style={{ backgroundColor: '#194866' }}>
-                    {getUserAvatar()}
-                  </div>
-                  <div className="hidden lg:block text-left rtl:text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {currentUser.role === 'company' && userCompanyData 
-                        ? userCompanyData.name 
-                        : currentUser.displayName
-                      }
-                    </p>
-                    <p className="text-xs text-gray-500 capitalize">
-                      {currentUser.role === 'company'
-                        ? (translations?.companyAccount || 'Company Account')
-                        : currentUser.role === 'admin'
-                          ? (translations?.adminAccount || 'Admin Account')
-                          : (translations?.userAccount || 'User Account')
-                      }
-                    </p>
-                  </div>
-                  <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
+            {!isAuthPage && (
+              <>
+                {/* User Profile (when logged in) */}
+                {currentUser ? (
+                  <div className="relative" id="user-menu">
+                    <button
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                    >
+                      <div className="flex items-center justify-center w-8 h-8 lg:w-10 lg:h-10 rounded-full shadow-md" style={{ backgroundColor: '#194866' }}>
+                        {getUserAvatar()}
+                      </div>
+                      <div className="hidden lg:block text-left rtl:text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          {currentUser.role === 'company' && userCompanyData 
+                            ? userCompanyData.name 
+                            : currentUser.displayName
+                          }
+                        </p>
+                        <p className="text-xs text-gray-500 capitalize">
+                          {currentUser.role === 'company'
+                            ? (translations?.companyAccount || 'Company Account')
+                            : currentUser.role === 'admin'
+                              ? (translations?.adminAccount || 'Admin Account')
+                              : (translations?.userAccount || 'User Account')
+                          }
+                        </p>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
 
                 {isUserMenuOpen && (
                   <div className={`absolute top-full mt-2 ${direction === 'rtl' ? 'left-0' : 'right-0'} bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-48 z-50`}>
@@ -458,45 +463,47 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                 )}
               </div>
             ) : (
-              <>
-                {/* Create Account Button */}
-                <button
-                  onClick={handleCreateAccount}
-                  className="flex items-center space-x-1 lg:space-x-2 rtl:space-x-reverse px-2 lg:px-4 py-2 text-white rounded-lg transition-all duration-200 font-medium text-xs lg:text-sm shadow-md hover:shadow-lg"
-                  style={{ backgroundColor: '#194866' }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#0f3147';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = '#194866';
-                  }}
-                >
-                  <UserPlus className="w-3 h-3 lg:w-4 lg:h-4" />
-                  <span className="hidden lg:inline">{translations?.createAccount || 'Create Account'}</span>
-                  <span className="lg:hidden">{translations?.signup || 'Sign Up'}</span>
-                </button>
+                <>
+                  {/* Create Account Button */}
+                  <button
+                    onClick={handleCreateAccount}
+                    className="flex items-center space-x-1 lg:space-x-2 rtl:space-x-reverse px-2 lg:px-4 py-2 text-white rounded-lg transition-all duration-200 font-medium text-xs lg:text-sm shadow-md hover:shadow-lg"
+                    style={{ backgroundColor: '#194866' }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#0f3147';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#194866';
+                    }}
+                  >
+                    <UserPlus className="w-3 h-3 lg:w-4 lg:h-4" />
+                    <span className="hidden lg:inline">{translations?.createAccount || 'Create Account'}</span>
+                    <span className="lg:hidden">{translations?.signup || 'Sign Up'}</span>
+                  </button>
 
-                {/* Login Button */}
-                <button
-                  onClick={handleLogin}
-                  className="px-2 lg:px-3 py-2 text-xs lg:text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                  onMouseEnter={(e) => {
-                    e.target.style.color = '#194866';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.color = '#4b5563';
-                  }}
-                >
-                  {translations?.login || 'Login'}
-                </button>
-              </>
-            )}
+                  {/* Login Button */}
+                  <button
+                    onClick={handleLogin}
+                    className="px-2 lg:px-3 py-2 text-xs lg:text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200"
+                    onMouseEnter={(e) => {
+                      e.target.style.color = '#194866';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.color = '#4b5563';
+                    }}
+                  >
+                    {translations?.login || 'Login'}
+                  </button>
+                </>
+              )}
+            </>
+          )}
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => !isAuthPage && setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200"
               aria-label="Toggle mobile menu"
             >
@@ -510,7 +517,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
         </div>
 
         {/* Mobile Menu */}
-        {isMobileMenuOpen && (
+        {isMobileMenuOpen && !isAuthPage && (
           <div id="mobile-menu" className="md:hidden border-t border-gray-200 bg-white">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {/* Navigation Items */}

@@ -85,6 +85,7 @@ function AppContent() {
   }, [navigate]);
 
   const shouldShowHeaderFooter = !location.pathname.includes('/login') && !location.pathname.includes('/register');
+  const isAuthPage = location.pathname.includes('/login') || location.pathname.includes('/register');
 
   const handleNavigate = (page: string) => {
     switch (page) {
@@ -142,12 +143,11 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {shouldShowHeaderFooter && (
-        <Header 
-          currentPage={location.pathname.split('/')[1] || 'home'} 
-          setCurrentPage={handleNavigate} 
-        />
-      )}
+      <Header 
+        currentPage={location.pathname.split('/')[1] || 'home'} 
+        setCurrentPage={handleNavigate}
+        isAuthPage={isAuthPage}
+      />
       <main>
         <Routes>
           <Route path="/" element={
@@ -241,7 +241,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      {shouldShowHeaderFooter && <Footer onNavigate={handleNavigate} />}
+      {shouldShowHeaderFooter && <Footer onNavigate={handleNavigate} />} 
       <NotificationContainer />
     </div>
   );
