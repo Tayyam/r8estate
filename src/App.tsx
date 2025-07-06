@@ -12,6 +12,7 @@ import Contact from './components/Contact';
 import Terms from './components/Terms';
 import Privacy from './components/Privacy';
 import Settings from './components/Settings';
+import NotificationsPage from './components/Notifications/NotificationsPage';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import CompanyProfile from './components/CompanyProfile';
@@ -109,6 +110,9 @@ function AppContent() {
       case 'privacy':
         navigate('/privacy');
         break;
+      case 'notifications':
+        navigate('/notifications');
+        break;
       case 'settings':
         navigate('/admin/settings');
         break;
@@ -179,6 +183,11 @@ function AppContent() {
           <Route path="/pricing" element={
             <CheckUserStatus>
               <Pricing />
+            </CheckUserStatus>
+          } />
+          <Route path="/notifications" element={
+            <CheckUserStatus>
+              <NotificationsPage onNavigate={handleNavigate} />
             </CheckUserStatus>
           } />
           <Route path="/contact" element={

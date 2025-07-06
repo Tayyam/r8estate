@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, ChevronDown, User, UserPlus, Menu, X, LogOut, Settings as SettingsIcon, Building2, MessageSquare } from 'lucide-react';
+import { Globe, ChevronDown, User, UserPlus, Menu, X, LogOut, Settings as SettingsIcon, Building2, MessageSquare, Bell } from 'lucide-react';
 import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getCompanySlug } from '../utils/urlUtils';
+import NotificationBell from './Header/NotificationBell';
 
 interface HeaderProps {
   currentPage?: string;
@@ -334,6 +335,9 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
             {/* User Profile (when logged in) */}
             {currentUser ? (
               <div className="relative" id="user-menu">
+                {/* Notification Bell */}
+                <NotificationBell onNavigate={setCurrentPage} />
+                
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200"
@@ -562,6 +566,11 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
               <div className="pt-3 border-t border-gray-200 mt-3 space-y-2">
                 {currentUser ? (
                   <>
+                    {/* Notification Bell for Mobile */}
+                    <div className="mr-2">
+                      <NotificationBell onNavigate={setCurrentPage} />
+                    </div>
+                    
                     <div className="flex items-center px-3 py-2 space-x-3 rtl:space-x-reverse">
                       <div className="flex items-center justify-center w-8 h-8 rounded-full shadow-md" style={{ backgroundColor: '#194866' }}>
                         {getUserAvatar()}
