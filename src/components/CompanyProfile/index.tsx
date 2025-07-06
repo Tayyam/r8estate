@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -27,6 +27,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const params = useParams<{ companySlug: string; companyId: string; tab: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const [company, setCompany] = useState<CompanyProfileType | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -41,6 +42,9 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   const [showAddProperty, setShowAddProperty] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
 
+  // Reference to highlighted review
+  const highlightedReviewRef = useRef<HTMLDivElement>(null);
+
   // Update URL when tab changes
   useEffect(() => {
     if (company && activeTab && params.tab !== activeTab) {
@@ -48,6 +52,35 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
       navigate(`/company/${companySlug}/${company.id}/${activeTab}`, { replace: true });
     }
   }, [activeTab, company, navigate, params.tab]);
+
+  // Check for review ID in URL query params and scroll to it if found
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const reviewId = searchParams.get('review');
+    
+    // If a review ID is provided in the URL, switch to reviews tab and scroll to it
+    if (reviewId && company) {
+      // Switch to reviews tab if not already there
+      if (activeTab !== 'reviews') {
+        setActiveTab('reviews');
+      }
+      
+      // Give some time for the reviews to load, then scroll to the review
+      const timer = setTimeout(() => {
+        const reviewElement = document.getElementById(`review-${reviewId}`);
+        if (reviewElement) {
+          reviewElement.scrollIntoView({ behavior: 'smooth' });
+          reviewElement.classList.add('bg-yellow-50');
+          setTimeout(() => {
+            reviewElement.classList.remove('bg-yellow-50');
+            reviewElement.classList.add('bg-white');
+          }, 3000);
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.search, company, activeTab]);
 
   // Check if user can edit (admin or company owner)
   const canEdit = currentUser && (

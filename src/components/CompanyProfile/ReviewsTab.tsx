@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check, Share2 } from 'lucide-react';
 import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, increment, DocumentData } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -12,6 +12,7 @@ import EditReviewModal from './EditReviewModal';
 import ReplyModal from './ReplyModal';
 import ReviewVotingButtons from './ReviewVotingButtons';
 import WriteReviewTab from './WriteReviewTab';
+import ShareReviewButton from './ShareReviewButton';
 
 interface ReviewsTabProps {
   reviews: Review[];
@@ -601,11 +602,18 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
               
               {/* Review Voting Buttons */}
               <div className="flex justify-end mb-4">
-                <ReviewVotingButtons 
-                  reviewId={review.id} 
-                  reviewUserId={review.userId} 
-                  contentType="review"
-                />
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                  <ShareReviewButton
+                    reviewId={review.id}
+                    companyId={company.id}
+                    companyName={company.name}
+                  />
+                  <ReviewVotingButtons 
+                    reviewId={review.id} 
+                    reviewUserId={review.userId} 
+                    contentType="review"
+                  />
+                </div>
               </div>
               
               {/* Company Reply */}
@@ -655,13 +663,20 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                         <p className="text-gray-700 leading-relaxed">{review.companyReply.content}</p>
                         
                         {/* Reply Voting/Report Buttons */}
-                        <div className="flex justify-end">
-                          <ReviewVotingButtons 
-                            reviewId={review.id} 
-                            reviewUserId={review.companyReply.repliedBy} 
-                            contentType="reply"
-                            replyId={review.id} // Using review ID as reply ID since replies are embedded
-                          />
+                        <div className="flex justify-end mt-4">
+                          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                            <ShareReviewButton
+                              reviewId={review.id}
+                              companyId={company.id}
+                              companyName={company.name}
+                            />
+                            <ReviewVotingButtons 
+                              reviewId={review.id} 
+                              reviewUserId={review.companyReply.repliedBy} 
+                              contentType="reply"
+                              replyId={review.id} // Using review ID as reply ID since replies are embedded
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
