@@ -231,24 +231,39 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
     
     // Check if there's a specific review to scroll to
     const searchParams = new URLSearchParams(location.search);
-    const reviewId = searchParams.get('review');
+    const highlightedReviewId = searchParams.get('review');
     
-    if (reviewId && params.tab === 'reviews') {
+    if (highlightedReviewId && params.tab === 'reviews') {
       setTimeout(() => {
-        const reviewElement = document.getElementById(`review-${reviewId}`);
+        const reviewElement = document.getElementById(`review-${highlightedReviewId}`);
         if (reviewElement) {
-          reviewElement.scrollIntoView({ behavior: 'smooth' });
+          // Scroll to the element with offset to center it in the viewport
+          const elementRect = reviewElement.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          const middle = absoluteElementTop - (window.innerHeight / 3);
+          window.scrollTo({
+            top: middle,
+            behavior: 'smooth'
+          });
+          
           // Add a highlight class that will fade out
-          reviewElement.classList.add('bg-yellow-100');
+          reviewElement.classList.add('highlight-review');
+          
+          // Temporarily move focus to the review for accessibility
+          reviewElement.setAttribute('tabindex', '-1');
+          reviewElement.focus();
+          
+          // Remove the highlight effect after some time
           setTimeout(() => {
-            reviewElement.classList.remove('bg-yellow-100');
-            reviewElement.classList.add('bg-yellow-50');
+            reviewElement.classList.remove('highlight-review');
+            reviewElement.classList.add('highlight-review-fading');
             setTimeout(() => {
-              reviewElement.classList.remove('bg-yellow-50');
-            }, 2000);
-          }, 2000);
+              reviewElement.classList.remove('highlight-review-fading');
+              reviewElement.removeAttribute('tabindex');
+            }, 2500);
+          }, 2500);
         }
-      }, 1000);
+      }, 500);
     }
   }, [params.tab]);
 
