@@ -352,7 +352,7 @@ export const ar = {
   comingSoon: 'قريباً',
   view: 'عرض',
   filters: 'المرشحات',
-  viewAll: 'عرض الكل'
+  viewAll: 'عرض الكل',
   
   replyVotesNotificationTitle: 'تفاعل مع ردك',
   replyVotesNotificationMessage: 'حصل ردك على 5 تصويتات',
