@@ -18,9 +18,9 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, i
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLanguageOpen, setIsLanguageOpen] = React.useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [userCompanyId, setUserCompanyId] = useState<string | null>(null);
   const [userCompanyData, setUserCompanyData] = useState<any>(null);
   const [loadingCompanyId, setLoadingCompanyId] = useState(false);
@@ -297,7 +297,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, i
           <div className="hidden md:flex items-center space-x-2 lg:space-x-4 rtl:space-x-reverse">
             
             {/* Language Selector */}
-            <div className="relative">
+            <div className="relative z-20">
               <button
                 onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                 className="flex items-center space-x-2 rtl:space-x-reverse px-2 lg:px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
@@ -335,8 +335,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, i
             </div>
 
             {!isAuthPage && (
-              <>
-                {/* User Profile (when logged in) */}
+              /* User Profile or Auth Buttons Section */
+              <div>
                 {currentUser ? (
                   <div className="relative" id="user-menu">
                     <button
@@ -495,15 +495,15 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, i
                     {translations?.login || 'Login'}
                   </button>
                 </>
-              )}
-            </>
+               )}
+              </div>
           )}
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
-              onClick={() => !isAuthPage && setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200"
               aria-label="Toggle mobile menu"
             >
@@ -517,30 +517,61 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, i
         </div>
 
         {/* Mobile Menu */}
-        {isMobileMenuOpen && !isAuthPage && (
+        {isMobileMenuOpen && (
           <div id="mobile-menu" className="md:hidden border-t border-gray-200 bg-white">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {/* Navigation Items */}
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item)}
-                  className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    activePage === item.id
-                      ? 'bg-opacity-10'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                  style={{
-                    color: activePage === item.id ? '#194866' : '',
-                    backgroundColor: activePage === item.id ? 'rgba(25, 72, 102, 0.1)' : ''
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
+            {!isAuthPage && (
+              <div className="px-2 pt-2 pb-3 space-y-1">
+                {/* Navigation Items */}
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item)}
+                    className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      activePage === item.id
+                        ? 'bg-opacity-10'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    style={{
+                      color: activePage === item.id ? '#194866' : '',
+                      backgroundColor: activePage === item.id ? 'rgba(25, 72, 102, 0.1)' : ''
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
 
-              {/* Mobile Language Selector */}
-              <div className="pt-2 border-t border-gray-200 mt-3">
+                {/* Mobile Language Selector */}
+                <div className="pt-2 border-t border-gray-200 mt-3">
+                  <div className="px-3 py-2 text-sm font-medium text-gray-700 mb-2">
+                    {translations?.language || 'Language'}
+                  </div>
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => {
+                        setLanguage(lang.code);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150 rounded-lg ${
+                        language === lang.code ? 'text-gray-700' : 'text-gray-700'
+                      }`}
+                      style={{
+                        backgroundColor: language === lang.code ? 'rgba(25, 72, 102, 0.1)' : '',
+                        color: language === lang.code ? '#194866' : ''
+                      }}
+                    >
+                      <span>{lang.flag}</span>
+                      <span>{lang.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            )}
+            
+            {/* Mobile Language Selector for Auth Pages */}
+            {isAuthPage && (
+              <div className="px-2 pt-2 pb-3">
                 <div className="px-3 py-2 text-sm font-medium text-gray-700 mb-2">
                   {translations?.language || 'Language'}
                 </div>
@@ -565,8 +596,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, i
                 ))}
               </div>
 
-              {/* Mobile User Actions */}
-              <div className="pt-3 border-t border-gray-200 mt-3 space-y-2">
+            {!isAuthPage && (
+              <div className="pt-3 border-t border-gray-200 mt-3 space-y-2 px-2">
                 {currentUser ? (
                   <>
                     <div className="flex items-center px-3 py-2 space-x-3 rtl:space-x-reverse">
@@ -690,7 +721,8 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, i
                     </button>
                   </>
                 )}
-              </div>
+               </div>
+            )}
             </div>
           </div>
         )}
