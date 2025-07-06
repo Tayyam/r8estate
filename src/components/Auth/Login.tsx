@@ -5,7 +5,6 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ForgotPasswordModal from './ForgotPasswordModal';
-import GlobalHeader from '../GlobalHeader';
 
 interface LoginProps {
   onNavigate: (page: string) => void;
@@ -147,10 +146,32 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      {/* Global Header */}
-      <GlobalHeader />
-      
       <div className="max-w-md w-full">
+        {/* Header with Language Toggle and Back Button */}
+        <div className="flex items-center justify-between mb-8 animate-slideInDown">
+          {/* Back to Home Button */}
+          <button
+            onClick={handleBackToHome}
+            className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 text-gray-600 hover:text-gray-800 transition-all duration-200 rounded-lg hover:bg-gray-100 transform hover:scale-105"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="text-sm font-medium">
+              {translations?.home || 'Home'}
+            </span>
+          </button>
+
+          {/* Language Toggle */}
+          <button
+            onClick={handleLanguageToggle}
+            className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 transform hover:scale-105"
+          >
+            <Globe className="w-4 h-4 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">
+              {language === 'ar' ? 'EN' : 'العربية'}
+            </span>
+          </button>
+        </div>
+
         {/* Logo and Title */}
         <div className="text-center mb-8 animate-slideInUp">
           <div className="flex items-center justify-center mb-6">

@@ -3,8 +3,7 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { NotificationProvider } from './contexts/NotificationContext';
-import Header from './components/Header'; 
-import GlobalHeader from './components/GlobalHeader';
+import Header from './components/Header';
 import Hero from './components/Hero';
 import Categories from './components/Categories';
 import About from './components/About';
@@ -143,13 +142,11 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {shouldShowHeaderFooter ? (
+      {shouldShowHeaderFooter && (
         <Header 
           currentPage={location.pathname.split('/')[1] || 'home'} 
           setCurrentPage={handleNavigate} 
         />
-      ) : (
-        <GlobalHeader />
       )}
       <main>
         <Routes>
