@@ -153,6 +153,7 @@ const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({
   };
   
   return (
+    <>
     <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
       {/* Helpful Button */}
       <button
@@ -198,6 +199,7 @@ const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({
       contentOwnerId={reviewUserId}
       companyId={companyId}
     />
+    </>
   );
 };
 
