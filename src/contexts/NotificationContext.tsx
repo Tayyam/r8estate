@@ -396,7 +396,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     showWarningToast,
     showInfoToast,
     modals,
-    toasts
+    toasts,
     // Add the new notification-related methods and state
     notifications,
     unreadCount,
