@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Flag, Search, Eye, Check, X, AlertCircle, Calendar, 
   ChevronDown, ChevronUp, ArrowLeft, ArrowRight, 
-  MessageSquare, ExternalLink, Filter
+  MessageSquare, ExternalLink, Filter, Info
 } from 'lucide-react';
 import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, getDoc, where } from 'firebase/firestore';
 import { db } from '../../config/firebase';
@@ -388,7 +388,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Reports List */}
-      <div className="p-6">
+      <div className="overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
@@ -406,171 +406,261 @@ const Reports: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {paginatedReports.map(report => (
-              <div 
-                key={report.id} 
-                className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200 ${
-                  report.status === 'pending' ? 'border-l-4 border-l-yellow-400' : 
-                  report.status === 'accepted' ? 'border-l-4 border-l-green-400' : 
-                  'border-l-4 border-l-red-400'
-                }`}
-              >
-                {/* Report Header */}
-                <div 
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:px-6 bg-gray-50 cursor-pointer"
-                  onClick={() => toggleExpand(report.id)}
-                >
-                  <div className="flex items-center space-x-3 rtl:space-x-reverse mb-3 sm:mb-0">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                      <Flag className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
-                        {report.reporterName || report.reporterEmail}
-                      </h3>
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse text-xs text-gray-500">
-                        <Calendar className="h-3 w-3" />
-                        <span>{report.createdAt.toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusBadgeColor(report.status)}`}>
-                      {getStatusTranslation(report.status)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleExpand(report.id);
-                      }}
-                      className="p-1.5 hover:bg-gray-200 rounded-full"
-                    >
-                      {expandedReportId === report.id ? (
-                        <ChevronUp className="h-5 w-5 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-gray-500" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Report Details (Expanded) */}
-                {expandedReportId === report.id && (
-                  <div className="p-4 sm:p-6 border-t border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      {/* Report Information */}
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-gray-900 mb-2">
-                          {translations?.reportInformation || 'Report Information'}
-                        </h4>
-                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                          <span className="text-gray-500 min-w-24">{translations?.reportType || 'Content Type'}:</span>
-                          <span className="text-gray-700 capitalize">
-                            {report.contentType === 'review' 
-                              ? (translations?.review || 'Review') 
-                              : (translations?.companyReply || 'Company Reply')}
-                          </span>
+          <div>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.reporterName || 'Reporter'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.reportedContent || 'Reported Content'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.reportReason || 'Reason'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.status || 'Status'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.reportDate || 'Date'}
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.actions || 'Actions'}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedReports.map(report => (
+                  <tr 
+                    key={report.id} 
+                    className={`hover:bg-gray-50 ${
+                      expandedReportId === report.id ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    {/* Reporter */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <Flag className="h-5 w-5 text-gray-600" />
                         </div>
-                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                          <span className="text-gray-500 min-w-24">{translations?.reportReason || 'Reason'}:</span>
-                          <span className="text-gray-700">{getReasonTranslation(report.reason)}</span>
-                        </div>
-                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                          <span className="text-gray-500 min-w-24">{translations?.company || 'Company'}:</span>
-                          <span className="text-gray-700">{report.companyName || 'Unknown'}</span>
-                        </div>
-                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                          <span className="text-gray-500 min-w-24">{translations?.reportDate || 'Report Date'}:</span>
-                          <span className="text-gray-700">{report.createdAt.toLocaleString()}</span>
-                        </div>
-                        {report.resolvedAt && (
-                          <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                            <span className="text-gray-500 min-w-24">{translations?.resolvedDate || 'Resolved Date'}:</span>
-                            <span className="text-gray-700">{report.resolvedAt.toLocaleString()}</span>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {report.reporterName || 'Anonymous'}
                           </div>
+                          <div className="text-sm text-gray-500">
+                            {report.reporterEmail}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    
+                    {/* Reported Content */}
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 max-w-xs truncate">
+                        {report.contentPreview || (translations?.contentNotAvailable || 'Content not available')}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {report.contentType === 'review' 
+                          ? (translations?.review || 'Review') 
+                          : (translations?.companyReply || 'Company Reply')}
+                        {report.companyName && ` - ${report.companyName}`}
+                      </div>
+                    </td>
+                    
+                    {/* Reason */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-900">
+                        {getReasonTranslation(report.reason)}
+                      </span>
+                    </td>
+                    
+                    {/* Status */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${getStatusBadgeColor(report.status)}`}>
+                        {getStatusTranslation(report.status)}
+                      </span>
+                    </td>
+                    
+                    {/* Date */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {report.createdAt.toLocaleDateString()}
+                    </td>
+                    
+                    {/* Actions */}
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => toggleExpand(report.id)}
+                          className="text-blue-600 hover:text-blue-900 p-1"
+                          title={translations?.viewDetails || 'View Details'}
+                        >
+                          <Info className="h-5 w-5" />
+                        </button>
+                        
+                        <button
+                          onClick={() => navigateToContent(report)}
+                          disabled={!report.companyId || !report.companyName}
+                          className="text-blue-600 hover:text-blue-900 p-1 disabled:opacity-50"
+                          title={translations?.viewContent || 'View Content'}
+                        >
+                          <Eye className="h-5 w-5" />
+                        </button>
+                        
+                        {report.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setSelectedReport(report);
+                                setShowAcceptModal(true);
+                              }}
+                              disabled={actionLoading === report.id}
+                              className="text-green-600 hover:text-green-900 p-1"
+                              title={translations?.acceptReport || 'Accept Report'}
+                            >
+                              <Check className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedReport(report);
+                                setShowRejectModal(true);
+                              }}
+                              disabled={actionLoading === report.id}
+                              className="text-red-600 hover:text-red-900 p-1"
+                              title={translations?.rejectReport || 'Reject Report'}
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                          </>
                         )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {/* Expanded Report Details */}
+            {expandedReportId && (
+              <div className="border-t border-gray-200 bg-gray-50 p-6">
+                {paginatedReports.filter(r => r.id === expandedReportId).map(report => (
+                  <div key={`details-${report.id}`} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Report Information */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        {translations?.reportInformation || 'Report Information'}
+                      </h4>
+                      <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
+                        <span className="text-gray-500 min-w-24">{translations?.reportType || 'Content Type'}:</span>
+                        <span className="text-gray-700 capitalize">
+                          {report.contentType === 'review' 
+                            ? (translations?.review || 'Review') 
+                            : (translations?.companyReply || 'Company Reply')}
+                        </span>
+                      </div>
+                      <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
+                        <span className="text-gray-500 min-w-24">{translations?.reportReason || 'Reason'}:</span>
+                        <span className="text-gray-700">{getReasonTranslation(report.reason)}</span>
+                      </div>
+                      <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
+                        <span className="text-gray-500 min-w-24">{translations?.company || 'Company'}:</span>
+                        <span className="text-gray-700">{report.companyName || 'Unknown'}</span>
+                      </div>
+                      <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
+                        <span className="text-gray-500 min-w-24">{translations?.reportDate || 'Report Date'}:</span>
+                        <span className="text-gray-700">{report.createdAt.toLocaleString()}</span>
+                      </div>
+                      {report.resolvedAt && (
+                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
+                          <span className="text-gray-500 min-w-24">{translations?.resolvedDate || 'Resolved Date'}:</span>
+                          <span className="text-gray-700">{report.resolvedAt.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Reported Content */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        {translations?.reportedContent || 'Reported Content'}
+                      </h4>
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <p className="text-gray-700 text-sm">
+                          {report.contentPreview || (translations?.contentNotAvailable || 'Content not available')}
+                        </p>
                       </div>
                       
-                      {/* Reported Content */}
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-gray-900 mb-2">
-                          {translations?.reportedContent || 'Reported Content'}
-                        </h4>
-                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                          <p className="text-gray-700 text-sm">
-                            {report.contentPreview || (translations?.contentNotAvailable || 'Content not available')}
-                          </p>
+                      {report.details && (
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mt-4 mb-1">
+                            {translations?.reporterComments || 'Reporter Comments'}:
+                          </h5>
+                          <div className="bg-white p-3 rounded-lg border border-gray-200">
+                            <p className="text-gray-700 text-sm italic">"{report.details}"</p>
+                          </div>
                         </div>
-                        
-                        {report.details && (
-                          <div>
-                            <h5 className="text-sm font-medium text-gray-700 mt-4 mb-1">
-                              {translations?.reporterComments || 'Reporter Comments'}:
-                            </h5>
-                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                              <p className="text-gray-700 text-sm italic">"{report.details}"</p>
-                            </div>
+                      )}
+                      
+                      {report.notes && (
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mt-4 mb-1">
+                            {translations?.adminNotes || 'Admin Notes'}:
+                          </h5>
+                          <div className="bg-white p-3 rounded-lg border border-gray-200">
+                            <p className="text-gray-700 text-sm">{report.notes}</p>
                           </div>
-                        )}
-                        
-                        {report.notes && (
-                          <div>
-                            <h5 className="text-sm font-medium text-gray-700 mt-4 mb-1">
-                              {translations?.adminNotes || 'Admin Notes'}:
-                            </h5>
-                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                              <p className="text-gray-700 text-sm">{report.notes}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-2 justify-end pt-4 border-t border-gray-100">
-                      <button
-                        onClick={() => navigateToContent(report)}
-                        disabled={!report.companyId || !report.companyName}
-                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse disabled:opacity-50"
-                      >
-                        <Eye className="h-4 w-4" />
-                        <span>{translations?.viewContent || 'View Content'}</span>
-                      </button>
-                      
-                      {report.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setSelectedReport(report);
-                              setShowAcceptModal(true);
-                            }}
-                            disabled={actionLoading === report.id}
-                            className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
-                          >
-                            <Check className="h-4 w-4" />
-                            <span>{translations?.acceptReport || 'Accept Report'}</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedReport(report);
-                              setShowRejectModal(true);
-                            }}
-                            disabled={actionLoading === report.id}
-                            className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
-                          >
-                            <X className="h-4 w-4" />
-                            <span>{translations?.rejectReport || 'Reject Report'}</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    {report.status === 'pending' && (
+                      <div className="md:col-span-2 flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                        <button
+                          onClick={() => navigateToContent(report)}
+                          disabled={!report.companyId || !report.companyName}
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse disabled:opacity-50"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span>{translations?.viewContent || 'View Content'}</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedReport(report);
+                            setShowAcceptModal(true);
+                          }}
+                          disabled={actionLoading === report.id}
+                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
+                        >
+                          <Check className="h-4 w-4" />
+                          <span>{translations?.acceptReport || 'Accept Report'}</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedReport(report);
+                            setShowRejectModal(true);
+                          }}
+                          disabled={actionLoading === report.id}
+                          className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
+                        >
+                          <X className="h-4 w-4" />
+                          <span>{translations?.rejectReport || 'Reject Report'}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
+                
+                {/* Close Details Button */}
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={() => setExpandedReportId(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+                  >
+                    {translations?.close || 'Close Details'}
+                  </button>
+                </div>
               </div>
-            ))}
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (
