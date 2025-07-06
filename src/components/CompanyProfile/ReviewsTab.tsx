@@ -510,7 +510,11 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       ) : reviews.length > 0 ? (
         <div className="space-y-6">
           {reviews.map((review) => (
-            <div key={review.id} className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
+            <div 
+              key={review.id} 
+              id={`review-${review.id}`}
+              className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300 transition-colors duration-1000"
+            >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 space-y-3 sm:space-y-0">
                 <div className="flex items-start space-x-4 rtl:space-x-reverse flex-1">
                   {/* User Avatar */}

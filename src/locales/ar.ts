@@ -109,6 +109,13 @@ export const ar = {
   voteSuccess: 'تم تسجيل تصويتك',
   voteRemoved: 'تم إزالة تصويتك',
   
+  // Share review
+  share: 'مشاركة',
+  shareReview: 'مشاركة هذا التقييم',
+  linkCopied: 'تم نسخ الرابط',
+  reviewLinkCopiedDesc: 'تم نسخ رابط التقييم إلى الحافظة',
+  couldNotCopyLink: 'تعذر نسخ الرابط إلى الحافظة',
+  
   // Auth error messages
   loginError: 'خطأ في تسجيل الدخول',
   loginErrorDesc: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
