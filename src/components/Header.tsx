@@ -232,4 +232,3 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, i
 };
 
 export default Header;
-```
