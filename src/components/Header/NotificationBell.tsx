@@ -56,7 +56,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }) => {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors duration-200 focus:outline-none"
+        className="relative p-2 rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors duration-200 focus:outline-none flex items-center justify-center"
         aria-label={translations?.notifications || 'Notifications'}
       >
         <Bell className="h-6 w-6" />
@@ -73,7 +73,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }) => {
       {isOpen && (
         <div 
           ref={dropdownRef}
-          className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden animate-fadeIn"
+          className="absolute right-0 rtl:left-0 rtl:right-auto mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden animate-fadeIn"
           style={{ maxHeight: 'calc(100vh - 200px)' }}
         >
           <NotificationDropdown 

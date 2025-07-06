@@ -244,7 +244,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
   return (
     <header className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-16 relative">
           
           {/* Logo */}
           <div className="flex items-center space-x-3 rtl:space-x-reverse flex-shrink-0 cursor-pointer" onClick={() => handleNavClick(navItems[0])}>
@@ -293,7 +293,6 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
 
           {/* Desktop Right side - Language, Profile, Sign Up */}
           <div className="hidden md:flex items-center space-x-2 lg:space-x-4 rtl:space-x-reverse">
-            
             {/* Language Selector */}
             <div className="relative">
               <button
@@ -334,10 +333,12 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
 
             {/* User Profile (when logged in) */}
             {currentUser ? (
-              <div className="relative" id="user-menu">
-                {/* Notification Bell */}
-                <NotificationBell onNavigate={setCurrentPage} />
-                
+              <div className="flex items-center space-x-3 rtl:space-x-reverse" id="user-menu-container">
+                <div className="relative">
+                  <NotificationBell onNavigate={setCurrentPage} />
+                </div>
+
+                <div className="relative" id="user-menu">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200"
@@ -460,6 +461,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                     </button>
                   </div>
                 )}
+                </div>
               </div>
             ) : (
               <>
@@ -567,7 +569,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage })
                 {currentUser ? (
                   <>
                     {/* Notification Bell for Mobile */}
-                    <div className="mr-2">
+                    <div className="mr-3">
                       <NotificationBell onNavigate={setCurrentPage} />
                     </div>
                     
