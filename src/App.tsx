@@ -45,7 +45,7 @@ function AppContent() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useState({
     query: '',
-    category: 'all'
+    category: ''
   });
 
   // Listen for company profile navigation from Header
@@ -73,8 +73,19 @@ function AppContent() {
     // Listen for search navigation
     const handleSearchNavigation = (event: CustomEvent) => {
       const { query, category } = event.detail;
-      setSearchParams({ query, category });
-      navigate(`/search?q=${encodeURIComponent(query || '')}&category=${category || 'all'}`);
+      setSearchParams({ query, category: category === 'all' ? '' : category });
+      
+      // Only include category in URL if it's not 'all'
+      const queryParams = new URLSearchParams();
+      if (query) {
+        queryParams.append('q', query);
+      }
+      if (category && category !== 'all') {
+        queryParams.append('category', category);
+      }
+      
+      const queryString = queryParams.toString();
+      navigate(`/search${queryString ? `?${queryString}` : ''}`);
     };
 
     window.addEventListener('navigateToSearch', handleSearchNavigation as EventListener);
