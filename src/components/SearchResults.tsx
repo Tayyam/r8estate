@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Star, Filter, MapPin, Building2, ArrowLeft, ChevronDown, ChevronUp, X, Sliders, ChevronRight } from 'lucide-react';
-import { collection, getDocs, query, orderBy, where, limit, startAfter, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, limit, startAfter, DocumentData, Query } from 'firebase/firestore';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -46,6 +46,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [error, setError] = useState('');
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<DocumentData | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // Number of companies to show per page
   const [totalResults, setTotalResults] = useState(0);
   
   // UI States
@@ -243,59 +245,57 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const searchCompanies = async (loadMore = false) => {
     try {
       setLoading(true);
-      setError('');
       
-      // Start building the query
-      let baseQuery = collection(db, 'companies');
-      let conditions: any[] = [];
+      if (!loadMore) {
+        setCompanies([]);
+        setLastDoc(null);
+        setCurrentPage(1);
+      }
+      
+      // Build base query
+      let companiesRef = collection(db, 'companies');
+      let constraints: any[] = [];
       
       // Add category filter
       if (selectedCategory !== 'all') {
-        conditions.push(where('categoryId', '==', selectedCategory));
+        constraints.push(where('categoryId', '==', selectedCategory));
       }
       
       // Add location filter
       if (selectedLocation !== 'all') {
-        conditions.push(where('location', '==', selectedLocation));
+        constraints.push(where('location', '==', selectedLocation));
       }
       
       // Add rating filter
       if (selectedRating !== 'all') {
         const minRating = parseInt(selectedRating);
-        conditions.push(where('rating', '>=', minRating));
-        conditions.push(where('rating', '<', minRating + 1));
+        constraints.push(where('rating', '>=', minRating));
+        constraints.push(where('rating', '<', minRating + 1));
       }
       
-      // Create query with conditions
-      let companiesQuery;
-      if (conditions.length > 0) {
-        companiesQuery = query(
-          baseQuery,
-          ...conditions,
-          orderBy('rating', 'desc'),
-          limit(COMPANIES_PER_PAGE)
-        );
-      } else {
-        companiesQuery = query(
-          baseQuery,
-          orderBy('rating', 'desc'),
-          limit(COMPANIES_PER_PAGE)
-        );
-      }
+      // Create base query with filters
+      let baseQuery = query(companiesRef, ...constraints);
       
-      // Add pagination
+      // First get total count for properly displaying "X results found"
+      const countSnapshot = await getDocs(baseQuery);
+      const totalCount = countSnapshot.size;
+      setTotalResults(totalCount);
+      
+      // Apply sorting and pagination to get actual results
+      const paginationConstraints = [
+        ...constraints,
+        orderBy('rating', 'desc'),
+        limit(COMPANIES_PER_PAGE)
+      ];
+      
       if (loadMore && lastDoc) {
-        companiesQuery = query(
-          baseQuery,
-          ...conditions,
-          orderBy('rating', 'desc'),
-          startAfter(lastDoc),
-          limit(COMPANIES_PER_PAGE)
-        );
+        paginationConstraints.push(startAfter(lastDoc));
       }
+      
+      let finalQuery = query(companiesRef, ...paginationConstraints);
+      const snapshot = await getDocs(finalQuery);
 
-      const companiesSnapshot = await getDocs(companiesQuery);
-      const companiesData = await processCompaniesData(companiesSnapshot);
+      const companiesData = await processCompaniesData(snapshot);
       
       // Filter by search term (client-side filtering for name matching)
       const filtered = searchQuery.trim() !== '' 
@@ -308,16 +308,18 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         : companiesData;
 
       // Update state
-      if (loadMore) {
-        setCompanies(prev => [...prev, ...filtered]);
-      } else {
+      if (!loadMore) {
         setCompanies(filtered);
-        setTotalResults(filtered.length);
+      } else {
+        setCompanies(prev => [...prev, ...filtered]);
+        setCurrentPage(prevPage => prevPage + 1);
       }
-
+      
       // Update pagination state
-      setLastDoc(companiesSnapshot.docs[companiesSnapshot.docs.length - 1] || null);
-      setHasMore(companiesSnapshot.docs.length === COMPANIES_PER_PAGE);
+      if (snapshot.docs.length > 0) {
+        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+      }
+      setHasMore(snapshot.docs.length === COMPANIES_PER_PAGE && companies.length + snapshot.docs.length < totalCount);
       
       // Update filtered companies
       setFilteredCompanies(filtered);
@@ -990,6 +992,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                             src={company.logoUrl}
                             alt={company.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            onError={(e) => {
+                              // Fallback if image fails to load
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="%23dddddd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="12" cy="12" r="1"></circle></svg>';
+                            }}
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
