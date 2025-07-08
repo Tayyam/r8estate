@@ -408,7 +408,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, o
                         ) : userCompanyId ? (
                           <>
                             <Building2 className="w-4 h-4" />
-                            <span>{translations?.companyProfile || 'Company Profile'}</span>
+                            <span>{translations?.companyDashboard || 'Dashboard'}</span>
                           </>
                         ) : (
                           <>
@@ -456,6 +456,25 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, o
                       >
                         <SettingsIcon className="w-4 h-4" />
                         <span>{translations?.adminSettings || 'Admin Settings'}</span>
+                      </button>
+                    )}
+
+                    {/* Company Profile Button */}
+                    {currentUser.role === 'company' && userCompanyId && (
+                      <button
+                        onClick={() => {
+                          if (onNavigateToProfile && userCompanyData) {
+                            onNavigateToProfile(userCompanyId, userCompanyData.name);
+                          } else {
+                            const companySlug = getCompanySlug(userCompanyData?.name || '');
+                            navigate(`/company/${companySlug}/${userCompanyId}/overview`);
+                          }
+                          setIsUserMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 rtl:space-x-reverse transition-colors duration-150"
+                      >
+                        <User className="w-4 h-4" />
+                        <span>{translations?.companyProfile || 'Profile'}</span>
                       </button>
                     )}
 
@@ -620,12 +639,12 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, o
                         {loadingCompanyId ? (
                           <>
                             <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                            <span>{translations?.loadingDashboard || 'Loading Dashboard...'}</span>
+                            <span>{translations?.loading || 'Loading...'}</span>
                           </>
                         ) : userCompanyId ? (
                           <>
-                            <Building2 className="w-4 h-4 text-blue-600" />
-                            <span>{translations?.companyDashboard || 'Company Dashboard'}</span>
+                            <Building2 className="w-4 w-4 text-blue-600" />
+                            <span>{translations?.companyDashboard || 'Dashboard'}</span>
                           </>
                         ) : (
                           <>
@@ -644,6 +663,25 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, o
                       >
                         <User className="w-4 h-4" />
                         <span>{translations?.personalProfile || 'Personal Profile'}</span>
+                      </button>
+                    )}
+                    
+                    {/* Company Profile for mobile */}
+                    {currentUser.role === 'company' && userCompanyId && (
+                      <button
+                        onClick={() => {
+                          if (onNavigateToProfile && userCompanyData) {
+                            onNavigateToProfile(userCompanyId, userCompanyData.name);
+                          } else {
+                            const companySlug = getCompanySlug(userCompanyData?.name || '');
+                            navigate(`/company/${companySlug}/${userCompanyId}/overview`);
+                          }
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm hover:bg-gray-50"
+                      >
+                        <User className="w-4 h-4" />
+                        <span>{translations?.companyProfile || 'Profile'}</span>
                       </button>
                     )}
                     
