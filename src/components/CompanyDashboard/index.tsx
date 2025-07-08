@@ -226,14 +226,6 @@ const CompanyDashboard = () => {
                 {company && <span className="text-gray-500 text-lg ml-2">• {company.name}</span>}
               </h1>
             </div>
-            
-            <button
-              onClick={handleViewPublicProfile}
-              className="inline-flex items-center space-x-2 rtl:space-x-reverse text-blue-600 hover:text-blue-800 transition-colors duration-200 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg"
-            >
-              <ExternalLink className="h-4 w-4" />
-              <span>{translations?.viewPublicProfile || 'View Public Profile'}</span>
-            </button>
           </div>
         </div>
       </div>
