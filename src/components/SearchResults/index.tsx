@@ -184,11 +184,24 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           }
           
           setTotalResults(countResults.length);
+          console.log("Search results filtering:", {
+            totalBeforeClientFilter: countSnapshot.docs.length,
+            afterSearchFilter: searchQuery ? countResults.filter(company => 
+              company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (company.description && company.description.toLowerCase().includes(searchQuery.toLowerCase()))
+            ).length : countResults.length,
+            afterRatingFilter: ratingFilter !== 'all' ? countResults.filter(company => 
+              (company.totalRating || company.rating || 0) >= parseInt(ratingFilter)
+            ).length : countResults.length,
+            finalFilteredCount: countResults.length,
+            actualDisplayedCount: filteredCompanies.length
+          });
         } else {
           // If no special filters, the total count is just the total number of companies
           const countQuery = query(companyRef);
           const countSnapshot = await getDocs(countQuery);
           setTotalResults(countSnapshot.docs.length);
+          console.log("Total search results (no special filters):", countSnapshot.docs.length, "but displaying:", filteredCompanies.length);
         }
       }
       
@@ -268,6 +281,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {console.log("Rendering SearchResults with:", { totalResults, displayedResults: companies.length })}
         <SearchFilters
           categoryFilter={categoryFilter}
           setCategoryFilter={setCategoryFilter}
