@@ -336,19 +336,9 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
   const handleSearch = () => {
     setShowSuggestions(false);
     if (onSearch) {
-      onSearch(searchQuery, selectedCategory === 'all' ? '' : selectedCategory);
+      onSearch(searchQuery, selectedCategory);
     } else {
-      // Only include category in URL if it's not 'all'
-      const queryParams = new URLSearchParams();
-      if (searchQuery) {
-        queryParams.append('q', searchQuery);
-      }
-      if (selectedCategory !== 'all') {
-        queryParams.append('category', selectedCategory);
-      }
-      
-      const queryString = queryParams.toString();
-      navigate(`/search${queryString ? `?${queryString}` : ''}`);
+      navigate(`/search?q=${encodeURIComponent(searchQuery || '')}&category=${selectedCategory || 'all'}`);
     }
   };
 
