@@ -64,10 +64,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           isEmailVerified: firebaseUser.emailVerified,
           photoURL: firebaseUser.photoURL || userData.photoURL
         };
-      }
       } else {
         console.log("No user document found for Firebase user:", firebaseUser.uid);
-      return null;
+        return null;
+      }
     } catch (error) {
       console.error('Error loading user data:', error);
       return null;
