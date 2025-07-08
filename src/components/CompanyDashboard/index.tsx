@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BarChart, MessageSquare, Image, Building2, FileText, Briefcase, ExternalLink, Shield, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Company } from '../../types/company';
 import { getCompanySlug } from '../../utils/urlUtils';
