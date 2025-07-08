@@ -11,9 +11,10 @@ import NotificationBell from './Header/NotificationBell';
 interface HeaderProps {
   currentPage?: string;
   setCurrentPage?: (page: string) => void;
+  onNavigateToProfile?: (companyId: string, companyName: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage }) => {
+const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, onNavigateToProfile }) => {
   const { language, translations, setLanguage, direction } = useLanguage();
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
