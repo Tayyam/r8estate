@@ -51,6 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
       if (userDoc.exists()) {
+        console.log("User document found:", userDoc.id);
         const userData = userDoc.data();
         return {
           uid: firebaseUser.uid,
@@ -64,6 +65,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           photoURL: firebaseUser.photoURL || userData.photoURL
         };
       }
+      } else {
+        console.log("No user document found for Firebase user:", firebaseUser.uid);
       return null;
     } catch (error) {
       console.error('Error loading user data:', error);

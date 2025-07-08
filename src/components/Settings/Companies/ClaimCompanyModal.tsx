@@ -71,6 +71,8 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const userId = userCredential.user.uid;
       
+      console.log("Created new Firebase Auth user for company claim:", userId);
+      
       // Create user document in Firestore
       await setDoc(doc(db, 'users', userId), {
         uid: userId,
@@ -82,6 +84,7 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
         updatedAt: new Date(),
         isEmailVerified: false
       });
+      console.log("Created user document with companyId:", company.id);
       
       // Update company document to mark as claimed
       await updateDoc(doc(db, 'companies', company.id), {
@@ -89,6 +92,7 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
         email: formData.email, // Update company email to match user email
         updatedAt: new Date()
       });
+      console.log("Updated company as claimed, email:", formData.email);
       
       onSuccess(translations?.companyClaimedSuccess || 'Company claimed successfully');
       onClose();

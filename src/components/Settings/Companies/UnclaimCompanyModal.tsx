@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserMinus, AlertCircle, AlertTriangle } from 'lucide-react';
-import { doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company } from '../../../types/company';
@@ -26,20 +26,32 @@ const UnclaimCompanyModal: React.FC<UnclaimCompanyModalProps> = ({
     try {
       setLoading(true);
       
-      // Find the user document with the company ID
-      const usersSnapshot = await getDoc(doc(db, 'users', company.id));
+      // Find user documents associated with this company
+      console.log("Finding users associated with company ID:", company.id);
+      const usersQuery = query(
+        collection(db, 'users'),
+        where('companyId', '==', company.id),
+        where('role', '==', 'company')
+      );
       
-      // If user document exists, delete it
-      if (usersSnapshot.exists()) {
-        // Delete user document in users collection
-        await deleteDoc(doc(db, 'users', company.id));
+      const usersSnapshot = await getDocs(usersQuery);
+      console.log("Found", usersSnapshot.size, "user(s) associated with this company");
+      
+      // Delete all associated user documents
+      for (const userDoc of usersSnapshot.docs) {
+        console.log("Deleting user document:", userDoc.id);
+        await deleteDoc(doc(db, 'users', userDoc.id));
+        // Note: We cannot delete Firebase Auth users from the client side
+        // A Firebase Cloud Function would be needed for that
       }
       
       // Update company document to mark as unclaimed
       await updateDoc(doc(db, 'companies', company.id), {
         claimed: false,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        // Don't remove the email as it could be useful for future reference
       });
+      console.log("Updated company as unclaimed:", company.id);
       
       // Note: We cannot delete the Firebase Auth user from client side
       // A Firebase Function would be needed to delete the Auth user

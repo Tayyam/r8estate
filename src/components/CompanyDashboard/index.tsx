@@ -35,16 +35,66 @@ const CompanyDashboard = () => {
       try {
         // Check if user is logged in and is a company
         if (!currentUser || currentUser.role !== 'company') {
+          console.log("Access denied: User not logged in or not a company role", currentUser);
           setError('accessDenied');
           setLoading(false);
           return;
         }
 
+        console.log("Company user authenticated:", { 
+          uid: currentUser.uid, 
+          email: currentUser.email, 
+          companyId: currentUser.companyId 
+        });
+
         // Get company data
         const companyId = currentUser.companyId || currentUser.uid;
+        console.log("Attempting to fetch company with ID:", companyId);
         const companyDoc = await getDoc(doc(db, 'companies', companyId));
         
         if (!companyDoc.exists()) {
+          console.log("Company not found with primary ID. Searching by email...");
+          
+          // Attempt to find the company by email as fallback
+          const emailQuery = query(
+            collection(db, 'companies'),
+            where('email', '==', currentUser.email)
+          );
+          
+          console.log("Searching for company with email:", currentUser.email);
+          const emailSnapshot = await getDocs(emailQuery);
+          
+          if (!emailSnapshot.empty) {
+            const foundCompanyDoc = emailSnapshot.docs[0];
+            const foundCompanyData = {
+              id: foundCompanyDoc.id,
+              ...foundCompanyDoc.data(),
+              createdAt: foundCompanyDoc.data().createdAt?.toDate() || new Date(),
+              updatedAt: foundCompanyDoc.data().updatedAt?.toDate() || new Date()
+            } as Company;
+            
+            console.log("Found company by email:", foundCompanyData.name, "ID:", foundCompanyData.id);
+            setCompany(foundCompanyData);
+            
+            // Update user's companyId for future reference
+            try {
+              console.log("Updating user document with correct companyId:", foundCompanyData.id);
+              await updateDoc(doc(db, 'users', currentUser.uid), {
+                companyId: foundCompanyData.id,
+                updatedAt: new Date()
+              });
+              console.log("User document updated successfully");
+              setLoading(false);
+              return;
+            } catch (updateError) {
+              console.error("Failed to update user with company ID:", updateError);
+              // Continue to company not found error
+            }
+          } else {
+            console.log("No company found by email either:", currentUser.email);
+          }
+          
+          console.log("Company not found. Tried ID:", companyId, "and email:", currentUser.email);
           setError('companyNotFound');
           setLoading(false);
           return;
@@ -57,6 +107,7 @@ const CompanyDashboard = () => {
           updatedAt: companyDoc.data().updatedAt?.toDate() || new Date()
         } as Company;
         
+        console.log("Company found successfully:", companyData.name, "ID:", companyData.id);
         setCompany(companyData);
 
         // Check if company is a developer
