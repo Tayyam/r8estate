@@ -100,14 +100,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   {translations?.verifiedCompanyExplanation || 
                   'This is an official company account verified by R8 ESTATE.'}
                 </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Claim Company Button - show for all users if company is not claimed */}
-        {!isClaimed && (
-          <div className="bg-white rounded-2xl shadow-md p-6 flex items-center justify-between border-l-4 border-blue-500">
+                onClick={() => setShowClaimRequestModal(true)}
             <div>
               <h3 className="font-semibold text-gray-900">
                 {translations?.claimCompany || 'Claim Company'}
