@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { sendOTPEmail } from './sendOTPEmail';
+import { sendEmail } from './emailService';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -186,5 +186,5 @@ export const changeUserPassword = functions.https.onCall(async (data, context) =
   }
 });
 
-// Export the new OTP email function
-export { sendOTPEmail };
+// Export the email service function
+export { sendEmail };

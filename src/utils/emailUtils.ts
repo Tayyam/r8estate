@@ -11,12 +11,16 @@ import { functions } from '../config/firebase';
 export const sendOTPVerificationEmail = async (email: string, otp: string, companyName: string): Promise<boolean> => {
   try {
     // Call the Cloud Function
-    const sendOTPEmailFunction = httpsCallable(functions, 'sendOTPEmail');
+    const sendEmailFunction = httpsCallable(functions, 'sendEmail');
     
-    const response = await sendOTPEmailFunction({
-      email,
-      otp,
-      companyName
+    const response = await sendEmailFunction({
+      to: email,
+      subject: `Your R8 Estate Verification Code: ${otp}`,
+      templateType: 'otp',
+      templateData: {
+        otp,
+        companyName
+      }
     });
     
     // Check if the function returned success
