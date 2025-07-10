@@ -43,8 +43,8 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
       
       // Search for users by email or display name
       const usersQuery = query(
-        collection(db, 'users'),
-        where('role', '==', 'user') // Only search regular users
+        collection(db, 'users')
+        // Removed role filter to show all users
       );
       
       const usersSnapshot = await getDocs(usersQuery);
@@ -55,14 +55,41 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
           uid: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date()
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+          role: doc.data().role || 'user'
         }))
         .filter(user => 
           user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
           user.displayName.toLowerCase().includes(searchQuery.toLowerCase())
-        ) as UserType[];
+        )
+        .sort((a, b) => {
+          // Sort by match priority - exact matches first, then startsWith, then includes
+          const aNameMatch = a.displayName.toLowerCase().includes(searchQuery.toLowerCase());
+          const bNameMatch = b.displayName.toLowerCase().includes(searchQuery.toLowerCase());
+          const aEmailMatch = a.email.toLowerCase().includes(searchQuery.toLowerCase());
+          const bEmailMatch = b.email.toLowerCase().includes(searchQuery.toLowerCase());
+          
+          if (aNameMatch && !bNameMatch) return -1;
+          if (!aNameMatch && bNameMatch) return 1;
+          if (aEmailMatch && !bEmailMatch) return -1;
+          if (!aEmailMatch && bEmailMatch) return 1;
+          
+          // If both match equally, sort by name
+          return a.displayName.localeCompare(b.displayName);
+        }) as UserType[];
       
-      setSearchResults(filteredUsers);
+      // Always show some results if available, even on initial load
+      setSearchResults(filteredUsers.length > 0 ? filteredUsers : 
+        !searchQuery.trim() ? usersSnapshot.docs
+          .map(doc => ({
+            uid: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+            role: doc.data().role || 'user'
+          }))
+          .slice(0, 10) as UserType[]
+        : []);
     } catch (error) {
       console.error('Error searching users:', error);
       onError(translations?.failedToSearchUsers || 'Failed to search users');
@@ -84,6 +111,77 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
       ...formData,
       [field]: value
     });
+  };
+  
+  // Load initial users on mount
+  useEffect(() => {
+    const loadInitialUsers = async () => {
+      try {
+        setSearchLoading(true);
+        
+        const usersQuery = query(
+          collection(db, 'users'),
+          // Limit to first few users
+          limit(10)
+        );
+        
+        const usersSnapshot = await getDocs(usersQuery);
+        const userData = usersSnapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+          role: doc.data().role || 'user'
+        })) as UserType[];
+        
+        setSearchResults(userData);
+      } catch (error) {
+        console.error('Error loading initial users:', error);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+    
+    if (claimMode === 'existing') {
+      loadInitialUsers();
+    }
+  }, [claimMode]);
+  
+  // Handle input changes for search (with debounce)
+  const handleSearchInput = (value: string) => {
+    setSearchQuery(value);
+    
+    // If search input is empty, load initial users
+    if (!value.trim()) {
+      const loadInitialUsers = async () => {
+        try {
+          setSearchLoading(true);
+          
+          const usersQuery = query(
+            collection(db, 'users'),
+            // Limit to first few users
+            limit(10)
+          );
+          
+          const usersSnapshot = await getDocs(usersQuery);
+          const userData = usersSnapshot.docs.map(doc => ({
+            uid: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+            role: doc.data().role || 'user'
+          })) as UserType[];
+          
+          setSearchResults(userData);
+        } catch (error) {
+          console.error('Error loading initial users:', error);
+        } finally {
+          setSearchLoading(false);
+        }
+      };
+      
+      loadInitialUsers();
+    }
   };
 
   // Handle form submission
@@ -340,7 +438,7 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
                     <input
                       type="text"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => handleSearchInput(e.target.value)}
                       placeholder={translations?.searchByEmailName || 'Search by email or name'}
                       className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
@@ -349,7 +447,7 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
                     type="button"
                     onClick={handleSearch}
                     disabled={searchLoading || !searchQuery.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
                   >
                     {searchLoading ? (
                       <RefreshCw className="h-5 w-5 animate-spin" />
@@ -363,12 +461,15 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
               {/* Search Results */}
               {searchResults.length > 0 ? (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
                     <p className="text-sm font-medium text-gray-700">
                       {translations?.searchResults || 'Search Results'} ({searchResults.length})
                     </p>
+                    {searchLoading && (
+                      <RefreshCw className="h-4 w-4 animate-spin text-gray-500" />
+                    )}
                   </div>
-                  <div className="divide-y divide-gray-200 max-h-64 overflow-y-auto">
+                  <div className="divide-y divide-gray-200 max-h-64 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
                     {searchResults.map(user => (
                       <div 
                         key={user.uid}
@@ -378,7 +479,7 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
                         onClick={() => handleSelectUser(user)}
                       >
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
                             {user.photoURL ? (
                               <img
                                 src={user.photoURL}
@@ -392,6 +493,11 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
                           <div>
                             <p className="text-sm font-medium text-gray-900">{user.displayName}</p>
                             <p className="text-xs text-gray-500">{user.email}</p>
+                            <p className="text-xs bg-gray-100 text-gray-700 px-1 py-0.5 rounded mt-1 inline-block">
+                              {user.role === 'admin' ? (translations?.adminRole || 'Admin') :
+                               user.role === 'company' ? (translations?.companyRole || 'Company') :
+                               (translations?.userRole || 'User')}
+                            </p>
                           </div>
                         </div>
                         {selectedUser?.uid === user.uid && (
