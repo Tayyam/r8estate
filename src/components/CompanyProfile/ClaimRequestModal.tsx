@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Phone, Mail, Send, X, AlertCircle, Check, RefreshCw, Globe } from 'lucide-react';
+import { Building2, Mail, Send, X, AlertCircle, Check, RefreshCw, Globe } from 'lucide-react';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { db, auth } from '../../config/firebase';
@@ -28,15 +28,15 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   
   // Domain-related state
   const [companyDomain, setCompanyDomain] = useState('');
-  const [hasDomainEmail, setHasDomainEmail] = useState<boolean | null>(null); // User selection for having domain email
+  const [hasDomainEmail, setHasDomainEmail] = useState<boolean | null>(null);
   const [passwordGenerated, setPasswordGenerated] = useState('');
   
   // Form and verification state
   const [formData, setFormData] = useState({
-    contactPhone: '',
     businessEmail: '',
     supervisorEmail: ''
   });
+  
   const [verificationStatus, setVerificationStatus] = useState({
     sent: false,
     emailVerified: false
@@ -187,7 +187,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     e.preventDefault();
     
     // Validate form data
-    if (!formData.contactPhone || !formData.businessEmail || !formData.supervisorEmail) {
+    if (!formData.businessEmail || !formData.supervisorEmail) {
       onError(translations?.fillAllFields || 'Please fill in all fields');
       return;
     }
@@ -244,7 +244,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             companyName: company.name,
             requesterId: currentUser?.uid || null,
             requesterName: currentUser?.displayName || null,
-            contactPhone: formData.contactPhone,
             businessEmail: formData.businessEmail,
             supervisorEmail: formData.supervisorEmail,
             status: 'verification_pending',
@@ -257,8 +256,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           
           // Move to verification step
           setCurrentStep(3);
-          
-          onSuccess(translations?.verificationEmailSent + passwordGenerated || 'Verification email sent! Please check your inbox to verify your email address. A temporary password has been created: ' + passwordGenerated);
         } catch (error: any) {
           console.error("Error in domain verification flow:", error);
           // If there's a specific error about email in use, handle it specially
@@ -288,7 +285,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       companyName: company.name,
       requesterId: currentUser?.uid || null,
       requesterName: currentUser?.displayName || null,
-      contactPhone: formData.contactPhone,
       businessEmail: formData.businessEmail,
       supervisorEmail: formData.supervisorEmail,
       status: 'pending',
@@ -325,13 +321,17 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         </div>
         
         <div className="flex flex-col space-y-3">
-          <button
-            onClick={() => handleDomainChoice(true)}
-            className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center justify-center space-x-2 rtl:space-x-reverse"
-          >
-            <Check className="h-5 w-5" />
-            <span>{translations?.yesHaveDomainEmail || `Yes, I have an email with @${companyDomain}`}</span>
-          </button>
+          {companyDomain && (
+            <button
+              onClick={() => handleDomainChoice(true)}
+              className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center justify-center space-x-2 rtl:space-x-reverse"
+            >
+              <Check className="h-5 w-5" />
+              <span>
+                {translations?.yesHaveDomainEmail || 'Yes, I have an email with'} @{companyDomain}
+              </span>
+            </button>
+          )}
           
           <button
             onClick={() => handleDomainChoice(false)}
@@ -390,25 +390,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           </div>
         )}
 
-        {/* Contact Phone */}
-        <div>
-          <label htmlFor="contactPhone" className="block text-sm font-medium text-gray-700 mb-1">
-            {translations?.contactPhone || 'Contact Phone'} *
-          </label>
-          <div className="relative">
-            <Phone className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              id="contactPhone"
-              type="text"
-              required
-              value={formData.contactPhone}
-              onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-              placeholder={translations?.enterContactPhone || 'Enter contact phone number'}
-              className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-
         {/* Business Email */}
         <div>
           <label htmlFor="businessEmail" className="block text-sm font-medium text-gray-700 mb-1">
@@ -462,21 +443,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             </p>
           )}
         </div>
-
-        {/* Temporary Password Display for domain users */}
-        {hasDomainEmail && (
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h5 className="text-sm font-medium text-gray-800 mb-2">
-              {translations?.tempPasswordInfo || 'Your temporary password:'}
-            </h5>
-            <div className="bg-white p-3 rounded-lg border border-gray-300 text-center font-mono text-lg tracking-wider font-bold text-gray-800 mb-2">
-              {passwordGenerated}
-            </div>
-            <p className="text-xs text-gray-600">
-              {translations?.passwordKeepSafe || 'Please keep this password safe. You will need it to log in after verifying your email.'}
-            </p>
-          </div>
-        )}
 
         {/* Buttons */}
         <div className="flex justify-end space-x-3 rtl:space-x-reverse pt-4">
@@ -537,16 +503,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
                 
               {!verificationStatus.emailVerified && (
                 <div className="mt-4">
-                  <p className="text-sm text-yellow-800 mb-2 font-medium">
-                    {translations?.tempPasswordInfo || 'Your temporary password:'}
-                  </p>
-                  <div className="bg-white p-2 rounded border border-yellow-200 text-center mb-3">
-                    <span className="font-mono text-yellow-900 font-bold tracking-wider">{passwordGenerated}</span>
-                  </div>
-                  <p className="text-xs text-yellow-700 mb-3">
-                    {translations?.passwordKeepSafe || 'Please keep this password safe. You will need it to log in after verifying your email.'}
-                  </p>
-                  
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
                     <button
                       onClick={handleResendVerification}
