@@ -383,9 +383,17 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           displayName: formData.displayName,
           email: formData.businessEmail,
           photoURL: photoURL,
-          role: 'user', // Initially user role
+          role: 'company', // Set role as company
+          companyId: company.id, // Link to the company
           isEmailVerified: user.emailVerified,
           createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        
+        // Mark the company as claimed
+        await updateDoc(doc(db, 'companies', company.id), {
+          claimed: true,
+          email: formData.businessEmail, // Update company email
           updatedAt: serverTimestamp()
         });
         
