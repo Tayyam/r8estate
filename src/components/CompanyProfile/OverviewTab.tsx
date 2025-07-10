@@ -100,16 +100,28 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   {translations?.verifiedCompanyExplanation || 
                   'This is an official company account verified by R8 ESTATE.'}
                 </p>
-                onClick={() => setShowClaimRequestModal(true)}
-            <div>
-              <h3 className="font-semibold text-gray-900">
-                {translations?.claimCompany || 'Claim Company'}
-              </h3>
-              {currentUser ? null : (
-                <p className="text-sm text-gray-600 mt-1">
-                  {translations?.loginToClaimCompany || 'Login to claim this company'}
-                </p>
-              )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Claim Company Button - for unclaimed companies */}
+        {!isClaimed && !isOwnerOrAdmin && (
+          <div className="bg-white rounded-2xl shadow-md p-6 border border-blue-200">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Building2 className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">
+                  {translations?.claimCompany || 'Claim Company'}
+                </h3>
+                {currentUser ? null : (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {translations?.loginToClaimCompany || 'Login to claim this company'}
+                  </p>
+                )}
+              </div>
             </div>
             <button
               onClick={() => {
