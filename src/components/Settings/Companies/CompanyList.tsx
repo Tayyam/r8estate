@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, Building2, MapPin, Star, Calendar, User, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, UserPlus, UserMinus, Users } from 'lucide-react';
+import { Edit, Trash2, Building2, MapPin, Star, Calendar, User, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, UserPlus, UserMinus, Users, Shield } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
 
@@ -88,6 +88,12 @@ const CompanyList: React.FC<CompanyListProps> = ({
                   <th className="px-6 py-4 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
                     {translations?.claimed || 'Claimed'}
                   </th>
+                  <th className="px-6 py-4 text-start text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.claimedBy || 'Claimed By'}
+                  </th>
+                  <th className="px-6 py-4 text-start text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    {translations?.subscription || 'Subscription'}
+                  </th>
                   <th className="px-6 py-4 text-end text-sm font-medium text-gray-500 uppercase tracking-wider">
                     {translations?.createdDate || 'Created'}
                   </th>
@@ -137,6 +143,21 @@ const CompanyList: React.FC<CompanyListProps> = ({
                           {translations?.notClaimed || 'Not Claimed'}
                         </span>
                       )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {company.claimed ? (
+                        <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                          <User className="h-4 w-4 text-blue-500" />
+                          <span>{company.email || translations?.notAvailable || 'N/A'}</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">{translations?.notClaimed || 'Not Claimed'}</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {company.subscription || translations?.freePlan || 'Free'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-end">
                       <div className="flex items-center justify-end space-x-1 rtl:space-x-reverse">
@@ -243,6 +264,25 @@ const CompanyList: React.FC<CompanyListProps> = ({
                           <MapPin className="h-3 w-3 text-gray-600" />
                         </div>
                         <span className="text-gray-600">{getLocationName(company.location)}</span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center mr-1 rtl:ml-1 rtl:mr-0">
+                          <User className="h-3 w-3 text-gray-600" />
+                        </div>
+                        <span className="text-gray-600">
+                          {company.claimed ? (company.email || translations?.notAvailable || 'N/A') : 
+                            (translations?.notClaimed || 'Not Claimed')}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-1 rtl:ml-1 rtl:mr-0">
+                          <Shield className="h-3 w-3 text-blue-600" />
+                        </div>
+                        <span className="text-gray-600">
+                          {company.subscription || translations?.freePlan || 'Free'}
+                        </span>
                       </div>
 
                       <div className="flex items-center">
