@@ -253,7 +253,8 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
       // Update company document to mark as claimed
       await updateDoc(doc(db, 'companies', company.id), {
         claimed: true,
-        email: formData.email, // Update company email to match user email
+        email: claimMode === 'new' ? formData.email : selectedUser?.email || company.email, // Update company email
+        claimedByName: claimMode === 'new' ? company.name : selectedUser?.displayName || company.name, // Add the name of the user who claimed it
         updatedAt: new Date()
       });
       

@@ -120,6 +120,13 @@ const CompanyList: React.FC<CompanyListProps> = ({
                           <div className="text-sm text-gray-500">{company.email}</div>
                         </div>
                       </div>
+
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center mr-1 rtl:ml-1 rtl:mr-0">
+                          <MapPin className="h-3 w-3 text-gray-600" />
+                        </div>
+                        <span className="text-gray-600">{getLocationName(company.location)}</span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{getCategoryName(company.categoryId)}</div>
@@ -255,19 +262,15 @@ const CompanyList: React.FC<CompanyListProps> = ({
 
                       <div className="flex items-center">
                         <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center mr-1 rtl:ml-1 rtl:mr-0">
-                          {company.claimed ? (
-                            <>
-                              <User className="h-3 w-3 text-green-500 mr-1 inline-block" />
-                              <span className="text-green-600 font-medium">{company.claimedByName || company.email || translations?.notAvailable || 'N/A'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <User className="h-3 w-3 text-gray-400 mr-1 inline-block" />
-                              <span>{translations?.notClaimed || 'Not Claimed'}</span>
-                            </>
-                          )}
+                          <User className="h-3 w-3 text-gray-600" />
                         </div>
+                        {company.claimed ? (
+                          <span className="text-green-600 font-medium">{company.claimedByName || company.email || translations?.notAvailable || 'N/A'}</span>
+                        ) : (
+                          <span className="text-gray-600">{translations?.notClaimed || 'Not Claimed'}</span>
+                        )}
                       </div>
+
                       
                       <div className="flex items-center">
                         <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-1 rtl:ml-1 rtl:mr-0">
