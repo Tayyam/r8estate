@@ -357,28 +357,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         return;
       }
       
-      // Mark OTP as used
-      try {
-        const otpQuery = query(
-          collection(db, 'otp'),
-          where('email', '==', formData.businessEmail),
-          where('otp', '==', otpCode),
-          where('used', '==', false)
-        );
-        
-        const otpSnapshot = await getDocs(otpQuery);
-        if (!otpSnapshot.empty) {
-          const otpDocRef = doc(db, 'otp', otpSnapshot.docs[0].id);
-          await updateDoc(otpDocRef, {
-            used: true,
-            updatedAt: serverTimestamp()
-          });
-        }
-      } catch (error) {
-        console.error('Error marking OTP as used:', error);
-        // Continue with verification even if marking OTP as used fails
-      }
-      
       // Mark OTP as verified
       setOtpVerified(true);
       // Create user account with stored info
@@ -589,9 +567,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const navigateToLogin = () => {
     window.location.href = `/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
   };
-  
-  // File input ref for photo upload - moved outside conditional rendering to maintain hook order
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if user is logged in
   if (!currentUser) {
