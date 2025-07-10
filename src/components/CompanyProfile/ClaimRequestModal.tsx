@@ -362,4 +362,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       }
       
       // Mark OTP as verified
+    }
+  }
+}
 export default ClaimRequestModal;
