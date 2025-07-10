@@ -54,6 +54,16 @@ export const arClaimRequests = {
   optional: 'اختياري',
   enterNotesForRequest: 'أدخل أي ملاحظات لهذا الطلب...',
   
+  // Email Verification
+  verificationStatus: 'حالة التحقق',
+  awaitingVerification: 'في انتظار التحقق',
+  sendVerificationEmail: 'إرسال بريد التحقق',
+  resendVerificationEmail: 'إعادة إرسال بريد التحقق',
+  verificationEmailsResent: 'تم إعادة إرسال رسائل التحقق بنجاح',
+  emailAlreadyExists: 'البريد الإلكتروني موجود بالفعل. قد تكون رسالة التحقق قد أُرسلت بالفعل.',
+  failedToSendVerification: 'فشل في إرسال بريد التحقق',
+  preferCompanyEmail: 'يفضل استخدام بريد الشركة',
+  
   // Action Buttons
   approve: 'موافقة',
   delete: 'حذف',
