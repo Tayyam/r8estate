@@ -1,7 +1,7 @@
 import React, { useState , useEffect } from 'react';
 import { UserPlus, AlertCircle, Lock, Mail, User, Building2, Search, RefreshCw, Check, X } from 'lucide-react';
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
-import { doc, updateDoc, setDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, updateDoc, setDoc, collection, query, where, getDocs, limit as firestoreLimit } from 'firebase/firestore';
 import { auth, db } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company } from '../../../types/company';
@@ -122,7 +122,7 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
         const usersQuery = query(
           collection(db, 'users'),
           // Limit to first few users
-          limit(10)
+          firestoreLimit(10)
         );
         
         const usersSnapshot = await getDocs(usersQuery);
