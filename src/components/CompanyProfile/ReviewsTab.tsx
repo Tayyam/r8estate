@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check, Share2 } from 'lucide-react';
+import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check, Share2, Filter, Clock } from 'lucide-react';
 import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, increment, DocumentData } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db, storage } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { Review } from '../../types/property';
@@ -14,6 +14,7 @@ import ReplyModal from './ReplyModal';
 import ReviewVotingButtons from './ReviewVotingButtons';
 import WriteReviewTab from './WriteReviewTab';
 import { getCompanySlug } from '../../utils/urlUtils';
+import { subDays, isAfter, parseISO, format } from 'date-fns';
 
 interface ReviewsTabProps {
   reviews: Review[];
@@ -56,6 +57,13 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const [showEditReview, setShowEditReview] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
+  
+  // Filter states
+  const [ratingFilter, setRatingFilter] = useState<'all' | 1 | 2 | 3 | 4 | 5>('all');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'yesterday' | 'week' | 'month' | 'year'>('all');
+  const [sortFilter, setSortFilter] = useState<'newest' | 'oldest'>('newest');
+  const [showFilters, setShowFilters] = useState(false);
+  
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -157,6 +165,56 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       setReviewsLoaded(true);
     }
   }, [initialReviews, currentUser, reviewsLoaded]);
+
+  // Get date filter range
+  const getDateFilterRange = (): Date | null => {
+    const now = new Date();
+    
+    switch (timeFilter) {
+      case 'today':
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      case 'yesterday':
+        return subDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), 1);
+      case 'week':
+        return subDays(now, 7);
+      case 'month':
+        return subDays(now, 30);
+      case 'year':
+        return subDays(now, 365);
+      default:
+        return null;
+    }
+  };
+
+  // Apply filters to reviews
+  const getFilteredReviews = () => {
+    let filteredReviews = [...reviews];
+    
+    // Apply rating filter
+    if (ratingFilter !== 'all') {
+      filteredReviews = filteredReviews.filter(review => review.rating === ratingFilter);
+    }
+    
+    // Apply time filter
+    const dateFilter = getDateFilterRange();
+    if (dateFilter) {
+      filteredReviews = filteredReviews.filter(review => isAfter(review.createdAt, dateFilter));
+    }
+    
+    // Apply sort order
+    filteredReviews.sort((a, b) => {
+      if (sortFilter === 'newest') {
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      } else {
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      }
+    });
+    
+    return filteredReviews;
+  };
+
+  // Get filtered reviews
+  const filteredReviews = getFilteredReviews();
 
   // Calculate average rating
   const averageRating = totalReviewsCount > 0 && reviews.length > 0
@@ -504,12 +562,107 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         </div>
       ) : null}
 
+      {/* Filters */}
+      <div className="mt-8 mb-6">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-sm"
+        >
+          <Filter className="h-4 w-4" />
+          <span>{translations?.filterReviews || 'Filter Reviews'}</span>
+          {showFilters ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </button>
+        
+        {showFilters && (
+          <div className="bg-gray-50 p-4 rounded-lg mt-3 border border-gray-100 animate-fadeIn">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Rating Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translations?.filterByRating || 'Filter by Rating'}
+                </label>
+                <select
+                  value={ratingFilter as string}
+                  onChange={(e) => setRatingFilter(e.target.value as 'all' | 1 | 2 | 3 | 4 | 5)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">{translations?.allRatings || 'All Ratings'}</option>
+                  <option value="5">★★★★★ (5)</option>
+                  <option value="4">★★★★☆ (4)</option>
+                  <option value="3">★★★☆☆ (3)</option>
+                  <option value="2">★★☆☆☆ (2)</option>
+                  <option value="1">★☆☆☆☆ (1)</option>
+                </select>
+              </div>
+              
+              {/* Time Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translations?.filterByTime || 'Filter by Time'}
+                </label>
+                <select
+                  value={timeFilter}
+                  onChange={(e) => setTimeFilter(e.target.value as 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'year')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">{translations?.allTime || 'All Time'}</option>
+                  <option value="today">{translations?.today || 'Today'}</option>
+                  <option value="yesterday">{translations?.yesterday || 'Yesterday'}</option>
+                  <option value="week">{translations?.pastWeek || 'Past Week'}</option>
+                  <option value="month">{translations?.pastMonth || 'Past Month'}</option>
+                  <option value="year">{translations?.pastYear || 'Past Year'}</option>
+                </select>
+              </div>
+              
+              {/* Sort Order */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {translations?.sortOrder || 'Sort Order'}
+                </label>
+                <select
+                  value={sortFilter}
+                  onChange={(e) => setSortFilter(e.target.value as 'newest' | 'oldest')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="newest">{translations?.newestFirst || 'Newest First'}</option>
+                  <option value="oldest">{translations?.oldestFirst || 'Oldest First'}</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Filter Actions */}
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => {
+                  setRatingFilter('all');
+                  setTimeFilter('all');
+                  setSortFilter('newest');
+                }}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200"
+              >
+                {translations?.clearFilters || 'Clear Filters'}
+              </button>
+            </div>
+            
+            {/* Filter Results Count */}
+            <div className="mt-2 text-sm text-gray-500">
+              {translations?.showingFilteredReviews?.replace('{count}', filteredReviews.length.toString()).replace('{total}', reviews.length.toString()) || 
+               `Showing ${filteredReviews.length} of ${reviews.length} reviews`}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Reviews List */}
       {loading && !reviewsLoaded ? (
         renderLoadingPlaceholder()
-      ) : reviews.length > 0 ? (
+      ) : filteredReviews.length > 0 ? (
         <div className="space-y-6">
-          {reviews.map((review) => (
+          {filteredReviews.map((review) => (
             <div 
               key={review.id} 
               id={`review-${review.id}`}
@@ -753,7 +906,29 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             </div>
           )}
         </div>
-      ) : !loading ? (
+      ) : filteredReviews.length === 0 && reviews.length > 0 ? (
+        <div className="text-center py-12 bg-white rounded-xl shadow-md">
+          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Filter className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-3">
+            {translations?.noReviewsMatchFilters || 'No reviews match your filters'}
+          </h3>
+          <p className="text-gray-600 mb-8 max-w-md mx-auto">
+            {translations?.tryAdjustingFilters || 'Try adjusting your filters to see more reviews.'}
+          </p>
+          <button
+            onClick={() => {
+              setRatingFilter('all');
+              setTimeFilter('all');
+              setSortFilter('newest');
+            }}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            {translations?.clearFilters || 'Clear Filters'}
+          </button>
+        </div>
+      ) : reviews.length === 0 ? (
         <div className="text-center py-16">
           {/* Empty State */}
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -775,6 +950,17 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
           </button>
         </div>
       ) : null}
+
+      {/* CSS for animations */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
 
       {/* Add Review Modal */}
       {showAddReview && currentUser && (
