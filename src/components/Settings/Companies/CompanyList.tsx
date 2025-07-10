@@ -279,17 +279,19 @@ const CompanyList: React.FC<CompanyListProps> = ({
                         <button
                           onClick={() => onUnclaimCompany(company)}
                           className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-orange-600 hover:bg-orange-50"
-                        <button
-                          onClick={() => onManageUsers(company)}
-                          className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-purple-600 hover:bg-purple-50"
                         >
-                          <Users className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                          <span>{translations?.manageUsers || 'Manage Users'}</span>
+                          <UserMinus className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
+                          <span>{translations?.unclaim || 'Unclaim'}</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onClaimCompany(company)}
+                          className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-blue-600 hover:bg-blue-50"
+                        >
+                          <UserPlus className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
+                          <span>{translations?.claim || 'Claim'}</span>
                         </button>
                       )}
-                      {company.claimed ? (
-                        <button
-                          onClick={() => onUnclaimCompany(company)}
 
                       <button
                         onClick={() => onEditCompany(company)}
