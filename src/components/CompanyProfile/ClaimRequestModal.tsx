@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Mail, Send, X, AlertCircle, Check, RefreshCw, Globe } from 'lucide-react';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { Building2, Phone, Mail, Send, X, AlertCircle, Check, RefreshCw, Globe, Lock } from 'lucide-react';
+import { collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -23,26 +23,26 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const [loading, setLoading] = useState(false);
-  const [verificationSending, setVerificationSending] = useState(false);
-  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
   
   // Domain-related state
   const [companyDomain, setCompanyDomain] = useState('');
   const [hasDomainEmail, setHasDomainEmail] = useState<boolean | null>(null);
-  const [passwordGenerated, setPasswordGenerated] = useState('');
   
   // Form and verification state
   const [formData, setFormData] = useState({
+    contactPhone: '',
     businessEmail: '',
     supervisorEmail: ''
   });
   
-  const [verificationStatus, setVerificationStatus] = useState({
-    sent: false,
-    emailVerified: false
-  });
+  // OTP and password state
+  const [otpCode, setOtpCode] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
-  // Step selection (1: Domain choice, 2: Form, 3: Verification)
+  // Step selection (1: Domain choice, 2: Form, 3: OTP Verification, 4: Password Creation)
   const [currentStep, setCurrentStep] = useState(1);
 
   // Extract domain from website
@@ -58,21 +58,14 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     }
   }, [company.website]);
 
-  // Generate a random 9-digit password
-  const generateRandomPassword = () => {
-    return Math.random().toString().substring(2, 11);
+  // Generate a random 6-digit OTP
+  const generateOTP = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   // Handle domain choice
   const handleDomainChoice = (hasDomain: boolean) => {
     setHasDomainEmail(hasDomain);
-    
-    if (hasDomain) {
-      // Generate password for domain verification flow
-      const randomPassword = generateRandomPassword();
-      setPasswordGenerated(randomPassword);
-    }
-    
     setCurrentStep(2);
   };
 
@@ -92,93 +85,196 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     return emailDomain === companyDomain;
   };
 
-  // Create user account and send verification email
-  const createUserAndSendVerification = async (email: string, password: string) => {
+  // Store OTP in Firestore
+  const storeOTP = async (email: string, otp: string) => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(userCredential.user);
-      return userCredential.user.uid;
-    } catch (error: any) {
-      console.error("Error creating user:", error);
+      // Create expiration date (60 minutes from now)
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 60);
       
-      // If account already exists, we can't create it
-      if (error.code === 'auth/email-already-in-use') {
-        throw new Error(translations?.emailAlreadyInUse || 'This email is already in use by another account');
-      }
-      
-      throw error;
-    }
-  };
-
-  // Resend verification email
-  const handleResendVerification = async () => {
-    try {
-      setVerificationSending(true);
-      
-      // Create temporary user accounts for verification
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.businessEmail, passwordGenerated);
-      await sendEmailVerification(userCredential.user);
-      
-      // If supervisor email is different, create another account
-      if (formData.supervisorEmail !== formData.businessEmail) {
-        try {
-          const supervisorCredential = await createUserWithEmailAndPassword(auth, formData.supervisorEmail, passwordGenerated);
-          await sendEmailVerification(supervisorCredential.user);
-        } catch (error) {
-          console.error("Error creating supervisor account:", error);
-          // Continue even if supervisor account creation fails
-        }
-      }
-      
-      setVerificationStatus({
-        ...verificationStatus,
-        sent: true
+      // Store in 'otp' collection
+      await addDoc(collection(db, 'otp'), {
+        userId: currentUser?.uid,
+        companyId: company.id,
+        email: email,
+        otp: otp,
+        createdAt: serverTimestamp(),
+        expiresAt: Timestamp.fromDate(expiresAt),
+        used: false
       });
       
-      onSuccess(translations?.verificationEmailResent || 'Verification email has been resent. Please check your inbox.');
-    } catch (error: any) {
-      console.error("Error resending verification:", error);
-      
-      if (error.code === 'auth/email-already-in-use') {
-        // This is expected if we've already created the account before
-        onSuccess(translations?.verificationEmailResent || 'Verification email has been resent. Please check your inbox.');
-      } else {
-        onError(error.message || translations?.failedToSendVerification || 'Failed to resend verification email');
-      }
-    } finally {
-      setVerificationSending(false);
+      return true;
+    } catch (error) {
+      console.error("Error storing OTP:", error);
+      return false;
     }
   };
 
-  // Check verification status
-  const handleCheckStatus = async () => {
+  // Verify OTP from Firestore
+  const verifyOTP = async (email: string, otp: string): Promise<boolean> => {
     try {
-      setCheckingStatus(true);
+      const now = new Date();
       
-      // Reload the current user to get latest email verification status
-      if (auth.currentUser) {
-        await auth.currentUser.reload();
-        if (auth.currentUser.emailVerified) {
-          setVerificationStatus({
-            ...verificationStatus,
-            emailVerified: true
-          });
-          onSuccess(translations?.emailVerified || 'Email verified! Your company claim is being processed.');
-          return true;
-        } else {
-          onError(translations?.emailNotVerified || 'Email not verified yet. Please check your inbox and click the verification link.');
-        }
-      } else {
-        onError(translations?.notLoggedIn || 'Not logged in with verification account. Please log in with the email address that was sent the verification link.');
+      // Query for matching OTP
+      const otpQuery = query(
+        collection(db, 'otp'),
+        where('email', '==', email),
+        where('otp', '==', otp),
+        where('used', '==', false)
+      );
+      
+      const otpSnapshot = await getDocs(otpQuery);
+      
+      if (otpSnapshot.empty) {
+        return false;
       }
       
-      return false;
+      const otpDoc = otpSnapshot.docs[0];
+      const otpData = otpDoc.data();
+      
+      // Check if OTP is expired
+      const expiresAt = otpData.expiresAt.toDate();
+      if (now > expiresAt) {
+        return false;
+      }
+      
+      return true;
     } catch (error) {
-      console.error("Error checking verification status:", error);
-      onError(translations?.verificationCheckFailed || 'Failed to check verification status');
+      console.error("Error verifying OTP:", error);
       return false;
+    }
+  };
+
+  // Send OTP email
+  const sendOTPEmail = async (email: string, otp: string) => {
+    try {
+      // In a real implementation, you would integrate with an email service
+      // For now, we'll simulate it and just store the OTP in Firestore
+      console.log(`Sending OTP ${otp} to ${email}`);
+      return true;
+    } catch (error) {
+      console.error("Error sending OTP email:", error);
+      return false;
+    }
+  };
+
+  // Handle sending OTP
+  const handleSendOTP = async () => {
+    try {
+      setOtpSending(true);
+      
+      // Generate OTP
+      const otp = generateOTP();
+      
+      // Store OTP
+      const stored = await storeOTP(formData.businessEmail, otp);
+      if (!stored) {
+        onError(translations?.failedToSendVerification || 'Failed to send verification code');
+        return;
+      }
+      
+      // Send OTP email
+      const sent = await sendOTPEmail(formData.businessEmail, otp);
+      if (!sent) {
+        onError(translations?.failedToSendVerification || 'Failed to send verification code');
+        return;
+      }
+      
+      // Move to OTP verification step
+      setCurrentStep(3);
+      onSuccess(`OTP sent to ${formData.businessEmail}. Please check your inbox for the verification code.`);
+      
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      onError(translations?.failedToSendVerification || 'Failed to send verification code');
     } finally {
-      setCheckingStatus(false);
+      setOtpSending(false);
+    }
+  };
+
+  // Handle OTP verification
+  const handleVerifyOTP = async () => {
+    if (otpCode.length !== 6) {
+      onError('Please enter a valid 6-digit verification code');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // Verify OTP
+      const isValid = await verifyOTP(formData.businessEmail, otpCode);
+      
+      if (!isValid) {
+        onError('Invalid or expired verification code');
+        return;
+      }
+      
+      // Mark OTP as verified
+      setOtpVerified(true);
+      
+      // Move to password creation step
+      setCurrentStep(4);
+      
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      onError('Failed to verify code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle account creation
+  const handleCreateAccount = async () => {
+    if (!otpVerified) {
+      onError('OTP verification required');
+      return;
+    }
+    
+    if (password.length < 6) {
+      onError('Password must be at least 6 characters');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      onError('Passwords do not match');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // Create user account
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.businessEmail, password);
+      const uid = userCredential.user.uid;
+      
+      // Create claim request document
+      await addDoc(collection(db, 'claimRequests'), {
+        companyId: company.id,
+        companyName: company.name,
+        requesterId: currentUser?.uid || null,
+        requesterName: currentUser?.displayName || null,
+        contactPhone: hasDomainEmail ? '' : formData.contactPhone,
+        businessEmail: formData.businessEmail,
+        supervisorEmail: formData.supervisorEmail,
+        businessUserUid: uid,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      onSuccess(translations?.claimRequestSubmitted || 'Claim request submitted successfully! We will review your request and contact you soon.');
+      onClose();
+      
+    } catch (error: any) {
+      console.error('Error creating account:', error);
+      if (error.code === 'auth/email-already-in-use') {
+        onError(translations?.emailAlreadyInUse || 'This email is already in use by another account');
+      } else {
+        onError(translations?.failedToSubmitRequest || 'Failed to submit claim request. Please try again later.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -187,9 +283,16 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     e.preventDefault();
     
     // Validate form data
-    if (!formData.businessEmail || !formData.supervisorEmail) {
-      onError(translations?.fillAllFields || 'Please fill in all fields');
-      return;
+    if (hasDomainEmail) {
+      if (!formData.businessEmail || !formData.supervisorEmail) {
+        onError(translations?.fillAllFields || 'Please fill in all fields');
+        return;
+      }
+    } else {
+      if (!formData.contactPhone || !formData.businessEmail || !formData.supervisorEmail) {
+        onError(translations?.fillAllFields || 'Please fill in all fields');
+        return;
+      }
     }
     
     // Validate email format
@@ -210,90 +313,36 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         onError(translations?.supervisorEmailDomainMismatch || 'Supervisor email must match the company domain: ' + companyDomain);
         return;
       }
-    }
-
-    try {
-      setLoading(true);
       
-      if (hasDomainEmail) {
-        // Domain verification flow
-        try {
-          // Create business email account
-          const businessUserUid = await createUserAndSendVerification(formData.businessEmail, passwordGenerated);
-          
-          // Create supervisor email account if different
-          let supervisorUserUid = businessUserUid;
-          if (formData.supervisorEmail !== formData.businessEmail) {
-            try {
-              supervisorUserUid = await createUserAndSendVerification(formData.supervisorEmail, passwordGenerated);
-            } catch (error) {
-              console.error("Error creating supervisor account:", error);
-              // Continue even if supervisor account creation fails
-            }
-          }
-          
-          // Set verification status
-          setVerificationStatus({
-            sent: true,
-            emailVerified: false
-          });
-          
-          // Create claim request document with verification pending
-          await addDoc(collection(db, 'claimRequests'), {
-            companyId: company.id,
-            companyName: company.name,
-            requesterId: currentUser?.uid || null,
-            requesterName: currentUser?.displayName || null,
-            businessEmail: formData.businessEmail,
-            supervisorEmail: formData.supervisorEmail,
-            status: 'verification_pending',
-            temporaryPassword: passwordGenerated,
-            businessUserUid: businessUserUid,
-            supervisorUserUid: supervisorUserUid,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
-          
-          // Move to verification step
-          setCurrentStep(3);
-        } catch (error: any) {
-          console.error("Error in domain verification flow:", error);
-          // If there's a specific error about email in use, handle it specially
-          if (error.message && error.message.includes('already in use')) {
-            onError(error.message);
-          } else {
-            // Otherwise fall back to the regular claim process
-            await createRegularClaimRequest();
-          }
-        }
-      } else {
-        // Regular claim request
-        await createRegularClaimRequest();
+      // Send OTP for domain verification
+      await handleSendOTP();
+    } else {
+      // Regular claim request without domain verification
+      try {
+        setLoading(true);
+        
+        await addDoc(collection(db, 'claimRequests'), {
+          companyId: company.id,
+          companyName: company.name,
+          requesterId: currentUser?.uid || null,
+          requesterName: currentUser?.displayName || null,
+          contactPhone: formData.contactPhone,
+          businessEmail: formData.businessEmail,
+          supervisorEmail: formData.supervisorEmail,
+          status: 'pending',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        
+        onSuccess(translations?.claimRequestSubmitted || 'Claim request submitted successfully! We will review your request and contact you soon.');
+        onClose();
+      } catch (error) {
+        console.error('Error submitting claim request:', error);
+        onError(translations?.failedToSubmitRequest || 'Failed to submit claim request. Please try again later.');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error submitting claim request:', error);
-      onError(translations?.failedToSubmitRequest || 'Failed to submit claim request. Please try again later.');
-    } finally {
-      setLoading(false);
     }
-  };
-
-  // Create a regular claim request without domain verification
-  const createRegularClaimRequest = async () => {
-    await addDoc(collection(db, 'claimRequests'), {
-      companyId: company.id,
-      companyName: company.name,
-      requesterId: currentUser?.uid || null,
-      requesterName: currentUser?.displayName || null,
-      businessEmail: formData.businessEmail,
-      supervisorEmail: formData.supervisorEmail,
-      status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    
-    onSuccess(translations?.claimRequestSubmitted || 'Claim request submitted successfully! We will review your request and contact you soon.');
-    onClose();
   };
 
   // Handle backdrop click to close modal
@@ -390,6 +439,27 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           </div>
         )}
 
+        {/* Contact Phone - Only show if not using domain verification */}
+        {!hasDomainEmail && (
+          <div>
+            <label htmlFor="contactPhone" className="block text-sm font-medium text-gray-700 mb-1">
+              {translations?.contactPhone || 'Contact Phone'} *
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                id="contactPhone"
+                type="text"
+                required
+                value={formData.contactPhone}
+                onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+                placeholder={translations?.enterContactPhone || 'Enter contact phone number'}
+                className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Business Email */}
         <div>
           <label htmlFor="businessEmail" className="block text-sm font-medium text-gray-700 mb-1">
@@ -456,10 +526,10 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           
           <button
             type="submit"
-            disabled={loading || (hasDomainEmail && (!validateEmailDomain(formData.businessEmail) || !validateEmailDomain(formData.supervisorEmail)))}
+            disabled={loading || otpSending || (hasDomainEmail && (!validateEmailDomain(formData.businessEmail) || !validateEmailDomain(formData.supervisorEmail)))}
             className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse disabled:opacity-50"
           >
-            {loading ? (
+            {loading || otpSending ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <Send className="h-4 w-4" />
@@ -467,9 +537,11 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             <span>
               {loading
                 ? (translations?.submitting || 'Submitting...')
-                : hasDomainEmail
-                  ? (translations?.verifyAndClaim || 'Verify & Claim')
-                  : (translations?.submitRequest || 'Submit Request')
+                : otpSending
+                  ? (translations?.sendingVerification || 'Sending verification...')
+                  : hasDomainEmail
+                    ? (translations?.verifyAndClaim || 'Verify & Claim')
+                    : (translations?.submitRequest || 'Submit Request')
               }
             </span>
           </button>
@@ -478,70 +550,181 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     );
   };
 
-  // Render verification step
-  const renderVerificationStep = () => {
+  // Render OTP verification step
+  const renderOTPVerificationStep = () => {
     return (
       <div className="p-6 space-y-6">
-        <div className={`${verificationStatus.emailVerified ? 'bg-green-50' : 'bg-yellow-50'} p-6 rounded-xl`}>
+        <div className="bg-yellow-50 p-4 rounded-lg">
           <div className="flex items-start space-x-3 rtl:space-x-reverse">
-            {verificationStatus.emailVerified ? (
-              <Check className="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-            )}
+            <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-medium text-yellow-800 mb-1">
-                {verificationStatus.emailVerified 
-                  ? (translations?.emailVerified || 'Email Verified!')
-                  : (translations?.verificationPending || 'Verification Pending')}
-              </h4>
+              <h5 className="text-sm font-medium text-yellow-800 mb-1">
+                OTP Verification Required
+              </h5>
               <p className="text-sm text-yellow-700">
-                {verificationStatus.emailVerified
-                  ? (translations?.emailVerifiedDesc || 'Your email has been verified. Your company claim is being processed.')
-                  : (translations?.checkEmailForVerification || 'Please check your email and click the verification link to complete your company claim.')}
+                We've sent a 6-digit verification code to <strong>{formData.businessEmail}</strong>.
+                Please enter it below to verify your email.
               </p>
-                
-              {!verificationStatus.emailVerified && (
-                <div className="mt-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
-                    <button
-                      onClick={handleResendVerification}
-                      disabled={verificationSending}
-                      className="w-full sm:w-auto text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center space-x-1 rtl:space-x-reverse disabled:opacity-50 px-3 py-1 rounded hover:bg-blue-50 border border-blue-100"
-                    >
-                      {verificationSending ? (
-                        <RefreshCw className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Mail className="h-3 w-3" />
-                      )}
-                      <span>{translations?.resendVerification || 'Resend verification email'}</span>
-                    </button>
-                      
-                    <button
-                      onClick={handleCheckStatus}
-                      disabled={checkingStatus}
-                      className="w-full sm:w-auto text-green-600 hover:text-green-800 text-sm font-medium flex items-center justify-center space-x-1 rtl:space-x-reverse px-3 py-1 rounded hover:bg-green-50 border border-green-100"
-                    >
-                      {checkingStatus ? (
-                        <RefreshCw className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3 w-3" />
-                      )}
-                      <span>{translations?.checkStatus || 'Check status'}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
         
-        <div className="flex justify-end">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-full max-w-xs">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+              Enter 6-digit verification code
+            </label>
+            <input
+              type="text"
+              pattern="[0-9]*"
+              inputMode="numeric"
+              maxLength={6}
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').substring(0, 6))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-2xl tracking-widest"
+              placeholder="------"
+            />
+          </div>
+          
+          <p className="text-sm text-gray-600 text-center">
+            Didn't receive a code? <button
+              type="button"
+              onClick={handleSendOTP}
+              disabled={otpSending}
+              className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+            >
+              {otpSending ? 'Sending...' : 'Resend'}
+            </button>
+          </p>
+          
+          <p className="text-xs text-gray-500 text-center">
+            OTP will expire in 60 minutes
+          </p>
+        </div>
+        
+        <div className="flex justify-end space-x-3 rtl:space-x-reverse">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
-            {translations?.close || 'Close'}
+            {translations?.cancel || 'Cancel'}
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleVerifyOTP}
+            disabled={loading || otpCode.length !== 6}
+            className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse disabled:opacity-50"
+          >
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            <span>
+              {loading
+                ? (translations?.verifying || 'Verifying...')
+                : (translations?.verifyCode || 'Verify Code')
+              }
+            </span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Render password creation step
+  const renderPasswordCreationStep = () => {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="bg-green-50 p-4 rounded-lg">
+          <div className="flex items-start space-x-3 rtl:space-x-reverse">
+            <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h5 className="text-sm font-medium text-green-800 mb-1">
+                Email Verified!
+              </h5>
+              <p className="text-sm text-green-700">
+                Your email has been verified. Please create a password for your account to complete the claim request.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Create Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={6}
+                className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter new password (min 6 characters)"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Confirm password"
+              />
+            </div>
+          </div>
+          
+          {password && password !== confirmPassword && (
+            <p className="text-sm text-red-600">
+              Passwords do not match
+            </p>
+          )}
+          
+          {password && password.length < 6 && (
+            <p className="text-sm text-red-600">
+              Password must be at least 6 characters
+            </p>
+          )}
+        </div>
+        
+        <div className="flex justify-end space-x-3 rtl:space-x-reverse">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            {translations?.cancel || 'Cancel'}
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleCreateAccount}
+            disabled={loading || password.length < 6 || password !== confirmPassword}
+            className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse disabled:opacity-50"
+          >
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            <span>
+              {loading
+                ? (translations?.creatingAccount || 'Creating Account...')
+                : (translations?.createAccount || 'Create Account')
+              }
+            </span>
           </button>
         </div>
       </div>
@@ -577,7 +760,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           </button>
         </div>
 
-        {/* Explanation Section */}
+        {/* Explanation Section - Only show in first step */}
         {currentStep === 1 && (
           <div className="bg-blue-50 p-4 m-6 mb-0 rounded-xl">
             <div className="flex items-start space-x-3 rtl:space-x-reverse">
@@ -601,8 +784,11 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         {/* Step 2: Form */}
         {currentStep === 2 && renderFormStep()}
         
-        {/* Step 3: Verification */}
-        {currentStep === 3 && renderVerificationStep()}
+        {/* Step 3: OTP Verification */}
+        {currentStep === 3 && renderOTPVerificationStep()}
+        
+        {/* Step 4: Password Creation */}
+        {currentStep === 4 && renderPasswordCreationStep()}
       </div>
     </div>
   );
