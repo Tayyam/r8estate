@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Mail, AlertCircle, Check, Loader, Search } from 'lucide-react';
+import { X, Plus, Trash2, Mail, AlertCircle, Check, Loader, Search, Building2 } from 'lucide-react';
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../../../config/firebase';
