@@ -33,7 +33,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const [formData, setFormData] = useState({
     contactPhone: '',
     businessEmail: '',
-    supervisorEmail: ''
   });
   
   // OTP and password state
@@ -256,7 +255,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         requesterName: currentUser?.displayName || null,
         contactPhone: hasDomainEmail ? '' : formData.contactPhone,
         businessEmail: formData.businessEmail,
-        supervisorEmail: formData.supervisorEmail,
         businessUserUid: uid,
         status: 'pending',
         createdAt: serverTimestamp(),
@@ -284,12 +282,12 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     
     // Validate form data
     if (hasDomainEmail) {
-      if (!formData.businessEmail || !formData.supervisorEmail) {
+      if (!formData.businessEmail) {
         onError(translations?.fillAllFields || 'Please fill in all fields');
         return;
       }
     } else {
-      if (!formData.contactPhone || !formData.businessEmail || !formData.supervisorEmail) {
+      if (!formData.contactPhone || !formData.businessEmail) {
         onError(translations?.fillAllFields || 'Please fill in all fields');
         return;
       }
@@ -297,7 +295,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.businessEmail) || !emailRegex.test(formData.supervisorEmail)) {
+    if (!emailRegex.test(formData.businessEmail)) {
       onError(translations?.invalidEmailFormat || 'Please enter valid email addresses');
       return;
     }
@@ -306,11 +304,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     if (hasDomainEmail) {
       if (!validateEmailDomain(formData.businessEmail)) {
         onError(translations?.businessEmailDomainMismatch || 'Business email must match the company domain: ' + companyDomain);
-        return;
-      }
-      
-      if (!validateEmailDomain(formData.supervisorEmail)) {
-        onError(translations?.supervisorEmailDomainMismatch || 'Supervisor email must match the company domain: ' + companyDomain);
         return;
       }
       
@@ -328,7 +321,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           requesterName: currentUser?.displayName || null,
           contactPhone: formData.contactPhone,
           businessEmail: formData.businessEmail,
-          supervisorEmail: formData.supervisorEmail,
           status: 'pending',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
@@ -487,33 +479,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           )}
         </div>
 
-        {/* Supervisor Email */}
-        <div>
-          <label htmlFor="supervisorEmail" className="block text-sm font-medium text-gray-700 mb-1">
-            {translations?.supervisorEmail || 'Supervisor Email'} *
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              id="supervisorEmail"
-              type="email"
-              required
-              value={formData.supervisorEmail}
-              onChange={(e) => handleInputChange('supervisorEmail', e.target.value)}
-              placeholder={hasDomainEmail 
-                ? `supervisor@${companyDomain}`
-                : translations?.enterSupervisorEmail || 'Enter supervisor email'}
-              className={`w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
-            />
-          </div>
-          {hasDomainEmail && !validateEmailDomain(formData.supervisorEmail) && formData.supervisorEmail && (
-            <p className="mt-1 text-sm text-red-600">
-              {translations?.emailMustMatchDomain?.replace('{domain}', companyDomain) || 
-               `Email must match the company domain (@${companyDomain})`}
-            </p>
-          )}
-        </div>
-
         {/* Buttons */}
         <div className="flex justify-end space-x-3 rtl:space-x-reverse pt-4">
           <button
@@ -526,7 +491,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           
           <button
             type="submit"
-            disabled={loading || otpSending || (hasDomainEmail && (!validateEmailDomain(formData.businessEmail) || !validateEmailDomain(formData.supervisorEmail)))}
+            disabled={loading || otpSending || (hasDomainEmail && !validateEmailDomain(formData.businessEmail))}
             className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse disabled:opacity-50"
           >
             {loading || otpSending ? (
