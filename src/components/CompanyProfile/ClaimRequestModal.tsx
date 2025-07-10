@@ -7,7 +7,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile } from '../../types/companyProfile';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import LoginPrompt from './ClaimRequestModal/LoginPrompt';
 import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
 import Step3Profile from './ClaimRequestModal/Step3Profile';
@@ -554,9 +553,39 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     }
   };
 
-  // Redirect to login if not logged in
+  // Navigate to login function
+  const navigateToLogin = () => {
+    window.location.href = `/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
+  };
+
+  // Check if user is logged in
   if (!currentUser) {
-    return <LoginPrompt onClose={onClose} translations={translations} />;
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-center">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">
+            {translations?.loginRequired || 'Login Required'}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {translations?.loginToClaimCompany || 'You need to be logged in to claim a company. Please log in to continue.'}
+          </p>
+          <div className="flex space-x-4 justify-center">
+            <button
+              onClick={navigateToLogin}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
+            >
+              {translations?.login || 'Login'}
+            </button>
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200"
+            >
+              {translations?.cancel || 'Cancel'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
