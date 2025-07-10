@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Mail, AlertCircle, Check, Loader, Search, Building2 } from 'lucide-react';
+import { X, Plus, Trash2, Mail, AlertCircle, Check, Loader, Search, Building2, RefreshCw, User as UserIcon } from 'lucide-react';
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../../../config/firebase';
@@ -25,7 +25,11 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [userMode, setUserMode] = useState<'new' | 'existing'>('new');
   const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     displayName: '',
@@ -72,6 +76,99 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
       user.email.toLowerCase().includes(searchLower)
     );
   });
+
+  // Handle searching for existing users
+  const handleSearchExistingUsers = async () => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      setSearchLoading(true);
+      setSearchResults([]);
+      
+      // Create a query to find users by email or displayName
+      const usersQuery = query(collection(db, 'users'));
+      const snapshot = await getDocs(usersQuery);
+      
+      // Filter users client-side to match search query
+      const matchingUsers = snapshot.docs
+        .map(doc => ({
+          uid: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date()
+        })) as User[];
+      
+      // Filter by search query and exclude users already associated with this company
+      const filteredUsers = matchingUsers.filter(user => 
+        (user.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        user.displayName.toLowerCase().includes(searchQuery.toLowerCase())) && 
+        !(user.role === 'company' && user.companyId === company.id)
+      );
+      
+      setSearchResults(filteredUsers);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      onError(translations?.failedToSearchUsers || 'Failed to search users');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Handle selecting an existing user
+  const handleSelectUser = (user: User) => {
+    setSelectedUser(user);
+  };
+
+  // Handle adding an existing user to the company
+  const handleAddExistingUser = async () => {
+    if (!selectedUser) {
+      onError(translations?.selectUser || 'Please select a user');
+      return;
+    }
+    
+    try {
+      setActionLoading(selectedUser.uid);
+      
+      // Update the user's role and companyId
+      await updateDoc(doc(db, 'users', selectedUser.uid), {
+        role: 'company',
+        companyId: company.id,
+        updatedAt: new Date()
+      });
+      
+      // Update company to claimed if not already
+      if (!company.claimed) {
+        await updateDoc(doc(db, 'companies', company.id), {
+          claimed: true,
+          updatedAt: new Date()
+        });
+      }
+      
+      // Add to local state
+      const updatedUser = {
+        ...selectedUser,
+        role: 'company' as const,
+        companyId: company.id
+      };
+      setUsers(prev => [...prev, updatedUser]);
+      
+      // Reset
+      setSelectedUser(null);
+      setSearchQuery('');
+      setSearchResults([]);
+      
+      if (!company.claimed) {
+        onSuccess(translations?.companyUserAddedAndClaimed || 'User added and company marked as claimed successfully');
+      } else {
+        onSuccess(translations?.companyUserAdded || 'User added successfully');
+      }
+    } catch (error) {
+      console.error('Error adding existing user:', error);
+      onError(translations?.failedToAddUser || 'Failed to add user');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   // Handle adding a new user
   const handleAddUser = async (e: React.FormEvent) => {
@@ -252,31 +349,205 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
             </div>
           </div>
 
-          {/* Search and Add User Button */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0 mb-6">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type="text"
-                placeholder={translations?.searchUsers || 'Search users...'}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+          {/* Add User Options */}
+          <div className="mb-6">
+            <div className="border-b border-gray-200 mb-4">
+              <div className="flex">
+                <button
+                  type="button"
+                  className={`py-2 px-4 border-b-2 font-medium text-sm ${
+                    userMode === 'new' 
+                      ? 'border-purple-500 text-purple-600' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  onClick={() => {
+                    setUserMode('new');
+                    setSelectedUser(null);
+                    setSearchResults([]);
+                  }}
+                >
+                  {translations?.createNewUser || 'Create New User'}
+                </button>
+                <button
+                  type="button"
+                  className={`py-2 px-4 border-b-2 font-medium text-sm ${
+                    userMode === 'existing' 
+                      ? 'border-purple-500 text-purple-600' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  onClick={() => {
+                    setUserMode('existing');
+                    setShowAddUserForm(false);
+                  }}
+                >
+                  {translations?.useExistingUser || 'Use Existing User'}
+                </button>
+              </div>
             </div>
             
-            <button
-              onClick={() => setShowAddUserForm(true)}
-              disabled={showAddUserForm}
-              className="w-full sm:w-auto bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:hover:bg-purple-600 flex items-center justify-center space-x-2 rtl:space-x-reverse"
-            >
-              <Plus className="h-4 w-4" />
-              <span>{translations?.addUser || 'Add User'}</span>
-            </button>
+            {/* Create New User UI */}
+            {userMode === 'new' && (
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <input
+                    type="text"
+                    placeholder={translations?.searchUsers || 'Search users...'}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <button
+                  onClick={() => setShowAddUserForm(true)}
+                  disabled={showAddUserForm}
+                  className="w-full sm:w-auto bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:hover:bg-purple-600 flex items-center justify-center space-x-2 rtl:space-x-reverse"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>{translations?.addUser || 'Add User'}</span>
+                </button>
+              </div>
+            )}
+            
+            {/* Find Existing User UI */}
+            {userMode === 'existing' && (
+              <div className="space-y-4">
+                <div className="flex space-x-2 rtl:space-x-reverse">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type="text"
+                      placeholder={translations?.searchByEmailName || 'Search by email or name'}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSearchExistingUsers}
+                    disabled={searchLoading || !searchQuery.trim()}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center"
+                  >
+                    {searchLoading ? (
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Search className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+                
+                {/* Search Results */}
+                {searchResults.length > 0 ? (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                      <p className="text-sm font-medium text-gray-700">
+                        {translations?.searchResults || 'Search Results'} ({searchResults.length})
+                      </p>
+                      {searchLoading && (
+                        <RefreshCw className="h-4 w-4 animate-spin text-gray-500" />
+                      )}
+                    </div>
+                    <div className="divide-y divide-gray-200 max-h-64 overflow-y-auto">
+                      {searchResults.map(user => (
+                        <div 
+                          key={user.uid}
+                          className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer ${
+                            selectedUser?.uid === user.uid ? 'bg-purple-50' : ''
+                          }`}
+                          onClick={() => handleSelectUser(user)}
+                        >
+                          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                              {user.photoURL ? (
+                                <img
+                                  src={user.photoURL}
+                                  alt={user.displayName}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <UserIcon className="h-5 w-5 text-gray-500" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{user.displayName}</p>
+                              <p className="text-xs text-gray-500">{user.email}</p>
+                              <p className="text-xs bg-gray-100 text-gray-700 px-1 py-0.5 rounded mt-1 inline-block">
+                                {user.role === 'admin' ? 
+                                  (translations?.admin || 'Admin') : 
+                                  user.role === 'company' ? 
+                                    (translations?.company || 'Company') : 
+                                    (translations?.userRole || 'User')}
+                              </p>
+                            </div>
+                          </div>
+                          {selectedUser?.uid === user.uid && (
+                            <Check className="h-5 w-5 text-purple-600" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : searchQuery && !searchLoading && (
+                  <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <p className="text-gray-500">
+                      {translations?.noUsersFound || 'No users found. Try a different search term.'}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Selected User */}
+                {selectedUser && (
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      {translations?.selectedUser || 'Selected User'}:
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <UserIcon className="h-4 w-4 text-purple-600" />
+                        <span className="text-purple-800 font-medium">{selectedUser.displayName}</span>
+                        <span className="text-purple-700">({selectedUser.email})</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="text-purple-600 hover:text-purple-800"
+                        onClick={() => setSelectedUser(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
+                    {selectedUser.role !== 'company' && (
+                      <div className="mt-2 px-2 py-1 bg-yellow-50 border border-yellow-100 rounded text-xs text-yellow-800">
+                        <AlertCircle className="h-3 w-3 inline mr-1" />
+                        {translations?.roleWillBeChanged || "User's role will be changed to company"}
+                      </div>
+                    )}
+                    
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={handleAddExistingUser}
+                        disabled={actionLoading === selectedUser.uid}
+                        className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center space-x-2 rtl:space-x-reverse"
+                      >
+                        {actionLoading === selectedUser.uid ? (
+                          <Loader className="animate-spin h-4 w-4 mr-2" />
+                        ) : (
+                          <Plus className="h-4 w-4 mr-2" />
+                        )}
+                        <span>{translations?.addUser || 'Add User'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Add User Form */}
-          {showAddUserForm && (
+          {userMode === 'new' && showAddUserForm && (
             <div className="bg-gray-50 p-4 rounded-xl mb-6 animate-fadeIn">
               <h4 className="font-medium text-gray-900 mb-3">
                 {translations?.addNewCompanyUser || 'Add New Company User'}
@@ -320,6 +591,7 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                   <input
                     type="password"
                     required
+                    autoComplete="new-password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
