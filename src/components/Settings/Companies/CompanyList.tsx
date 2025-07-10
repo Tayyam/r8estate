@@ -283,17 +283,20 @@ const CompanyList: React.FC<CompanyListProps> = ({
                         </button>
                       )}
                       
-                       {/* Users Button (only for claimed companies) */}
-                       {company.claimed && (
-                         <button
-                           onClick={() => onManageUsers(company)}
-                           className="text-purple-600 hover:text-purple-900 p-1"
-                           title={translations?.manageUsers || 'Manage Users'}
-                         >
-                           <Users className="h-5 w-5" />
-                         </button>
-                       )}
-                       
+                          {/* Users Button (only for claimed companies) */}
+                          {company.claimed && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onManageUsers(company);
+                              }}
+                              className="text-purple-600 hover:text-purple-900 p-1"
+                              title={translations?.manageUsers || 'Manage Users'}
+                            >
+                              <Users className="h-5 w-5" />
+                            </button>
+                          )}
+
                       <button
                         onClick={() => onEditCompany(company)}
                         className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-orange-600 hover:bg-orange-50"
@@ -309,6 +312,17 @@ const CompanyList: React.FC<CompanyListProps> = ({
                         <span>{translations?.delete || 'Delete'}</span>
                       </button>
                     </div>
+                    
+                    {/* Manage Users Button (only for claimed companies) */}
+                    {company.claimed && (
+                      <button
+                        onClick={() => onManageUsers(company)}
+                        className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-purple-600 hover:bg-purple-50"
+                      >
+                        <Users className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
+                        <span>{translations?.users || 'Users'}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

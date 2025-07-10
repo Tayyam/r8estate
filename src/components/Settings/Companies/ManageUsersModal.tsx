@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Mail, AlertCircle, Check, Loader, Search } from 'lucide-react';
-import { collection, query, where, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -273,6 +273,14 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
               <h4 className="font-medium text-gray-900 mb-3">
                 {translations?.addNewCompanyUser || 'Add New Company User'}
               </h4>
+              
+              // Update company to claimed if not already
+              if (!company.claimed) {
+                await updateDoc(doc(db, 'companies', company.id), {
+                  claimed: true,
+                  updatedAt: new Date()
+                });
+              }
               
               <form onSubmit={handleAddUser} className="space-y-4">
                 <div>

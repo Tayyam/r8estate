@@ -524,7 +524,12 @@ const UserManagement = () => {
                             >
                               <RoleIcon className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                               <span>
-                                {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
+                                {user.role === 'admin' 
+                                  ? (translations?.admin || 'Admin') 
+                                  : user.role === 'company'
+                                    ? (translations?.company || 'Company')
+                                    : (translations?.userRole || 'User')
+                                }
                               </span>
                             </div>
                           </div>
@@ -665,7 +670,12 @@ const UserManagement = () => {
                           }}
                         >
                           <RoleIcon className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
-                          {user.role === 'admin' ? (translations?.admin || 'Admin') : (translations?.userRole || 'User')}
+                          {user.role === 'admin' 
+                            ? (translations?.admin || 'Admin') 
+                            : user.role === 'company'
+                              ? (translations?.company || 'Company')
+                              : (translations?.userRole || 'User')
+                          }
                         </div>
                         
                         <div 
