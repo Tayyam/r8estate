@@ -1031,7 +1031,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
                   }
                 </span>
               </button>
-          </button>
         </div>
       </div>
         )}
