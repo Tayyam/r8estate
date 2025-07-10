@@ -1005,32 +1005,34 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           </p>
         </div>
         
-              <button
-                type="button"
-                onClick={() => setCurrentStep(3)}
-                className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              >
-                {translations?.back || 'Back'}
-              </button>
-              
-              <button
-                type="button"
-                onClick={handleVerifyOTP}
-                disabled={loading || otpCode.length !== 6}
-                className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse disabled:opacity-50"
-              >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
-                <span>
-                  {loading
-                    ? (translations?.verifying || 'Verifying...')
-                    : (translations?.verifyAndSubmit || 'Verify & Submit')
-                  }
-                </span>
-              </button>
+        <div className="flex justify-end space-x-3 rtl:space-x-reverse pt-4">
+          <button
+            type="button"
+            onClick={() => setCurrentStep(3)}
+            className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            {translations?.back || 'Back'}
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleVerifyOTP}
+            disabled={loading || otpCode.length !== 6}
+            className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse disabled:opacity-50"
+          >
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            <span>
+              {loading
+                ? (translations?.verifying || 'Verifying...')
+                : (translations?.verifyAndSubmit || 'Verify & Submit')
+              }
+            </span>
+          </button>
+        </div>
         </div>
       </div>
         )}
