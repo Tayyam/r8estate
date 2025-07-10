@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import { UserPlus, AlertCircle, Lock, Mail, User, Building2, Search, RefreshCw } from 'lucide-react';
 import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
