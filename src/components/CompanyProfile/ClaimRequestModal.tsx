@@ -380,12 +380,12 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         });
         
         // Create user document in Firestore
-        await addDoc(collection(db, 'users'), {
-          uid: user.uid,
+        await setDoc(doc(db, 'users', user.uid), {
           displayName: formData.displayName,
           email: formData.businessEmail,
           photoURL: photoURL,
           role: 'user', // Initially user role
+          isEmailVerified: user.emailVerified,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
