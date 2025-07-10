@@ -195,7 +195,6 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
         // Create a query to get reviews with rating >= 3, ordered by date
         const reviewsQuery = query(
           collection(db, 'reviews'),
-          where('rating', '>=', 3),
           orderBy('rating', 'desc'),
           orderBy('createdAt', 'desc'),
           limit(3)
