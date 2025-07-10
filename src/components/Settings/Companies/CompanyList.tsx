@@ -266,7 +266,7 @@ const CompanyList: React.FC<CompanyListProps> = ({
                               <span>{translations?.notClaimed || 'Not Claimed'}</span>
                             </>
                           )}
-                        </span>
+                        </div>
                       </div>
                       
                       <div className="flex items-center">
