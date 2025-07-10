@@ -62,7 +62,7 @@ const Step4OTPVerification: React.FC<Step4OTPVerificationProps> = ({
         </div>
         
         <p className="text-sm text-gray-600 text-center">
-          {translations?.didntReceiveCode || 'Didn't receive a code?'}{' '}
+          {translations?.didntReceiveCode || 'Didn\'t receive a code?'}{' '}
           <button
             type="button"
             onClick={handleSendOTP}
