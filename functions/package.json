@@ -15,11 +15,13 @@
   "main": "lib/index.js",
   "dependencies": {
     "firebase-admin": "^11.8.0",
-    "firebase-functions": "^4.3.1"
+    "firebase-functions": "^4.3.1",
+    "resend": "^2.0.0"
   },
   "devDependencies": {
     "typescript": "^4.9.0",
-    "@types/node": "^18.15.0"
+    "@types/node": "^18.15.0",
+    "dotenv": "^16.3.1"
   },
   "private": true
 }

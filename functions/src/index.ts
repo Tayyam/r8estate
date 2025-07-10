@@ -4,6 +4,12 @@ import * as admin from 'firebase-admin';
 // Initialize Firebase Admin
 admin.initializeApp();
 
+// Import the Resend library for email sending
+import { Resend } from 'resend';
+
+// Import email template
+import { OTP_TEMPLATE_HTML } from './utils/emailTemplates';
+
 export const createUser = functions.https.onCall(async (data, context) => {
   try {
     // Check if the caller is authenticated
@@ -182,5 +188,55 @@ export const changeUserPassword = functions.https.onCall(async (data, context) =
     }
     
     throw new functions.https.HttpsError('internal', 'An error occurred while changing the password');
+  }
+});
+
+// Cloud Function for sending OTP verification emails via Resend
+export const sendVerificationEmail = functions.https.onCall(async (data, context) => {
+  try {
+    const { email, otp, companyName } = data;
+    
+    // Validate input
+    if (!email || !otp || !companyName) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required fields: email, otp, or companyName');
+    }
+    
+    // Initialize Resend with API key
+    // Note: You need to set this in Firebase config with:
+    // firebase functions:config:set resend.key="YOUR_RESEND_API_KEY"
+    const resendApiKey = process.env.RESEND_API_KEY || functions.config().resend?.key || 're_YK6KENqh_55k2grJZeTG9G6HHG5THszvX';
+    const resend = new Resend(resendApiKey);
+    
+    // Prepare the email content
+    const html = OTP_TEMPLATE_HTML
+      .replace('{{otp}}', otp)
+      .replace(/{{companyName}}/g, companyName)
+      .replace('{{year}}', new Date().getFullYear().toString());
+      
+    // Send the email using Resend
+    const { data: emailData, error } = await resend.emails.send({
+      from: 'R8 Estate <verification@r8estate.com>',
+      to: email,
+      subject: `Verify Your Email for ${companyName} - R8 Estate`,
+      html: html,
+    });
+    
+    if (error) {
+      console.error('Resend API error:', error);
+      throw new functions.https.HttpsError('internal', `Error sending email: ${error.message}`);
+    }
+    
+    return {
+      success: true,
+      messageId: emailData?.id,
+    };
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', `An error occurred while sending the verification email: ${error.message}`);
   }
 });
