@@ -205,7 +205,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     // Apply rating filter
     if (ratingFilter !== 'all') {
       const ratingValue = typeof ratingFilter === 'string' ? parseInt(ratingFilter) : ratingFilter;
-      filteredReviews = filteredReviews.filter(review => review.rating >= ratingValue);
+      filteredReviews = filteredReviews.filter(review => review.rating === ratingValue);
     }
     
     // Apply time filter
