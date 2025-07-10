@@ -6,6 +6,7 @@ import { db, auth } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile } from '../../types/companyProfile';
+import { sendOTPVerificationEmail } from '../../utils/emailUtils';
 
 interface ClaimRequestModalProps {
   company: CompanyProfile;
@@ -147,10 +148,15 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   // Send OTP email
   const sendOTPEmail = async (email: string, otp: string) => {
     try {
-      // In a real implementation, you would integrate with an email service
-      // For now, we'll simulate it and just store the OTP in Firestore
-      console.log(`Sending OTP ${otp} to ${email}`);
-      return true;
+      // Send OTP email via Resend API
+      const sent = await sendOTPVerificationEmail(email, otp, company.name);
+      
+      if (!sent) {
+        console.error("Failed to send OTP email with Resend API");
+        return false;
+      }
+      
+      return sent;
     } catch (error) {
       console.error("Error sending OTP email:", error);
       return false;
