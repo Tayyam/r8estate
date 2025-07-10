@@ -58,6 +58,9 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const [otpCode, setOtpCode] = useState('');
   const [otpVerified, setOtpVerified] = useState(false);
   
+  // File input ref for photo upload
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
   // Step selection (1: Domain choice, 2: Basic info, 3: Profile info, 4: OTP Verification)
   const [currentStep, setCurrentStep] = useState(() => {
     // Try to get saved step from localStorage
@@ -665,7 +668,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             handleInputChange={handleInputChange}
             photoPreview={photoPreview}
             handlePhotoSelect={handlePhotoSelect}
-            fileInputRef={React.useRef<HTMLInputElement>(null)}
+            fileInputRef={fileInputRef}
             loading={loading}
             hasDomainEmail={hasDomainEmail}
             setCurrentStep={setCurrentStep}
