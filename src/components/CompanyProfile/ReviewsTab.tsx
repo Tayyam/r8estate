@@ -502,6 +502,8 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         setSortFilter={setSortFilter}
         hasFilters={hasFilters}
         handleClearFilters={handleClearFilters}
+        filteredReviews={filteredReviews}
+        reviews={reviews}
       />
 
       {/* Reviews List */}

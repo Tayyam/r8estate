@@ -1,6 +1,7 @@
 import React from 'react';
 import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Review } from '../../types/property';
 
 interface ReviewFiltersProps {
   ratingFilter: 'all' | 1 | 2 | 3 | 4 | 5;
@@ -13,6 +14,8 @@ interface ReviewFiltersProps {
   setSortFilter: (sort: 'newest' | 'oldest' | 'highest-rating' | 'lowest-rating') => void;
   hasFilters: boolean;
   handleClearFilters: () => void;
+  filteredReviews: Review[];
+  reviews: Review[];
 }
 
 const ReviewFilters: React.FC<ReviewFiltersProps> = ({
@@ -25,7 +28,9 @@ const ReviewFilters: React.FC<ReviewFiltersProps> = ({
   setTimeFilter,
   setSortFilter,
   hasFilters,
-  handleClearFilters
+  handleClearFilters,
+  filteredReviews,
+  reviews
 }) => {
   const { translations } = useLanguage();
 
