@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, Building2, MapPin, Star, Calendar, User, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, UserPlus, UserMinus } from 'lucide-react';
+import { Edit, Trash2, Building2, MapPin, Star, Calendar, User, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, UserPlus, UserMinus, Users } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
 
@@ -12,6 +12,7 @@ interface CompanyListProps {
   onDeleteCompany: (company: Company) => void;
   onClaimCompany: (company: Company) => void;
   onUnclaimCompany: (company: Company) => void;
+  onManageUsers: (company: Company) => void;
   onNavigateToProfile?: (companyId: string, companyName: string) => void;
 }
 
@@ -26,6 +27,7 @@ const CompanyList: React.FC<CompanyListProps> = ({
   onDeleteCompany,
   onClaimCompany,
   onUnclaimCompany,
+  onManageUsers,
   onNavigateToProfile
 }) => {
   const { translations, direction, language } = useLanguage();
@@ -270,6 +272,28 @@ const CompanyList: React.FC<CompanyListProps> = ({
                         </button>
                       )}
                       
+                      {/* Users Button (only for claimed companies) */}
+                      {company.claimed && (
+                        <button
+                          onClick={() => onManageUsers(company)}
+                          className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-purple-600 hover:bg-purple-50"
+                        >
+                          <Users className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
+                          <span>{translations?.users || 'Users'}</span>
+                        </button>
+                      )}
+                      
+                       {/* Users Button (only for claimed companies) */}
+                       {company.claimed && (
+                         <button
+                           onClick={() => onManageUsers(company)}
+                           className="text-purple-600 hover:text-purple-900 p-1"
+                           title={translations?.manageUsers || 'Manage Users'}
+                         >
+                           <Users className="h-5 w-5" />
+                         </button>
+                       )}
+                       
                       <button
                         onClick={() => onEditCompany(company)}
                         className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-orange-600 hover:bg-orange-50"

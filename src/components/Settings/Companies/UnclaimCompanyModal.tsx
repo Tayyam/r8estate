@@ -26,32 +26,15 @@ const UnclaimCompanyModal: React.FC<UnclaimCompanyModalProps> = ({
     try {
       setLoading(true);
       
-      // Find user documents associated with this company
-      console.log("Finding users associated with company ID:", company.id);
-      const usersQuery = query(
-        collection(db, 'users'),
-        where('companyId', '==', company.id),
-        where('role', '==', 'company')
-      );
-      
-      const usersSnapshot = await getDocs(usersQuery);
-      console.log("Found", usersSnapshot.size, "user(s) associated with this company");
-      
-      // Delete all associated user documents
-      for (const userDoc of usersSnapshot.docs) {
-        console.log("Deleting user document:", userDoc.id);
-        await deleteDoc(doc(db, 'users', userDoc.id));
-        // Note: We cannot delete Firebase Auth users from the client side
-        // A Firebase Cloud Function would be needed for that
-      }
-      
       // Update company document to mark as unclaimed
       await updateDoc(doc(db, 'companies', company.id), {
         claimed: false,
         updatedAt: new Date(),
         // Don't remove the email as it could be useful for future reference
       });
-      console.log("Updated company as unclaimed:", company.id);
+
+      // Note: We're not deleting user documents anymore
+      // This allows the company to keep its users
       
       // Note: We cannot delete the Firebase Auth user from client side
       // A Firebase Function would be needed to delete the Auth user
@@ -91,8 +74,8 @@ const UnclaimCompanyModal: React.FC<UnclaimCompanyModalProps> = ({
                   <h4 className="font-medium text-yellow-800 text-sm">
                     {translations?.importantNote || 'Important Note'}
                   </h4>
-                  <ul className="mt-1 text-sm text-yellow-700 list-disc list-inside space-y-1">
-                    <li>{translations?.unclaimWarning1 || 'The user account will be deleted from the database'}</li>
+                      <li>{translations?.unclaimWarning1 || 'The company will be marked as unclaimed'}</li>
+                      <li>{translations?.unclaimWarning2 || 'Existing user accounts will be preserved'}</li>
                     <li>{translations?.unclaimWarning2 || 'The company will no longer have login access'}</li>
                     <li>{translations?.unclaimWarning3 || 'All company data and reviews will remain intact'}</li>
                   </ul>
@@ -115,8 +98,8 @@ const UnclaimCompanyModal: React.FC<UnclaimCompanyModalProps> = ({
                   <>
                     <UserMinus className="h-5 w-5" />
                     <span>{translations?.unclaimCompanyButton || 'Unclaim Company'}</span>
-                  </>
-                )}
+               {translations?.confirmUnclaimCompany?.replace('{name}', company.name) || 
+                `Are you sure you want to unclaim "${company.name}"? This will mark the company as unclaimed but will preserve any existing user accounts.`}
               </button>
               
               <button
