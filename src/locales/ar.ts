@@ -170,6 +170,26 @@ export const ar = {
   
   // Claim requests tab
   claimRequests: 'طلبات الملكية',
+  claimCompanyDesc: 'طلب ملكية شركة {company}',
+  supervisorEmail: 'البريد الإلكتروني للمشرف',
+  enterSupervisorEmail: 'أدخل البريد الإلكتروني للمشرف',
+  domainMatch: 'تم اكتشاف تطابق نطاق الشركة',
+  domainMatchExplanation: 'لقد اكتشفنا أن بريدك الإلكتروني يطابق نطاق الشركة ({domain}). سنرسل رسائل تحقق إلى عناوين البريد الإلكتروني للعمل والمشرف للتحقق من الملكية.',
+  domainPrefilledEmail: 'تم ملء البريد الإلكتروني تلقائيًا بناءً على نطاق الشركة',
+  verifyAndClaim: 'تحقق واطلب الملكية',
+  verificationPending: 'التحقق معلق',
+  checkEmailForVerification: 'يرجى التحقق من بريدك الإلكتروني والنقر على رابط التحقق لإكمال طلب ملكية الشركة.',
+  tempPasswordInfo: 'كلمة المرور المؤقتة الخاصة بك:',
+  passwordKeepSafe: 'يرجى الاحتفاظ بكلمة المرور هذه في مكان آمن. ستحتاجها لتسجيل الدخول بعد التحقق من بريدك الإلكتروني.',
+  resendVerification: 'إعادة إرسال بريد التحقق',
+  checkStatus: 'التحقق من الحالة',
+  emailVerified: 'تم التحقق من البريد الإلكتروني!',
+  emailVerifiedDesc: 'تم التحقق من بريدك الإلكتروني. جاري معالجة طلب ملكية الشركة الخاص بك.',
+  verificationEmailSent: 'تم إرسال رسالة تحقق! يرجى التحقق من بريدك الإلكتروني للتحقق من عنوان بريدك الإلكتروني. تم إنشاء كلمة مرور مؤقتة: ',
+  verificationEmailResent: 'تمت إعادة إرسال رسالة التحقق. يرجى التحقق من صندوق الوارد الخاص بك.',
+  failedToSendVerification: 'فشل في إرسال بريد التحقق',
+  websiteLabel: 'الموقع الإلكتروني',
+  claimRequestSubmitted: 'تم تقديم طلب ملكية الشركة بنجاح! سنراجع طلبك ونتواصل معك قريبًا.',
   
   // Report functionality
   report: 'إبلاغ',
