@@ -201,7 +201,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   // Apply filters to reviews
   const getFilteredReviews = () => {
     let filteredReviews = [...reviews];
-
+    
     // Apply rating filter
     if (ratingFilter !== 'all') {
       const ratingValue = typeof ratingFilter === 'string' ? parseInt(ratingFilter) : ratingFilter;
@@ -216,10 +216,22 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     
     // Apply sort order
     filteredReviews.sort((a, b) => {
-      if (sortFilter === 'newest') {
-        return b.createdAt.getTime() - a.createdAt.getTime();
-      } else {
-        return a.createdAt.getTime() - b.createdAt.getTime();
+      switch(sortFilter) {
+        case 'highest-rating':
+          // Sort by rating (highest first), then by date (newest first) if ratings are equal
+          return b.rating !== a.rating 
+            ? b.rating - a.rating 
+            : b.createdAt.getTime() - a.createdAt.getTime();
+        case 'lowest-rating':
+          // Sort by rating (lowest first), then by date (newest first) if ratings are equal
+          return a.rating !== b.rating 
+            ? a.rating - b.rating 
+            : b.createdAt.getTime() - a.createdAt.getTime();
+        case 'oldest':
+          return a.createdAt.getTime() - b.createdAt.getTime();
+        case 'newest':
+        default:
+          return b.createdAt.getTime() - a.createdAt.getTime();
       }
     });
     
@@ -228,7 +240,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
   // Get filtered reviews
   const filteredReviews = getFilteredReviews();
-
+  
   // Check if any filters are applied
   const hasFilters = ratingFilter !== 'all' || timeFilter !== 'all' || sortFilter !== 'newest';
 
@@ -240,18 +252,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   };
 
   const averageRating = calculateAverageRating();
-
-  // Handle filter changes
-  const handleFilterChange = (filter: keyof typeof filters, value: any) => {
-    if (filter === 'ratingFilter') {
-      const numValue = value === 'all' ? 'all' : Number(value);
-      setRatingFilter(numValue);
-    } else if (filter === 'timeFilter') {
-      setTimeFilter(value);
-    } else if (filter === 'sortFilter') {
-      setSortFilter(value);
-    }
-  };
 
   // Handle review deletion confirmation
   const handleDeleteReview = async () => {

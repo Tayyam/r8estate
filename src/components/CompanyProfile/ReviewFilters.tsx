@@ -119,9 +119,8 @@ const ReviewFilters: React.FC<ReviewFiltersProps> = ({
           
           {/* Filter Results Count */}
           <div className="mt-2 text-sm text-gray-500 animate-fadeIn">
-            <span id="filter-results-count">
-              {/* This will be populated dynamically when filters are applied */}
-            </span>
+            {translations?.showingFilteredReviews?.replace('{count}', filteredReviews?.length?.toString() || '0').replace('{total}', reviews?.length?.toString() || '0') || 
+            `Showing ${filteredReviews?.length || 0} of ${reviews?.length || 0} reviews`}
           </div>
         </div>
       )}
