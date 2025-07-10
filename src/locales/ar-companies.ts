@@ -16,6 +16,18 @@ export const arCompanies = {
   claimCompany: 'إسناد حساب',
   unclaimCompany: 'إزالة الحساب',
   claim: 'إسناد',
+  createNewUser: 'إنشاء مستخدم جديد',
+  useExistingUser: 'استخدام مستخدم حالي',
+  searchExistingUsers: 'البحث عن مستخدمين حاليين',
+  searchByEmailName: 'البحث بالبريد الإلكتروني أو الاسم',
+  searchResults: 'نتائج البحث',
+  selectedUser: 'المستخدم المحدد',
+  roleWillBeChanged: 'سيتم تغيير دور المستخدم إلى شركة',
+  claimWithNewUser: 'إسناد بمستخدم جديد',
+  claimWithExistingUser: 'إسناد بالمستخدم المحدد',
+  selectUser: 'الرجاء اختيار مستخدم',
+  noUsersFound: 'لم يتم العثور على مستخدمين',
+  failedToSearchUsers: 'فشل في البحث عن المستخدمين',
   unclaim: 'إزالة',
   
   // Claim/Unclaim
@@ -52,6 +64,7 @@ export const arCompanies = {
   users: 'المستخدمين',
   claimingCompanyDesc: 'سيؤدي إسناد شركة إلى إنشاء حساب مستخدم يرتبط بملف هذه الشركة. سيتمكن المستخدم من إدارة ملف الشركة والرد على التقييمات.',
   confirmClaimCompany: 'هل أنت متأكد من أنك تريد إسناد شركة "{name}"؟ سيتم إنشاء حساب مستخدم مرتبط بملف هذه الشركة.',
+  confirmClaimCompanyExisting: 'هل أنت متأكد من أنك تريد إسناد شركة "{name}" للمستخدم المحدد؟ سيتم تغيير دور المستخدم إلى شركة.',
   confirmUnclaimCompany: 'هل أنت متأكد من أنك تريد إزالة إسناد "{name}"؟ سيؤدي ذلك إلى إزالة حساب المستخدم المرتبط بملف هذه الشركة.',
   companyIsClaimed: 'الشركة مُسندة',
   
