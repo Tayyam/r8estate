@@ -151,7 +151,7 @@ const CompanyList: React.FC<CompanyListProps> = ({
                           <button
                             onClick={() => onManageUsers(company)}
                             className="text-purple-600 hover:text-purple-900 p-1"
-                            title={translations?.manageUsers || 'Manage Users'}
+                            title={translations?.manageCompanyUsers || 'Manage Company Users'}
                           >
                             <Users className="h-5 w-5" />
                           </button>
@@ -279,44 +279,17 @@ const CompanyList: React.FC<CompanyListProps> = ({
                         <button
                           onClick={() => onUnclaimCompany(company)}
                           className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-orange-600 hover:bg-orange-50"
-                        >
-                          <UserMinus className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                          <span>{translations?.unclaim || 'Unclaim'}</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => onClaimCompany(company)}
-                          className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-blue-600 hover:bg-blue-50"
-                        >
-                          <UserPlus className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                          <span>{translations?.claim || 'Claim'}</span>
-                        </button>
-                      )}
-                      
-                      {/* Users Button (only for claimed companies) */}
-                      {company.claimed && (
                         <button
                           onClick={() => onManageUsers(company)}
                           className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-purple-600 hover:bg-purple-50"
                         >
                           <Users className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                          <span>{translations?.users || 'Users'}</span>
+                          <span>{translations?.manageUsers || 'Manage Users'}</span>
                         </button>
                       )}
-                      
-                          {/* Users Button (only for claimed companies) */}
-                          {company.claimed && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onManageUsers(company);
-                              }}
-                              className="text-purple-600 hover:text-purple-900 p-1"
-                              title={translations?.manageUsers || 'Manage Users'}
-                            >
-                              <Users className="h-5 w-5" />
-                            </button>
-                          )}
+                      {company.claimed ? (
+                        <button
+                          onClick={() => onUnclaimCompany(company)}
 
                       <button
                         onClick={() => onEditCompany(company)}
@@ -330,20 +303,9 @@ const CompanyList: React.FC<CompanyListProps> = ({
                         className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                        <span>{translations?.delete || 'Delete'}</span>
+                        <span>{translations?.deleteAction || 'Delete'}</span>
                       </button>
                     </div>
-                    
-                    {/* Manage Users Button (only for claimed companies) */}
-                    {company.claimed && (
-                      <button
-                        onClick={() => onManageUsers(company)}
-                        className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-purple-600 hover:bg-purple-50"
-                      >
-                        <Users className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                        <span>{translations?.users || 'Users'}</span>
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}

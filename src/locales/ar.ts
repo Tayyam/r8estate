@@ -362,4 +362,11 @@ export const ar = {
   
   newClaimRequestNotificationTitle: 'طلب ملكية جديد',
   newClaimRequestNotificationMessage: 'تم تقديم طلب ملكية جديد يحتاج إلى مراجعة'
+  
+  // Manage users
+  manageCompanyUsers: 'إدارة مستخدمي الشركة',
+  manageUsers: 'إدارة المستخدمين',
+  users: 'المستخدمين',
+  addUser: 'إضافة مستخدم',
+  deleteAction: 'حذف',
 };
