@@ -145,6 +145,14 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
       
       setUsers(prev => [...prev, newUser]);
       
+      // Update company to claimed if not already
+      if (!company.claimed) {
+        await updateDoc(doc(db, 'companies', company.id), {
+          claimed: true,
+          updatedAt: new Date()
+        });
+      }
+      
       // Update the company as claimed if it's not already
       if (!company.claimed) {
         onSuccess(translations?.companyUserAddedAndClaimed || 'User added and company marked as claimed successfully');
@@ -273,15 +281,6 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
               <h4 className="font-medium text-gray-900 mb-3">
                 {translations?.addNewCompanyUser || 'Add New Company User'}
               </h4>
-              
-              // Update company to claimed if not already
-              if (!company.claimed) {
-                await updateDoc(doc(db, 'companies', company.id), {
-                  claimed: true,
-                  updatedAt: new Date()
-                });
-              }
-              
               <form onSubmit={handleAddUser} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
