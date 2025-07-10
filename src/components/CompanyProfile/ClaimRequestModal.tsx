@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, X, AlertCircle } from 'lucide-react';
-import { collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp, doc, setDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { db, auth, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -352,7 +352,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       
       // Verify OTP
       const isValid = await verifyOTP(formData.businessEmail, otpCode);
-      
       if (!isValid) {
         onError('Invalid or expired verification code');
         return;
@@ -360,7 +359,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       
       // Mark OTP as verified
       setOtpVerified(true);
-      
       // Create user account with stored info
       try {
         // Create user account
@@ -381,6 +379,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         
         // Create user document in Firestore
         await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid, // Include uid field in the document
           displayName: formData.displayName,
           email: formData.businessEmail,
           photoURL: photoURL,
