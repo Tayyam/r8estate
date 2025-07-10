@@ -74,10 +74,11 @@ const UnclaimCompanyModal: React.FC<UnclaimCompanyModalProps> = ({
                   <h4 className="font-medium text-yellow-800 text-sm">
                     {translations?.importantNote || 'Important Note'}
                   </h4>
+                  <ul className="mt-2 text-sm text-yellow-700 space-y-1">
                       <li>{translations?.unclaimWarning1 || 'The company will be marked as unclaimed'}</li>
                       <li>{translations?.unclaimWarning2 || 'Existing user accounts will be preserved'}</li>
-                    <li>{translations?.unclaimWarning2 || 'The company will no longer have login access'}</li>
-                    <li>{translations?.unclaimWarning3 || 'All company data and reviews will remain intact'}</li>
+                      <li>{translations?.unclaimWarning2 || 'The company will no longer have login access'}</li>
+                      <li>{translations?.unclaimWarning3 || 'All company data and reviews will remain intact'}</li>
                   </ul>
                 </div>
               </div>
@@ -98,8 +99,8 @@ const UnclaimCompanyModal: React.FC<UnclaimCompanyModalProps> = ({
                   <>
                     <UserMinus className="h-5 w-5" />
                     <span>{translations?.unclaimCompanyButton || 'Unclaim Company'}</span>
-               {translations?.confirmUnclaimCompany?.replace('{name}', company.name) || 
-                `Are you sure you want to unclaim "${company.name}"? This will mark the company as unclaimed but will preserve any existing user accounts.`}
+                  </>
+                )}
               </button>
               
               <button
