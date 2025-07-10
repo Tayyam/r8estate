@@ -85,9 +85,6 @@ const CompanyList: React.FC<CompanyListProps> = ({
                   <th className="px-6 py-4 text-start text-sm font-medium text-gray-500 uppercase tracking-wider">
                     {translations?.location || 'Location'}
                   </th>
-                  <th className="px-6 py-4 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
-                    {translations?.claimed || 'Claimed'}
-                  </th>
                   <th className="px-6 py-4 text-start text-sm font-medium text-gray-500 uppercase tracking-wider">
                     {translations?.claimedBy || 'Claimed By'}
                   </th>
@@ -133,25 +130,22 @@ const CompanyList: React.FC<CompanyListProps> = ({
                         <span>{getLocationName(company.location)}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {company.claimed ? (
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          {translations?.claimed || 'Claimed'}
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                          {translations?.notClaimed || 'Not Claimed'}
-                        </span>
-                      )}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {company.claimed ? (
                         <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                          <User className="h-4 w-4 text-blue-500" />
-                          <span>{company.email || translations?.notAvailable || 'N/A'}</span>
+                          <User className="h-4 w-4 text-green-500" />
+                          <span className="font-medium text-green-700">
+                            {company.claimedByName || translations?.notAvailable || 'N/A'}
+                            <span className="px-2 py-0.5 ml-2 text-xs bg-green-100 text-green-800 rounded-full">
+                              {translations?.claimed || 'Claimed'}
+                            </span>
+                          </span>
                         </div>
                       ) : (
-                        <span className="text-gray-400">{translations?.notClaimed || 'Not Claimed'}</span>
+                        <span className="text-gray-400 flex items-center">
+                          <User className="h-4 w-4 text-gray-400 mr-1" />
+                          {translations?.notClaimed || 'Not Claimed'}
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -261,18 +255,17 @@ const CompanyList: React.FC<CompanyListProps> = ({
 
                       <div className="flex items-center">
                         <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center mr-1 rtl:ml-1 rtl:mr-0">
-                          <MapPin className="h-3 w-3 text-gray-600" />
-                        </div>
-                        <span className="text-gray-600">{getLocationName(company.location)}</span>
-                      </div>
-
-                      <div className="flex items-center">
-                        <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center mr-1 rtl:ml-1 rtl:mr-0">
-                          <User className="h-3 w-3 text-gray-600" />
-                        </div>
-                        <span className="text-gray-600">
-                          {company.claimed ? (company.email || translations?.notAvailable || 'N/A') : 
-                            (translations?.notClaimed || 'Not Claimed')}
+                          {company.claimed ? (
+                            <>
+                              <User className="h-3 w-3 text-green-500 mr-1 inline-block" />
+                              <span className="text-green-600 font-medium">{company.claimedByName || company.email || translations?.notAvailable || 'N/A'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <User className="h-3 w-3 text-gray-400 mr-1 inline-block" />
+                              <span>{translations?.notClaimed || 'Not Claimed'}</span>
+                            </>
+                          )}
                         </span>
                       </div>
                       
