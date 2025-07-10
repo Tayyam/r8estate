@@ -8,13 +8,18 @@ import { Review } from '../../types/property';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
 import { User } from '../../types/user';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { subDays, isAfter } from 'date-fns';
 import AddReviewModal from './AddReviewModal';
 import EditReviewModal from './EditReviewModal';
 import ReplyModal from './ReplyModal';
 import ReviewVotingButtons from './ReviewVotingButtons';
 import WriteReviewTab from './WriteReviewTab';
 import { getCompanySlug } from '../../utils/urlUtils';
-import { subDays, isAfter, parseISO, format } from 'date-fns';
+
+// Import new components
+import ReviewStats from './ReviewStats';
+import ReviewFilters from './ReviewFilters';
+import ReviewItem from './ReviewItem';
 
 interface ReviewsTabProps {
   reviews: Review[];
@@ -166,6 +171,13 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     }
   }, [initialReviews, currentUser, reviewsLoaded]);
 
+  // Calculate average rating
+  const calculateAverageRating = () => {
+    if (reviews.length === 0) return 0;
+    const sum = reviews.reduce((total, review) => total + review.rating, 0);
+    return Math.round((sum / reviews.length) * 10) / 10;
+  };
+
   // Get date filter range
   const getDateFilterRange = (): Date | null => {
     const now = new Date();
@@ -189,10 +201,11 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   // Apply filters to reviews
   const getFilteredReviews = () => {
     let filteredReviews = [...reviews];
-    
+
     // Apply rating filter
     if (ratingFilter !== 'all') {
-      filteredReviews = filteredReviews.filter(review => review.rating === ratingFilter);
+      const ratingValue = typeof ratingFilter === 'string' ? parseInt(ratingFilter) : ratingFilter;
+      filteredReviews = filteredReviews.filter(review => review.rating >= ratingValue);
     }
     
     // Apply time filter
@@ -216,49 +229,31 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   // Get filtered reviews
   const filteredReviews = getFilteredReviews();
 
-  // Calculate average rating
-  const averageRating = totalReviewsCount > 0 && reviews.length > 0
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
-    : 0;
+  // Check if any filters are applied
+  const hasFilters = ratingFilter !== 'all' || timeFilter !== 'all' || sortFilter !== 'newest';
 
-  // Group reviews by rating for distribution (based on loaded reviews)
-  const ratingDistribution = [5, 4, 3, 2, 1].map(rating => ({
-    rating,
-    count: reviews.filter(review => review.rating === rating).length,
-    percentage: reviews.length > 0 ? (reviews.filter(review => review.rating === rating).length / reviews.length) * 100 : 0
-  }));
+  // Handle clearing filters
+  const handleClearFilters = () => {
+    setRatingFilter('all');
+    setTimeFilter('all');
+    setSortFilter('newest');
+  };
 
-  // Update company's average rating in Firestore
-  const updateCompanyRating = async () => {
-    try {
-      const companyRef = doc(db, 'companies', company.id);
-      
-      // Get fresh reviews data to calculate accurate average
-      const reviewsQuery = query(
-        collection(db, 'reviews'),
-        where('companyId', '==', company.id)
-      );
-      const reviewsSnapshot = await getDocs(reviewsQuery);
-      const currentReviews = reviewsSnapshot.docs.map(doc => doc.data() as Review);
-      
-      const newAverageRating = currentReviews.length > 0 
-        ? currentReviews.reduce((sum, review) => sum + review.rating, 0) / currentReviews.length 
-        : 0;
-      
-      const roundedRating = Math.round(newAverageRating * 10) / 10;
-      
-      await updateDoc(companyRef, {
-        totalRating: roundedRating,
-        rating: roundedRating, // Also update the rating field
-        totalReviews: currentReviews.length,
-        updatedAt: new Date()
-      });
-    } catch (error) {
-      console.error('Error updating company rating:', error);
+  const averageRating = calculateAverageRating();
+
+  // Handle filter changes
+  const handleFilterChange = (filter: keyof typeof filters, value: any) => {
+    if (filter === 'ratingFilter') {
+      const numValue = value === 'all' ? 'all' : Number(value);
+      setRatingFilter(numValue);
+    } else if (filter === 'timeFilter') {
+      setTimeFilter(value);
+    } else if (filter === 'sortFilter') {
+      setSortFilter(value);
     }
   };
 
-  // Handle delete review
+  // Handle review deletion confirmation
   const handleDeleteReview = async () => {
     if (!selectedReview || !currentUser) return;
 
@@ -293,6 +288,36 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       onError(translations?.failedToDeleteReview || 'Failed to delete review. Please try again.');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // Update company's average rating in Firestore
+  const updateCompanyRating = async () => {
+    try {
+      const companyRef = doc(db, 'companies', company.id);
+      
+      // Get fresh reviews data to calculate accurate average
+      const reviewsQuery = query(
+        collection(db, 'reviews'),
+        where('companyId', '==', company.id)
+      );
+      const reviewsSnapshot = await getDocs(reviewsQuery);
+      const currentReviews = reviewsSnapshot.docs.map(doc => doc.data() as Review);
+      
+      const newAverageRating = currentReviews.length > 0 
+        ? currentReviews.reduce((sum, review) => sum + review.rating, 0) / currentReviews.length 
+        : 0;
+      
+      const roundedRating = Math.round(newAverageRating * 10) / 10;
+      
+      await updateDoc(companyRef, {
+        totalRating: roundedRating,
+        rating: roundedRating, // Also update the rating field
+        totalReviews: currentReviews.length,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating company rating:', error);
     }
   };
 
@@ -373,42 +398,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     }
   };
 
-  // Render detailed ratings if available
-  const renderDetailedRatings = (review: Review) => {
-    if (!review.ratingDetails) return null;
-    
-    const ratingDetails = review.ratingDetails;
-    const categories = [
-      { key: 'communication', label: translations?.communication || 'Communication' },
-      { key: 'valueForMoney', label: translations?.valueForMoney || 'Value for Money' },
-      { key: 'friendliness', label: translations?.friendliness || 'Friendliness' },
-      { key: 'responsiveness', label: translations?.responsiveness || 'Responsiveness' }
-    ];
-    
-    return (
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {categories.map((category) => {
-          const rating = ratingDetails[category.key as keyof typeof ratingDetails] || 0;
-          if (rating === 0) return null;
-          
-          return (
-            <div key={category.key} className="flex items-center space-x-2 rtl:space-x-reverse text-xs text-gray-600">
-              <span>{category.label}:</span>
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`w-3 h-3 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   // Handle login redirect for writing review
   const handleLoginToReview = () => {
     // Get the current URL to return after login
@@ -442,6 +431,18 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
   return (
     <div>
+      {/* Write Review Section - Only show if user can review and hasn't reviewed yet */}
+      {userCanReview && !hasUserReviewed && (
+        <div id="write-review-section" className="mb-10">
+          <WriteReviewTab
+            company={company}
+            onReviewAdded={onReviewAdded}
+            onSuccess={onSuccess}
+            onError={onError}
+          />
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
         <div>
@@ -469,407 +470,58 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
           onClick={currentUser ? () => setShowAddReview(true) : handleLoginToReview}
           className="flex items-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
         >
-          <Plus className="h-5 w-5" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+          </svg>
           <span>{translations?.addReview || 'Add Review'}</span>
         </button>
       </div>
 
-      {/* Write Review Section - Only show if user can review and hasn't reviewed yet */}
-      {userCanReview && !hasUserReviewed && (
-        <div id="write-review-section" className="mb-10">
-          <WriteReviewTab
-            company={company}
-            onReviewAdded={onReviewAdded}
-            onSuccess={onSuccess}
-            onError={onError}
-          />
-        </div>
-      )}
-
-      {/* Rating Overview */}
       {loading && !reviewsLoaded ? (
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 animate-pulse">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="text-center lg:text-left">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-6 rtl:space-x-reverse">
-                <div className="mb-4 lg:mb-0">
-                  <div className="h-12 bg-gray-200 rounded w-24 mx-auto lg:mx-0 mb-2"></div>
-                  <div className="h-6 bg-gray-200 rounded w-32 mx-auto lg:mx-0 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-40 mx-auto lg:mx-0"></div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {[...Array(5)].map((_, index) => (
-                <div key={index} className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <div className="h-4 bg-gray-200 rounded w-12"></div>
-                  <div className="flex-1 h-2 bg-gray-200 rounded-full"></div>
-                  <div className="h-4 bg-gray-200 rounded w-8"></div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="animate-pulse">
+          <div className="h-64 bg-gray-100 rounded-xl mb-8"></div>
         </div>
       ) : reviews.length > 0 ? (
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Average Rating */}
-            <div className="text-center lg:text-left">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-6 rtl:space-x-reverse">
-                <div className="mb-4 lg:mb-0">
-                  <div className="text-5xl font-bold text-gray-900 mb-2">
-                    {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
-                  </div>
-                  <div className="flex items-center justify-center lg:justify-start space-x-1 rtl:space-x-reverse mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-6 w-6 ${
-                          i < Math.round(averageRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-gray-600">
-                    {translations?.basedOnReviews?.replace('{count}', totalReviewsCount.toString()) || 
-                     `Based on ${totalReviewsCount} review${totalReviewsCount > 1 ? 's' : ''}`}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Rating Distribution */}
-            <div className="space-y-3">
-              {ratingDistribution.map(({ rating, count, percentage }) => (
-                <div key={rating} className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <div className="flex items-center space-x-1 rtl:space-x-reverse w-12">
-                    <span className="text-sm font-medium">{rating}</span>
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                  </div>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm text-gray-600 w-8 text-right rtl:text-left">
-                    {count}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <ReviewStats 
+          reviews={reviews} 
+          averageRating={averageRating}
+          totalReviews={totalReviewsCount}
+        />
       ) : null}
 
       {/* Filters */}
-      <div className="mt-8 mb-6">
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-sm"
-        >
-          <Filter className="h-4 w-4" />
-          <span>{translations?.filterReviews || 'Filter Reviews'}</span>
-          {showFilters ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </button>
-        
-        {showFilters && (
-          <div className="bg-gray-50 p-4 rounded-lg mt-3 border border-gray-100 animate-fadeIn">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Rating Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {translations?.filterByRating || 'Filter by Rating'}
-                </label>
-                <select
-                  value={ratingFilter as string}
-                  onChange={(e) => setRatingFilter(e.target.value as 'all' | 1 | 2 | 3 | 4 | 5)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="all">{translations?.allRatings || 'All Ratings'}</option>
-                  <option value="5">★★★★★ (5)</option>
-                  <option value="4">★★★★☆ (4)</option>
-                  <option value="3">★★★☆☆ (3)</option>
-                  <option value="2">★★☆☆☆ (2)</option>
-                  <option value="1">★☆☆☆☆ (1)</option>
-                </select>
-              </div>
-              
-              {/* Time Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {translations?.filterByTime || 'Filter by Time'}
-                </label>
-                <select
-                  value={timeFilter}
-                  onChange={(e) => setTimeFilter(e.target.value as 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'year')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="all">{translations?.allTime || 'All Time'}</option>
-                  <option value="today">{translations?.today || 'Today'}</option>
-                  <option value="yesterday">{translations?.yesterday || 'Yesterday'}</option>
-                  <option value="week">{translations?.pastWeek || 'Past Week'}</option>
-                  <option value="month">{translations?.pastMonth || 'Past Month'}</option>
-                  <option value="year">{translations?.pastYear || 'Past Year'}</option>
-                </select>
-              </div>
-              
-              {/* Sort Order */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {translations?.sortOrder || 'Sort Order'}
-                </label>
-                <select
-                  value={sortFilter}
-                  onChange={(e) => setSortFilter(e.target.value as 'newest' | 'oldest')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="newest">{translations?.newestFirst || 'Newest First'}</option>
-                  <option value="oldest">{translations?.oldestFirst || 'Oldest First'}</option>
-                </select>
-              </div>
-            </div>
-            
-            {/* Filter Actions */}
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => {
-                  setRatingFilter('all');
-                  setTimeFilter('all');
-                  setSortFilter('newest');
-                }}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200"
-              >
-                {translations?.clearFilters || 'Clear Filters'}
-              </button>
-            </div>
-            
-            {/* Filter Results Count */}
-            <div className="mt-2 text-sm text-gray-500">
-              {translations?.showingFilteredReviews?.replace('{count}', filteredReviews.length.toString()).replace('{total}', reviews.length.toString()) || 
-               `Showing ${filteredReviews.length} of ${reviews.length} reviews`}
-            </div>
-          </div>
-        )}
-      </div>
+      <ReviewFilters 
+        ratingFilter={ratingFilter}
+        timeFilter={timeFilter}
+        sortFilter={sortFilter}
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
+        setRatingFilter={setRatingFilter}
+        setTimeFilter={setTimeFilter}
+        setSortFilter={setSortFilter}
+        hasFilters={hasFilters}
+        handleClearFilters={handleClearFilters}
+      />
 
       {/* Reviews List */}
       {loading && !reviewsLoaded ? (
         renderLoadingPlaceholder()
       ) : filteredReviews.length > 0 ? (
         <div className="space-y-6">
-          {filteredReviews.map((review) => (
-            <div 
-              key={review.id} 
-              id={`review-${review.id}`}
-              className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 relative outline-none"
-            >
-              {/* "Shared review" indicator - will be visible when accessed via direct link */}
-              <div className="shared-review-indicator hidden absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow-md">
-                {translations?.sharedReview || 'Shared Review'}
-              </div>
-              
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 space-y-3 sm:space-y-0">
-                <div className="flex items-start space-x-4 rtl:space-x-reverse flex-1">
-                  {/* User Avatar */}
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-lg">
-                      {review.userName.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse mb-1">
-                      <h3 className="font-bold text-gray-900">{review.userName}</h3>
-                      {review.verified && (
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 rtl:space-x-reverse">
-                          <Shield className="h-3 w-3" />
-                          <span>{translations?.verified || 'Verified'}</span>
-                        </span>
-                      )}
-                      {review.isAnonymous && (
-                        <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
-                          {translations?.anonymous || 'Anonymous'}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                      <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        {review.createdAt.toLocaleDateString()}
-                        {review.updatedAt > review.createdAt && (
-                          <span className="text-xs text-gray-500 ml-2 rtl:ml-0 rtl:mr-2">
-                            {translations?.edited || '(edited)'}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    
-                    {/* Detailed Ratings */}
-                    {review.ratingDetails && renderDetailedRatings(review)}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  {/* Reply Button (for company owners and admins) */}
-                  {canEditCompany && !review.companyReply && (
-                    <button
-                      onClick={() => openReplyModal(review)}
-                      className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                      title={translations?.replyToReview || 'Reply to Review'}
-                    >
-                      <Reply className="h-4 w-4" />
-                    </button>
-                  )}
-                  
-                  {/* Edit Button (for review owner and admins) */}
-                  {(currentUser?.uid === review.userId || currentUser?.role === 'admin') && (
-                    <button
-                      onClick={() => openEditModal(review)}
-                      className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-colors duration-200"
-                      title={translations?.editReview || 'Edit Review'}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                  )}
-                  
-                  {/* Delete Button */}
-                  {canModifyReview(review) && (
-                    <button
-                      onClick={() => openDeleteConfirm(review)}
-                      className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                      title={translations?.deleteReview || 'Delete Review'}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <h4 className="font-semibold text-gray-900 mb-3 text-lg">{review.title}</h4>
-              <p className="text-gray-700 leading-relaxed mb-6">{review.content}</p>
-              
-              {/* Review Voting Buttons */}
-              <div className="flex justify-end mb-4">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <button
-                    onClick={() => {
-                      const reviewUrl = `https://r8estate.netlify.app/company/${getCompanySlug(company.name)}/${company.id}/reviews?review=${review.id}`;
-                      navigator.clipboard.writeText(reviewUrl)
-                        .then(() => {
-                          showSuccessToast(
-                            translations?.linkCopied || 'Link Copied',
-                            translations?.reviewLinkCopiedDesc || 'Review link has been copied to clipboard'
-                          );
-                        })
-                        .catch(err => {
-                          console.error('Could not copy text: ', err);
-                          showErrorToast(
-                            translations?.error || 'Error',
-                            translations?.couldNotCopyLink || 'Could not copy link to clipboard'
-                          );
-                        });
-                    }}
-                    className="flex items-center space-x-1 rtl:space-x-reverse px-2 py-1 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
-                    title={translations?.shareReview || 'Share this review'}
-                  >
-                    <Share2 className="h-4 w-4" />
-                    <span>{translations?.share || 'Share'}</span>
-                  </button>
-                  
-                  <ReviewVotingButtons 
-                    reviewId={review.id} 
-                    reviewUserId={review.userId} 
-                    contentType="review"
-                  />
-                </div>
-              </div>
-              
-              {/* Company Reply */}
-              {review.companyReply && (
-                <div className="bg-gray-50 rounded-xl border-l-4 border-blue-500 overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white border-2 border-blue-500">
-                          {company.logoUrl ? (
-                            <img
-                              src={company.logoUrl}
-                              alt={company.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Building2 className="h-5 w-5 text-blue-600" />
-                          )}
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-900">{company.name}</span>
-                          <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-gray-600">
-                            <Calendar className="h-3 w-3" />
-                            <span>{review.companyReply.repliedAt.toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Toggle Reply Visibility */}
-                      <button
-                        onClick={() => toggleReplyExpansion(review.id)}
-                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                      >
-                        {expandedReplies.has(review.id) ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                    
-                    {/* Reply Content */}
-                    <div className={`transition-all duration-300 ${
-                      expandedReplies.has(review.id) ? 'block' : 'hidden'
-                    }`}>
-                      <div className="space-y-4">
-                        <p className="text-gray-700 leading-relaxed">{review.companyReply.content}</p>
-                        
-                        {/* Reply Voting/Report Buttons */}
-                        <div className="flex justify-end">
-                          <ReviewVotingButtons 
-                            reviewId={review.id} 
-                            reviewUserId={review.companyReply.repliedBy} 
-                            contentType="reply"
-                            replyId={review.id} // Using review ID as reply ID since replies are embedded
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {!expandedReplies.has(review.id) && (
-                      <p className="text-gray-700 leading-relaxed">
-                        {review.companyReply.content.length > 100 
-                          ? `${review.companyReply.content.substring(0, 100)}...`
-                          : review.companyReply.content
-                        }
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+          {filteredReviews.map(review => (
+            <ReviewItem 
+              key={review.id}
+              review={review}
+              company={company}
+              currentUser={currentUser}
+              isHighlighted={new URLSearchParams(location.search).get('review') === review.id}
+              onReply={openReplyModal}
+              onEdit={openEditModal}
+              onDelete={openDeleteConfirm}
+              expandedReplies={expandedReplies}
+              toggleReplyExpansion={toggleReplyExpansion}
+            />
           ))}
 
           {/* Load More Button */}
@@ -887,7 +539,9 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
                   </>
                 ) : (
                   <>
-                    <ChevronDown className="h-5 w-5" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m6 9 6 6 6-6"/>
+                    </svg>
                     <span>{translations?.loadMoreReviews || 'Load More Reviews'}</span>
                   </>
                 )}
