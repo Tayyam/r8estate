@@ -123,11 +123,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               >
                 {translations?.claimCompany || 'Claim Company'}
               </button>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {translations?.loginToClaimCompany || 'Login to claim this company'}
-                  </p>
-                )}
-              </div>
             </div>
           </div>
         )}
