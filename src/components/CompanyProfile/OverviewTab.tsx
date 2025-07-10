@@ -107,35 +107,28 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
         {/* Claim Company Button - for unclaimed companies */}
         {!isClaimed && !isOwnerOrAdmin && (
-          <div className="bg-white rounded-2xl shadow-md p-6 border border-blue-200">
-            <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Building2 className="h-5 w-5 text-blue-600" />
-              </div>
+          <div className="bg-white rounded-2xl shadow-md p-6 border-l-4 border-blue-500">
+            <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-gray-900">
                   {translations?.claimCompany || 'Claim Company'}
                 </h3>
-                {currentUser ? null : (
+                <p className="text-sm text-gray-600 mt-1">
+                  {translations?.claimCompanyExplanation || 'Is this your company? Claim ownership to manage your profile and respond to reviews.'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowClaimRequestModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium"
+              >
+                {translations?.claimCompany || 'Claim Company'}
+              </button>
                   <p className="text-sm text-gray-600 mt-1">
                     {translations?.loginToClaimCompany || 'Login to claim this company'}
                   </p>
                 )}
               </div>
             </div>
-            <button
-              onClick={() => {
-                if (currentUser) {
-                  setShowClaimRequestModal(true);
-                } else {
-                  // Redirect to login page with return URL
-                  window.location.href = `/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
-                }
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium"
-            >
-              {translations?.claimCompany || 'Claim Company'}
-            </button>
           </div>
         )}
       </div>
