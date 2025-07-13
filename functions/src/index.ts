@@ -2,9 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { sendEmail } from './emailService';
 
-// Initialize Firebase Admin
-const app = admin.initializeApp();
-
+admin.initializeApp();
 export const createUser = functions.https.onCall(async (data, context) => {
   try {
     // Check if the caller is authenticated
