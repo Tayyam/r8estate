@@ -77,7 +77,7 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
       trackingNumber,
       businessEmailVerified: false,
       supervisorEmailVerified: false,
-      domainVerified: true, // Since this is a domain-based claim
+      domainVerified: true,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
@@ -85,8 +85,13 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
     // Get current year for copyright
     const currentYear = new Date().getFullYear();
     
-    // Generate verification links for both emails
+    // Email verification settings for both emails
     const businessActionCodeSettings = {
+      url: 'https://test.r8estate.com',
+      handleCodeInApp: true,
+    };
+
+    const supervisorActionCodeSettings = {
       url: 'https://test.r8estate.com',
       handleCodeInApp: true,
     };
@@ -145,33 +150,22 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
         businessActionCodeSettings
       );
       
-      // Generate custom verification link for supervisor
-      // We can't use Firebase's built-in verification for the supervisor
-      // since they don't have an account, so we'll create a custom token
-      const supervisorToken = admin.firestore().collection('verificationTokens').doc();
-      await supervisorToken.set({
-        email: supervisorEmail,
-        claimRequestId: claimRequestRef.id,
-        companyId: companyId,
-        supervisorId: supervisorRecord.uid,
-        businessEmail: businessEmail,
-        expiresAt: admin.firestore.Timestamp.fromDate(
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-        ),
-        used: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-      
-      const supervisorVerificationLink = `https://test.r8estate.com/verify-supervisor?token=${supervisorToken.id}&companyId=${companyId}`;
+      // Generate a standard Firebase verification link for the supervisor
+      const supervisorEmailLink = await admin.auth().generateEmailVerificationLink(
+        supervisorEmail,
+        supervisorActionCodeSettings
+      );
       
       // Modify the verification links to include our custom route
       const modifiedBusinessEmailLink = businessEmailLink.replace(
-        'https://test.r8estate.com/verify-supervisor',
+        'https://test.r8estate.com',
         'https://test.r8estate.com/verification'
       );
-
-      // Create supervisor verification link directly with /verification path
-      const modifiedSupervisorLink = `https://test.r8estate.com/verification?token=${supervisorToken.id}&companyId=${companyId}`;
+      
+      const modifiedSupervisorEmailLink = supervisorEmailLink.replace(
+        'https://test.r8estate.com',
+        'https://test.r8estate.com/verification'
+      );
 
       // Send batch emails using Resend
       const emailBatch = [
@@ -211,7 +205,7 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
           from: 'R8 Estate <support@r8estate.com>',
           to: [supervisorEmail],
           subject: `Supervisor Verification for ${companyName} Company Claim`,
-          html: `  
+          html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="text-align: center; margin-bottom: 20px;">
                 <img src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" alt="R8 Estate Logo" style="width: 100px; height: auto; border-radius: 10%;">
@@ -226,10 +220,10 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
               <p><strong>Important:</strong> Please save this password. You will need it to log in after verification.</p>
               <p>To verify and approve this request, please click the button below:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${supervisorVerificationLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
+                <a href="${modifiedSupervisorEmailLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
               </div>
               <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
-              <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;"><a href="${modifiedSupervisorLink}">${modifiedSupervisorLink}</a></p>
+              <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;"><a href="${modifiedSupervisorEmailLink}">${modifiedSupervisorEmailLink}</a></p>
               <p>Both business email and supervisor email must be verified to complete the company claim process.</p>
               <p>This link will expire in 7 days.</p>
               <p>If you are not a supervisor at ${companyName}, please ignore this email.</p>
@@ -377,7 +371,7 @@ export const verifySupervisor = functions.https.onRequest(async (req: Request, r
 export const checkBusinessEmailVerification = functions.https.onCall(async (data, context) => {
   try {
     const { userId, claimRequestId, companyId } = data;
-    
+
     if (!userId || !claimRequestId || !companyId) {
       throw new functions.https.HttpsError(
         'invalid-argument',
@@ -412,11 +406,30 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
     
-    // Check if supervisor email is also verified
-    const updatedClaimRequest = await claimRequestRef.get();
-    const claimData = updatedClaimRequest.data() as any;
-    
-    if (claimData?.supervisorEmailVerified) {
+    // Check if the supervisor's email is verified
+    const updatedClaimRequest = await claimRequestRef.get(); 
+    const claimData = updatedClaimRequest.data();
+
+    // Get supervisor's user data
+    let supervisorVerified = false;
+    if (claimData?.supervisorId) {
+      try {
+        const supervisorUser = await admin.auth().getUser(claimData.supervisorId);
+        supervisorVerified = supervisorUser.emailVerified;
+        
+        // Update claim request if supervisor is verified
+        if (supervisorVerified && !claimData.supervisorEmailVerified) {
+          await claimRequestRef.update({
+            supervisorEmailVerified: true,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      } catch (error) {
+        console.error('Error checking supervisor verification:', error);
+      }
+    }
+
+    if (claimData?.supervisorEmailVerified || supervisorVerified) {
       // Both emails are verified, update user role and claim company
       await admin.firestore().collection('users').doc(userId).update({
         role: 'company',
@@ -455,7 +468,7 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
     
     return { 
       success: true, 
-      message: 'Business email verified successfully. Waiting for supervisor verification.',
+      message: 'Email verified successfully. Waiting for supervisor verification.',
       bothVerified: false
     };
     
@@ -463,7 +476,7 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
     console.error('Error checking business email verification:', error);
     throw new functions.https.HttpsError(
       'internal',
-      error.message || 'Failed to check business email verification',
+      error.message || 'Failed to check email verification',
       error
     );
   }
