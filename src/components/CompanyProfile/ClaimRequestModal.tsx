@@ -5,10 +5,8 @@ import { db, auth, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile } from '../../types/companyProfile';
-import { sendOTPEmail } from '../../utils/emailUtils';
 import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
-import Step4OTPVerification from './ClaimRequestModal/Step4OTPVerification';
 import { notifyAdminsOfNewClaimRequest } from '../../utils/notificationUtils';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
@@ -29,7 +27,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const [loading, setLoading] = useState(false);
-  const [otpSending, setOtpSending] = useState(false);
   
   // Add state for supervisor email
   const [supervisorEmail, setSupervisorEmail] = useState('');
@@ -49,11 +46,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     password: ''
   });
   
-  // OTP and verification state
-  const [otpCode, setOtpCode] = useState('');
-  const [otpVerified, setOtpVerified] = useState(false);
-  
-  // Step selection (1: Domain choice, 2: Basic info, 3: OTP Verification)
+  // Step selection (1: Domain choice, 2: Basic info)
   const [currentStep, setCurrentStep] = useState(1);
 
   // Extract domain from website
@@ -74,17 +67,12 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
-  // Generate a random 6-digit OTP
-  const generateOTP = (): string => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
-
   // Handle backdrop click to close modal
-  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !loading && !otpSending) {
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !loading) {
       onClose();
     }
-  }, [onClose, loading, otpSending]);
+  };
 
   // Handle next step progression
   const handleNextStep = async () => {
@@ -100,44 +88,9 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         return;
       }
 
-      // Send OTP and move to verification step
-      await handleSendOTP();
-    }
-  };
-
-  // Handle OTP verification
-  const handleVerifyOTP = async () => {
-    if (!otpCode || otpCode.length !== 6) {
-      onError(translations?.invalidOTPLength || 'Please enter a valid 6-digit code');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      // Verify OTP
-      const isValid = await verifyOTP(formData.businessEmail, otpCode);
-      if (!isValid) {
-        onError(translations?.invalidOTP || 'Invalid or expired verification code');
-        return;
-      }
-
-      setOtpVerified(true);
-      
-      // Submit claim request
+      // Submit claim request directly
       await handleSubmitClaimRequest();
-    } catch (error) {
-      console.error("Error verifying OTP:", error);
-      onError(translations?.verificationFailed || 'Verification failed');
-    } finally {
-      setLoading(false);
     }
-  };
-
-  // Handle OTP verification for guest users
-  const handleOTPVerificationForGuest = async () => {
-    // For guest users, just verify the OTP and submit the claim request
-    await handleVerifyOTP();
   };
 
   // Submit claim request
@@ -168,21 +121,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       
       // Add to Firestore
       await addDoc(collection(db, 'claimRequests'), claimRequestData);
-      
-      // Mark OTP as used
-      const otpQuery = query(
-        collection(db, 'otp'),
-        where('email', '==', formData.businessEmail),
-        where('otp', '==', otpCode),
-        where('used', '==', false)
-      );
-      
-      const otpSnapshot = await getDocs(otpQuery);
-      if (!otpSnapshot.empty) {
-        const otpDoc = otpSnapshot.docs[0];
-        await updateDoc(doc(db, 'otp', otpDoc.id), { used: true });
-      }
-      
+
       // Notify admins
       await notifyAdminsOfNewClaimRequest(claimRequestData);
       
@@ -219,95 +158,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     return emailDomain === companyDomain;
   };
 
-  // Store OTP in Firestore
-  const storeOTP = async (email: string, otp: string): Promise<boolean> => {
-    try {
-      // Create expiration date (60 minutes from now)
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 60);
-      
-      // Store in 'otp' collection
-      await addDoc(collection(db, 'otp'), {
-        userId: currentUser?.uid || null,
-        companyId: company.id,
-        email: email,
-        otp: otp,
-        createdAt: serverTimestamp(),
-        expiresAt: Timestamp.fromDate(expiresAt),
-        used: false
-      });
-      
-      return true;
-    } catch (error) {
-      console.error("Error storing OTP:", error);
-      return false;
-    }
-  };
-
-  // Verify OTP from Firestore
-  const verifyOTP = async (email: string, otp: string): Promise<boolean> => {
-    try {
-      const now = new Date();
-      
-      // Query for matching OTP
-      const otpQuery = query(
-        collection(db, 'otp'),
-        where('email', '==', email),
-        where('otp', '==', otp),
-        where('used', '==', false)
-      );
-      
-      const otpSnapshot = await getDocs(otpQuery);
-      
-      if (otpSnapshot.empty) {
-        return false;
-      }
-      
-      const otpDoc = otpSnapshot.docs[0];
-      const otpData = otpDoc.data();
-      
-      // Check if OTP is expired
-      const expiresAt = otpData.expiresAt.toDate();
-      if (now > expiresAt) {
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error verifying OTP:", error);
-      return false;
-    }
-  };
-
-  // Send OTP email
-  const handleSendOTP = async () => {
-    try {
-      setOtpSending(true);
-      
-      // Generate OTP
-      const otp = generateOTP();
-      
-      // Store OTP in Firestore
-      const stored = await storeOTP(formData.businessEmail, otp);
-      if (!stored) {
-        throw new Error('Failed to store OTP');
-      }
-      
-      // Send OTP email
-      const sent = await sendOTPEmail(formData.businessEmail, otp);
-      if (!sent) {
-        throw new Error('Failed to send OTP email');
-      }
-      
-      setCurrentStep(4);
-      onSuccess(translations?.otpSent || 'Verification code sent successfully');
-    } catch (error) {
-      console.error("Error sending OTP:", error);
-      onError(translations?.failedToSendOTP || 'Failed to send verification code');
-    } finally {
-      setOtpSending(false);
-    }
-  };
 
   return (
     <div 
@@ -333,7 +183,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500"
-            disabled={loading || otpSending}
+            disabled={loading}
           >
             <X className="h-6 w-6" />
           </button>
@@ -380,21 +230,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             onClose={onClose}
             translations={translations}
           />
-        )}
-        
-        {currentStep === 3 && (
-          <Step4OTPVerification
-            formData={formData}
-            otpCode={otpCode}
-            setOtpCode={setOtpCode}
-            loading={loading}
-            otpSending={otpSending}
-            handleSendOTP={handleSendOTP}
-            handleVerifyOTP={handleVerifyOTP}
-            setCurrentStep={(step) => setCurrentStep(step <= 2 ? step : 2)}
-            translations={translations}
-          />
-        )}
+        )}        
       </div>
     </div>
   );
