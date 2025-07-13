@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Building2, X, AlertCircle } from 'lucide-react';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { db, auth, storage } from '../../config/firebase';
@@ -77,6 +77,13 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const generateOTP = (): string => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
+
+  // Handle backdrop click to close modal
+  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !loading && !otpSending) {
+      onClose();
+    }
+  }, [onClose, loading, otpSending]);
 
   // Handle domain choice
   const handleDomainChoice = (hasDomain: boolean) => {
