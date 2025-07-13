@@ -8,7 +8,8 @@ import {
   updateProfile,
   sendEmailVerification,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  applyActionCode
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db, functions } from '../config/firebase';
@@ -25,6 +26,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
+  changeEmailWithoutPassword: (newEmail: string) => Promise<void>;
+  verifyEmail: (oobCode: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,8 +98,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       await setDoc(doc(db, 'users', user.uid), userData);
 
-      // Send email verification
-      await sendEmailVerification(user);
+      // Send custom email verification
+      try {
+        const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
+        await sendVerificationEmailFunction({ email });
+      } catch (verificationError) {
+        console.error('Error sending verification email:', verificationError);
+        // Fall back to default Firebase verification email if our custom one fails
+        await sendEmailVerification(user);
+      }
       
       // No need to manually sign in since createUserWithEmailAndPassword
       // already signs the user in. Just update the current user state.
@@ -211,6 +221,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Change email without password
+  const changeEmailWithoutPassword = async (newEmail: string): Promise<void> => {
+    if (!firebaseUser) throw new Error('No user logged in');
+
+    try {
+      // Call our cloud function to change email
+      const changeEmailFunction = httpsCallable(functions, 'changeEmail');
+      const result = await changeEmailFunction({ newEmail });
+      
+      const data = result.data as any;
+      if (!data.success) {
+        throw new Error('Failed to change email');
+      }
+
+      // Update local state
+      if (currentUser) {
+        setCurrentUser({
+          ...currentUser,
+          email: newEmail,
+          isEmailVerified: false,
+          updatedAt: new Date()
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('Error changing email:', error);
+      throw new Error(error.message || 'Failed to change email');
+    }
+  };
+  
+  // Verify email
+  const verifyEmail = async (oobCode: string): Promise<void> => {
+    try {
+      await applyActionCode(auth, oobCode);
+      
+      // Update local state if user is logged in
+      if (currentUser && firebaseUser) {
+        setCurrentUser({
+          ...currentUser,
+          isEmailVerified: true,
+          updatedAt: new Date()
+        });
+        
+        // Update Firestore
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+          isEmailVerified: true,
+          updatedAt: new Date()
+        });
+      }
+    } catch (error: any) {
+      console.error('Error verifying email:', error);
+      throw new Error(error.message || 'Failed to verify email');
+    }
+  };
+
   // Auth state observer
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -240,7 +305,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGoogle,
     logout,
     resetPassword,
-    updateUserProfile
+    updateUserProfile,
+    changeEmailWithoutPassword,
+    verifyEmail
   };
 
   return (

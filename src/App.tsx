@@ -14,6 +14,7 @@ import Privacy from './components/Privacy';
 import Settings from './components/Settings';
 import NotificationsPage from './components/Notifications/NotificationsPage';
 import ResetPassword from './components/Auth/ResetPassword';
+import Verification from './components/Verification';
 import CompanyDashboard from './components/CompanyDashboard';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -222,6 +223,7 @@ function AppContent() {
           <Route path="/login" element={<Login onNavigate={handleNavigate} />} />
           <Route path="/register" element={<Register onNavigate={handleNavigate} />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verification" element={<Verification />} />
           <Route path="/company/:companySlug/:companyId/:tab" element={
             <CheckUserStatus>
               <CompanyProfile onNavigateBack={() => navigate(-1)} />

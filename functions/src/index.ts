@@ -1,6 +1,8 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { sendEmail } from './emailService';
+import { sendVerificationEmail } from './email-verification';
+import { changeEmail } from './change-email';
 
 admin.initializeApp();
 export const createUser = functions.https.onCall(async (data, context) => {
@@ -186,3 +188,7 @@ export const changeUserPassword = functions.https.onCall(async (data, context) =
 
 // Export the email service function
 export { sendEmail };
+// Export the email verification function
+export { sendVerificationEmail };
+// Export the email change function
+export { changeEmail };
