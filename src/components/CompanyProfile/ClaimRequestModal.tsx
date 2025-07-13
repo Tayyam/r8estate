@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Building2, X, AlertCircle } from 'lucide-react';
-import { collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp, doc, updateDoc } from 'firebase/firestore';
-import { db, auth, storage } from '../../config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db, functions } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile } from '../../types/companyProfile';
 import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
-import { notifyAdminsOfNewClaimRequest } from '../../utils/notificationUtils';
+import { httpsCallable } from 'firebase/functions';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
 
@@ -79,7 +79,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     if (currentStep === 2) {
       // Validate Step 2 fields
       // Only require contactPhone when not using domain email
-      if ((!hasDomainEmail && !formData.contactPhone) || !formData.businessEmail || !supervisorEmail) {
+      if (!formData.businessEmail || !supervisorEmail || (!hasDomainEmail && !formData.contactPhone)) {
         onError(translations?.allFieldsRequired || 'All fields are required');
         return;
       }
@@ -98,37 +98,35 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const handleSubmitClaimRequest = async () => {
     try {
       setLoading(true);
-      
-      // Generate tracking number
-      const newTrackingNumber = generateTrackingNumber();
-      setTrackingNumber(newTrackingNumber);
-      
-      // Prepare claim request data
-      const claimRequestData = {
-        companyId: company.id,
-        companyName: company.name,
-        userId: currentUser?.uid || null,
-        userEmail: currentUser?.email || null,
-        displayName: currentUser?.displayName || 'Anonymous User',
-        contactPhone: formData.contactPhone,
+
+      // Call the cloud function for claim process
+      const claimProcessFunction = httpsCallable(functions, 'claimProcess');
+      const response = await claimProcessFunction({
         businessEmail: formData.businessEmail,
         supervisorEmail: supervisorEmail,
-        trackingNumber: newTrackingNumber,
-        status: 'pending',
-        createdAt: serverTimestamp(),
-        hasDomainEmail: hasDomainEmail,
-        companyDomain: companyDomain
+        companyId: company.id,
+        companyName: company.name,
+        contactPhone: formData.contactPhone,
+        displayName: currentUser?.displayName || formData.displayName || company.name
       };
-      
-      // Add to Firestore
-      await addDoc(collection(db, 'claimRequests'), claimRequestData);
+      );
 
-      // Notify admins
-      await notifyAdminsOfNewClaimRequest(claimRequestData);
-      
-      onSuccess(translations?.claimRequestSubmitted?.replace('{trackingNumber}', newTrackingNumber) || 
-               `Claim request submitted successfully! Tracking number: ${newTrackingNumber}`);
+      // Extract response data
+      const responseData = response.data as any;
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Failed to process claim request');
+      }
+
+      // Store tracking number in local storage for future reference
+      if (responseData.trackingNumber) {
+        localStorage.setItem('claimTrackingNumber', responseData.trackingNumber);
+      }
+
+      // Show success message with tracking number
+      onSuccess(translations?.claimRequestSubmitted?.replace('{tracking}', responseData.trackingNumber) || 
+               `Claim request submitted successfully! Your tracking number is: ${responseData.trackingNumber}. Please keep this number for reference.`);
       onClose();
+
     } catch (error) {
       console.error("Error submitting claim request:", error);
       onError(translations?.claimRequestFailed || 'Failed to submit claim request');
