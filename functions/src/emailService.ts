@@ -1,17 +1,11 @@
 import * as functions from 'firebase-functions';
 import { Resend } from 'resend';
 
-const resend = new Resend('re_YK6KENqh_55k2grJZeTG9G6HHG5THszvX');
+const resend = new Resend('re_ZfaXVLi3_94WMKpGCx5XhSkKcQNFsX9nw');
 
-export const sendEmail = functions.https.onCall(async (data, context) => {
+export const sendEmail = functions.https.onCall(async (data) => {
   try {
-    // Validate the caller is authenticated
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        'The function must be called while authenticated.'
-      );
-    }
+   
 
     const { to, subject, html, templateType, templateData } = data;
     
@@ -58,7 +52,7 @@ export const sendEmail = functions.https.onCall(async (data, context) => {
     
     // Send email using Resend
     const response = await resend.emails.send({
-      from: 'R8 Estate <verification@ithraaoperation.com>',
+      from: 'R8 Estate <support@r8estate.com>',
       to,
       subject: emailSubject,
       html: emailHtml
