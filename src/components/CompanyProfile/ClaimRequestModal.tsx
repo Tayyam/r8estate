@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, X, AlertCircle } from 'lucide-react';
-import { collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp, doc, setDoc, updateDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { db, auth, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -11,7 +10,6 @@ import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
 import Step3Profile from './ClaimRequestModal/Step3Profile';
 import Step4OTPVerification from './ClaimRequestModal/Step4OTPVerification';
-import LoginPrompt from './ClaimRequestModal/LoginPrompt';
 import { sendOTPVerificationEmail } from '../../utils/emailUtils';
 import { notifyAdminsOfNewClaimRequest } from '../../utils/notificationUtils';
 
@@ -36,7 +34,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   // Domain-related state
   const [companyDomain, setCompanyDomain] = useState('');
   const [hasDomainEmail, setHasDomainEmail] = useState<boolean | null>(null);
-  
+
   // Form and verification state
   const [formData, setFormData] = useState({
     contactPhone: '',
@@ -51,10 +49,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   // OTP and verification state
   const [otpCode, setOtpCode] = useState('');
   const [otpVerified, setOtpVerified] = useState(false);
-  
-  // UI State 
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  
+    
   // File input ref for photo upload
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
@@ -371,12 +366,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   // Handle non-verification claim request
   const handleNonVerificationClaim = async () => {
     try {
-      // If user is not logged in, prompt to login
-      if (!currentUser) {
-        setShowLoginPrompt(true);
-        return;
-      }
-      
       if (!formData.contactPhone || !formData.businessEmail || !formData.displayName) {
         onError(translations?.fillAllFields || 'Please fill in all required fields');
         return;
@@ -387,8 +376,8 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       const claimRequestRef = await addDoc(collection(db, 'claimRequests'), {
         companyId: company.id,
         companyName: company.name,
-        requesterId: currentUser.uid,
-        requesterName: formData.displayName || currentUser.displayName,
+        requesterId: currentUser?.uid || null,
+        requesterName: formData.displayName || currentUser?.displayName || 'Guest User',
         contactPhone: formData.contactPhone,
         businessEmail: formData.businessEmail,
         displayName: formData.displayName,
@@ -456,12 +445,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         return;
       }
       
-      // For non-domain verification, check if we need the user to login
-      if (!hasDomainEmail && !currentUser) {
-        setShowLoginPrompt(true);
-        return;
-      }
-      
       try {
         setLoading(true);
                 
@@ -481,6 +464,54 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     }
   };
 
+  // Handle OTP for non-logged in users
+  const handleOTPVerificationForGuest = async () => {
+    if (otpCode.length !== 6) {
+      onError('Please enter a valid 6-digit verification code');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // Verify OTP
+      const isValid = await verifyOTP(formData.businessEmail, otpCode);
+      if (!isValid) {
+        onError('Invalid or expired verification code');
+        return;
+      }
+      
+      // Mark OTP as verified
+      setOtpVerified(true);
+      
+      // Create a claim request for admin review
+      const claimRequestRef = await addDoc(collection(db, 'claimRequests'), {
+        companyId: company.id,
+        companyName: company.name,
+        requesterId: currentUser?.uid || null,
+        requesterName: formData.displayName || 'Guest User',
+        contactPhone: formData.contactPhone || '',
+        businessEmail: formData.businessEmail,
+        displayName: formData.displayName,
+        status: 'pending',
+        domainVerified: true, // Mark as domain verified
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      // Notify admins about the new claim request
+      await notifyAdminsOfNewClaimRequest(claimRequestRef.id, company.name);
+      
+      onSuccess(translations?.claimRequestSubmitted || 'Claim request submitted successfully! We will review your request and contact you soon.');
+      onClose();
+    } catch (error) {
+      console.error("Error processing domain-verified request:", error);
+      onError('Failed to submit your request. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // Handle backdrop click to close modal
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -494,11 +525,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       }
     }
   };
-  
-  // If showing login prompt
-  if (showLoginPrompt) {
-    return <LoginPrompt onClose={onClose} translations={translations} />;
-  }
 
   return (
     <div 
@@ -508,7 +534,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-screen overflow-y-auto">
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+           <div className="flex items-center space-x-3 rtl:space-x-reverse">
             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
               <Building2 className="h-5 w-5 text-blue-600" />
             </div>
@@ -594,7 +620,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             loading={loading}
             otpSending={otpSending}
             handleSendOTP={handleSendOTP}
-            handleVerifyOTP={handleVerifyOTP}
+            handleVerifyOTP={currentUser ? handleVerifyOTP : handleOTPVerificationForGuest}
             setCurrentStep={setCurrentStep}
             translations={translations}
           />
