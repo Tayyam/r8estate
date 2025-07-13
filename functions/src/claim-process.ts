@@ -143,6 +143,12 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
         'https://test.r8estate.com',
         'https://test.r8estate.com/verification'
       );
+      
+      // Modify the supervisor verification link as well
+      const modifiedSupervisorLink = supervisorVerificationLink.replace(
+        'https://test.r8estate.com/verify-supervisor',
+        'https://test.r8estate.com/verification'
+      );
 
       // Send batch emails using Resend
       const emailBatch = [
@@ -198,10 +204,10 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
               </div>
               <p>To approve this request, please click the button below:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${supervisorVerificationLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify as Supervisor</a>
+                <a href="${modifiedSupervisorLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify as Supervisor</a>
               </div>
               <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
-              <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;"><a href="${supervisorVerificationLink}">${supervisorVerificationLink}</a></p>
+              <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;"><a href="${modifiedSupervisorLink}">${modifiedSupervisorLink}</a></p>
               <p>Both business email and supervisor email must be verified to complete the company claim process.</p>
               <p>This link will expire in 7 days.</p>
               <p>If you weren't expecting this verification request, please ignore this email.</p>
@@ -338,7 +344,7 @@ export const verifySupervisor = functions.https.onRequest(async (req: Request, r
     }
     
     // Redirect to success page
-    res.redirect('/verification-success?type=supervisor');
+    res.redirect('/verification?type=supervisor');
   } catch (error) {
     console.error('Error verifying supervisor:', error);
     res.status(500).send('An error occurred while verifying supervisor email');
