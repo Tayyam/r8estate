@@ -7,13 +7,13 @@ import {
   onAuthStateChanged,
   updateProfile,
   sendEmailVerification,
-  sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
+import { auth, db, functions } from '../config/firebase';
 import { User, UserRole } from '../types/user';
+import { httpsCallable } from 'firebase/functions';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -157,7 +157,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Reset password
   const resetPassword = async (email: string) => {
     try {
-      await sendPasswordResetEmail(auth, email);
+      // Generate password reset link from Firebase
+      const actionCodeSettings = {
+        // URL you want to redirect back to after password reset
+        url: `${window.location.origin}/login`,
+        // Handle the reset code in the app
+        handleCodeInApp: false
+      };
+
+      // Generate auth URL for password reset
+      const resetLink = `${window.location.origin}/reset-password?mode=resetPassword&oobCode=PLACEHOLDER&apiKey=${import.meta.env.VITE_FIREBASE_API_KEY}`;
+      
+      // Send email using our custom function
+      const sendEmailFunction = httpsCallable(functions, 'sendEmail');
+      const result = await sendEmailFunction({
+        to: email,
+        subject: 'Reset Your R8 Estate Password',
+        templateType: 'password-reset',
+        templateData: {
+          resetLink
+        }
+      });
+      
+      // Check if the function returned success
+      const data = result.data as any;
+      if (!data.success) {
+        throw new Error('Failed to send password reset email');
+      }
     } catch (error: any) {
       console.error('Password reset error:', error);
       throw new Error(error.message);
