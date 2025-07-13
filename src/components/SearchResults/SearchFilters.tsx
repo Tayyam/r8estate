@@ -4,7 +4,6 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Category } from '../../types/company';
 import { egyptianGovernorates } from '../../types/company';
 
-
 interface SearchFiltersProps {
   categoryFilter: string;
   setCategoryFilter: (value: string) => void;
@@ -56,21 +55,13 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Category Filter */}
         <div>
-          <div className="block text-sm font-medium text-gray-700 mb-2">
-            {translations?.category || 'Category'} <span className="text-primary-500">•</span>
-          </div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {translations?.category || 'Category'}
+          </label>
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 shadow-sm appearance-none bg-white"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-              backgroundPosition: `${language === 'ar' ? 'left 0.5rem center' : 'right 0.5rem center'}`,
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: '1.5em 1.5em',
-              paddingRight: '2.5rem',
-              paddingLeft: language === 'ar' ? '2.5rem' : undefined
-            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
           >
             <option value="all">{translations?.allCategories || 'All Categories'}</option>
             {categories.map((category) => (
@@ -83,21 +74,13 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         
         {/* Location Filter */}
         <div>
-          <div className="block text-sm font-medium text-gray-700 mb-2">
-            {translations?.location || 'Location'} <span className="text-primary-500">•</span>
-          </div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {translations?.location || 'Location'}
+          </label>
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 shadow-sm appearance-none bg-white"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-              backgroundPosition: `${language === 'ar' ? 'left 0.5rem center' : 'right 0.5rem center'}`,
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: '1.5em 1.5em',
-              paddingRight: '2.5rem',
-              paddingLeft: language === 'ar' ? '2.5rem' : undefined
-            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
           >
             <option value="all">{translations?.allLocations || 'All Locations'}</option>
             {egyptianGovernorates.map((location) => (
@@ -110,21 +93,13 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         
         {/* Rating Filter */}
         <div>
-          <div className="block text-sm font-medium text-gray-700 mb-2">
-            {translations?.rating || 'Rating'} <span className="text-primary-500">•</span>
-          </div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {translations?.rating || 'Rating'}
+          </label>
           <select
             value={ratingFilter}
             onChange={(e) => setRatingFilter(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 shadow-sm appearance-none bg-white"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-              backgroundPosition: `${language === 'ar' ? 'left 0.5rem center' : 'right 0.5rem center'}`,
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: '1.5em 1.5em',
-              paddingRight: '2.5rem',
-              paddingLeft: language === 'ar' ? '2.5rem' : undefined
-            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
           >
             <option value="all">{translations?.allRatings || 'All Ratings'}</option>
             <option value="5">{translations?.rating5 || '5 Stars'}</option>
@@ -137,21 +112,13 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         
         {/* Sort Order */}
         <div>
-          <div className="block text-sm font-medium text-gray-700 mb-2">
-            {translations?.sortBy || 'Sort By'} <span className="text-primary-500">•</span>
-          </div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {translations?.sortBy || 'Sort By'}
+          </label>
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 shadow-sm appearance-none bg-white"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-              backgroundPosition: `${language === 'ar' ? 'left 0.5rem center' : 'right 0.5rem center'}`,
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: '1.5em 1.5em',
-              paddingRight: '2.5rem',
-              paddingLeft: language === 'ar' ? '2.5rem' : undefined
-            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
           >
             <option value="highestRated">{translations?.highestRated || 'Highest Rated'}</option>
             <option value="mostReviewed">{translations?.mostReviewed || 'Most Reviewed'}</option>

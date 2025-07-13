@@ -5,10 +5,9 @@ import { useLanguage } from '../../contexts/LanguageContext';
 interface SearchHeaderProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  handleSearch: Function;
-  onNavigate: Function;
+  handleSearch: () => void;
+  onNavigate?: (page: string) => void;
   totalResults: number;
-  language?: string;
 }
 
 const SearchHeader: React.FC<SearchHeaderProps> = ({
@@ -16,63 +15,61 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   setSearchQuery,
   handleSearch,
   onNavigate,
-  totalResults,
-  language = 'ar'
+  totalResults
 }) => {
-  const { translations, direction } = useLanguage();
+  const { translations } = useLanguage();
 
   return (
-    <section className="bg-gradient-to-br from-blue-50 to-gray-50 py-12 border-b border-gray-100">
+    <section className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: '#194866', textShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-            {translations?.searchResults || 'Search Results'}
+        {/* Back Button */}
+        <div className="mb-8">
+          <button
+            onClick={() => onNavigate ? onNavigate('home') : null}
+            className="flex items-center space-x-2 rtl:space-x-reverse text-gray-600 hover:text-gray-800 transition-colors duration-200"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span>{translations?.backToHome || 'Back to Home'}</span>
+          </button>
+        </div>
+        
+        <div className="text-center max-w-3xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: '#194866' }}>
+            {searchQuery 
               ? translations?.searchFor?.replace('{query}', searchQuery) || `Search for "${searchQuery}"`
               : translations?.searchResults || 'Search Results'
             }
           </h1>
-          {searchQuery && (
-            <p className="text-lg text-gray-600 mb-2">
-              {translations?.searchFor?.replace('{query}', searchQuery) || `Searching for "${searchQuery}"`}
-            </p>
-          )}
           <p className="text-lg text-gray-600 mb-8">
-            <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
-              {totalResults} {translations?.resultsFound || 'results found'}
-            </span>
+            {translations?.foundResults?.replace('{count}', totalResults.toString()) || 
+             `Found ${totalResults} result${totalResults === 1 ? '' : 's'}`}
           </p>
 
-          {/* Enhanced Search Bar */}
-          <div className="relative max-w-2xl mx-auto">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
+          {/* Search Bar */}
+          <div className="relative max-w-lg mx-auto">
+            <Search className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
               placeholder={translations?.searchPlaceholder || 'Search companies...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="block w-full pl-10 pr-14 py-4 border-2 border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-opacity-50 focus:outline-none transition duration-300 ease-in-out shadow-sm"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSearch();
+              }}
+              className="w-full pl-12 rtl:pr-12 rtl:pl-6 pr-6 py-4 text-gray-800 text-lg rounded-xl border border-gray-300 focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 bg-white"
               style={{ 
-                boxShadow: '0 4px 12px rgba(0,0,0,0.05)', 
                 focusBorderColor: '#EE183F',
                 focusRingColor: '#EE183F'
               }}
-              dir={direction}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#EE183F';
+                e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.boxShadow = 'none';
+              }}
             />
-            <div className="absolute inset-y-0 right-0 flex items-center">
-              <button 
-                onClick={() => handleSearch()}
-                className="h-full px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-r-xl hover:from-blue-700 hover:to-blue-800 transition duration-300 ease-in-out"
-                style={{ 
-                  background: 'linear-gradient(to right, #194866, #1a5c82)',
-                  borderRadius: language === 'ar' ? '0.75rem 0 0 0.75rem' : '0 0.75rem 0.75rem 0'
-                }}
-              >
-                <Search className="h-5 w-5" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
