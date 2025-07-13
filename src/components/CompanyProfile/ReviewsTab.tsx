@@ -148,12 +148,10 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       setLastDoc(reviewsSnapshot.docs[reviewsSnapshot.docs.length - 1] || null);
       setHasMore(reviewsSnapshot.docs.length === REVIEWS_PER_PAGE);
       setReviewsLoaded(true);
-      setReviewsLoaded(true);
 
     } catch (error) {
       console.error('Error loading reviews:', error);
       onError(translations?.failedToLoadReviews || 'Failed to load reviews');
-      setReviewsLoaded(true);
     } finally {
       setLoading(false);
     }
@@ -169,7 +167,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     if (initialReviews && initialReviews.length > 0 && !reviewsLoaded) {
       setReviews(sortReviewsWithUserFirst(initialReviews));
       setTotalReviewsCount(initialReviews.length);
-      setReviewsLoaded(true);
       setReviewsLoaded(true);
     }
   }, [initialReviews, currentUser, reviewsLoaded]);
@@ -468,7 +465,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         <div className="animate-pulse">
           <div className="h-64 bg-gray-100 rounded-xl mb-8"></div>
         </div>
-      ) : reviewsLoaded && reviews.length > 0 ? (
+      ) : reviews.length > 0 ? (
         <ReviewStats 
           reviews={reviews} 
           averageRating={averageRating}
