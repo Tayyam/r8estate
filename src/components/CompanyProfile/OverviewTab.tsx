@@ -6,7 +6,7 @@ import { Category, egyptianGovernorates } from '../../types/company';
 import PhotoGallery from './PhotoGallery';
 import ContactInfo from './ContactInfo';
 import ClaimRequestModal from './ClaimRequestModal';
-import CheckStatus from './ClaimRequestModal/CheckStatus';
+import TrackingModal from './ClaimRequestModal/TrackingModal';
 import { Building2, CheckCircle } from 'lucide-react';
 
 interface OverviewTabProps {
@@ -120,10 +120,13 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowClaimRequestModal(true)}
+                  onClick={() => {
+                    // Just open the tracking modal directly
+                    setShowClaimRequestModal(true);
+                  }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium"
                 >
-                  {translations?.checkStatus || 'Check Status'}
+                  {translations?.trackRequest || 'Track Request'}
                 </button>
               </div>
             ) : (
@@ -151,7 +154,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Claim Request Modal */}
       {showClaimRequestModal && (
         localStorage.getItem('claimTrackingNumber') ? (
-          <CheckStatus
+          <TrackingModal
+            initialTrackingNumber={localStorage.getItem('claimTrackingNumber') || ''}
             onClose={() => setShowClaimRequestModal(false)}
             translations={translations}
           />

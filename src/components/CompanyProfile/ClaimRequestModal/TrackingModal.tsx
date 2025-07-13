@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
-import { SearchCode, Check, AlertCircle } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { SearchCode, Check, AlertCircle, Edit, Trash2 } from 'lucide-react';
+import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { ClaimRequest } from '../../../types/company';
 
 interface TrackingModalProps {
+  initialTrackingNumber?: string;
   onClose: () => void;
   translations: any;
 }
 
-const TrackingModal: React.FC<TrackingModalProps> = ({ onClose, translations }) => {
-  const [trackingNumber, setTrackingNumber] = useState('');
+const TrackingModal: React.FC<TrackingModalProps> = ({ initialTrackingNumber = '', onClose, translations }) => {
+  const [trackingNumber, setTrackingNumber] = useState(initialTrackingNumber);
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [foundRequest, setFoundRequest] = useState<ClaimRequest | null>(null);
+
+  // Automatically search if initial tracking number is provided
+  React.useEffect(() => {
+    if (initialTrackingNumber) {
+      handleSearch();
+    }
+  }, []);
 
   const handleSearch = async () => {
     if (!trackingNumber || trackingNumber.length !== 6) {
@@ -56,6 +66,57 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ onClose, translations }) 
     } finally {
       setLoading(false);
     }
+  };
+
+  // Remove request from localStorage and optionally database
+  const handleRemoveRequest = async (deleteFromDb = false) => {
+    try {
+      setDeleteLoading(true);
+      
+      // Remove from localStorage
+      localStorage.removeItem('claimTrackingNumber');
+      
+      // Optionally delete from database if user confirms
+      if (deleteFromDb && foundRequest) {
+        if (window.confirm(translations?.confirmDeleteRequest || 'Are you sure you want to delete this request? This cannot be undone.')) {
+          await deleteDoc(doc(db, 'claimRequests', foundRequest.id));
+          setSuccess(translations?.requestDeleted || 'Request deleted successfully');
+          
+          // Reset state
+          setFoundRequest(null);
+          setTrackingNumber('');
+          
+          // Close modal after short delay
+          setTimeout(() => {
+            onClose();
+          }, 1500);
+        }
+      } else {
+        setSuccess(translations?.trackingRemoved || 'Tracking number removed from this device');
+        
+        // Close modal after short delay
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error removing request:', error);
+      setError(translations?.failedToRemoveRequest || 'Failed to remove request');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // Handle edit request - redirect to claim form
+  const handleEditRequest = () => {
+    // Remove tracking from localStorage so the user can start fresh
+    localStorage.removeItem('claimTrackingNumber');
+    onClose();
+    
+    // The OverviewTab will automatically show the claim form now
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   };
 
   // Get status translation
@@ -109,6 +170,13 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ onClose, translations }) 
             </div>
           )}
 
+          {success && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-start">
+              <Check className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <span>{success}</span>
+            </div>
+          )}
+
           <div className="mb-6">
             <label htmlFor="trackingNumber" className="block text-sm font-medium text-gray-700 mb-1">
               {translations?.trackingNumber || 'Tracking Number'} *
@@ -127,7 +195,7 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ onClose, translations }) 
           </div>
 
           {foundRequest && (
-            <div className="bg-blue-50 p-4 rounded-lg mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
               <h4 className="font-medium text-gray-900 mb-3">
                 {translations?.requestDetails || 'Request Details'}:
               </h4>
@@ -160,6 +228,26 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ onClose, translations }) 
                   </div>
                 )}
               </div>
+              
+              {/* Request Management Options */}
+              <div className="mt-4 pt-4 border-t border-blue-200 flex justify-between items-center">
+                <button
+                  onClick={handleEditRequest}
+                  disabled={deleteLoading}
+                  className="px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse text-sm text-blue-700 hover:bg-blue-100 rounded transition-colors disabled:opacity-50"
+                >
+                  <Edit className="h-4 w-4" />
+                  <span>{translations?.editRequest || 'Edit Request'}</span>
+                </button>
+                <button
+                  onClick={() => handleRemoveRequest(true)}
+                  disabled={deleteLoading}
+                  className="px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse text-sm text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                >
+                  {deleteLoading ? <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin mr-1"></div> : <Trash2 className="h-4 w-4" />}
+                  <span>{translations?.deleteRequest || 'Delete Request'}</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -174,6 +262,16 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ onClose, translations }) 
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                 ) : null}
                 <span>{translations?.checkStatus || 'Check Status'}</span>
+              </button>
+            )}
+
+            {initialTrackingNumber && !loading && (
+              <button
+                onClick={() => handleRemoveRequest(false)}
+                disabled={deleteLoading}
+                className="flex-1 bg-gray-100 text-gray-600 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2 rtl:space-x-reverse mr-3"
+              >
+                <span>{translations?.forgetTracking || 'Forget Tracking'}</span>
               </button>
             )}
             
