@@ -217,12 +217,11 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ initialTrackingNumber = '
                 )}
               </div>
               
-                  <span>{translations?.editRequest || 'Edit Request'}</span>
-                </button>
+              <div className="flex justify-end mt-3">
                 <button
-                      className="px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse text-sm text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 ml-auto"
-                  disabled={deleteLoading}
+                  onClick={() => handleRemoveRequest(true)}
                   className="px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse text-sm text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                  disabled={deleteLoading}
                 >
                   {deleteLoading ? <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin mr-1"></div> : <Trash2 className="h-4 w-4" />}
                   <span>{translations?.deleteRequest || 'Delete Request'}</span>
