@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, Building2, ArrowRight, Star, ChevronDown, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { collection, query as firestoreQuery, where, orderBy, getDocs, limit, startAfter, getDoc, doc, DocumentData } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { Category } from '../../types/company';
 
@@ -92,13 +92,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
     
     try {
       const companiesQuery = searchQueryText.length >= 3 
-        ? firestoreQuery(
+        ? query(
             collection(db, 'companies'),
             where('name', '>=', searchQueryText),
             where('name', '<=', searchQueryText + '\uf8ff'),
             limit(5)
           )
-        : firestoreQuery(
+        : query(
             collection(db, 'companies'),
             orderBy('name'),
             limit(5)
@@ -433,10 +433,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                           {/* Rating */}
                           {company.totalRating > 0 && (
                             <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                              <div className="flex items-center px-2 py-1 bg-green-500 text-white rounded text-xs font-bold">
-                                <Star className="h-3 w-3 fill-current mr-1 rtl:ml-1 rtl:mr-0" />
-                                <span>{company.totalRating.toFixed(1)}</span>
-                              </div>
+                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                              <span className="font-medium">{company.totalRating.toFixed(1)}</span>
                               {company.totalReviews > 0 && (
                                 <span className="text-xs text-gray-500">
                                   ({formatReviewCount(company.totalReviews)})
