@@ -407,6 +407,7 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
         businessEmailVerified: true,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
+      )
     }
     
     // Get claim request
