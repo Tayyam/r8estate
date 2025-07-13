@@ -10,8 +10,9 @@ import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
 import Step3Profile from './ClaimRequestModal/Step3Profile';
 import Step4OTPVerification from './ClaimRequestModal/Step4OTPVerification';
-import { sendOTPVerificationEmail } from '../../utils/emailUtils';
 import { notifyAdminsOfNewClaimRequest } from '../../utils/notificationUtils';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../config/firebase';
 
 interface ClaimRequestModalProps {
   company: CompanyProfile;
@@ -30,6 +31,9 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const { translations } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
+  
+  // Add state for supervisor email
+  const [supervisorEmail, setSupervisorEmail] = useState('');
   
   // Tracking number state
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -258,29 +262,54 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         return;
       }
       
+      // Validate supervisor email
+      if (!supervisorEmail.trim()) {
+        onError(translations?.supervisorEmailRequired || 'Supervisor email is required');
+        return;
+      }
+      
+      // Basic email validation for supervisor
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(supervisorEmail)) {
+        onError(translations?.invalidSupervisorEmail || 'Please enter a valid supervisor email address');
+        return;
+      }
+      
       setOtpSending(true);
       
-      // Generate OTP
-      const otp = generateOTP();
-      
-      // Store OTP
-      const stored = await storeOTP(formData.businessEmail, otp);
-      if (!stored) {
-        onError(translations?.failedToSendVerification || 'Failed to send verification code');
-        return;
+      // Call claim-process cloud function
+      const claimProcessFunction = httpsCallable(functions, 'claimProcess');
+
+      try {
+        const result = await claimProcessFunction({
+          businessEmail: formData.businessEmail,
+          supervisorEmail: supervisorEmail,
+          companyId: company.id,
+          companyName: company.name,
+          contactPhone: formData.contactPhone,
+          displayName: formData.displayName || currentUser?.displayName
+        });
+        
+        const data = result.data as any;
+        
+        if (data.success) {
+          // Store tracking number in localStorage
+          localStorage.setItem('claimTrackingNumber', data.trackingNumber);
+          setTrackingNumber(data.trackingNumber);
+          
+          onSuccess(translations?.verificationEmailsSent || 
+            'Verification emails have been sent to both business and supervisor emails. A temporary password has been generated and included in the emails. Please check both inboxes to complete the verification process.');
+            
+          // Close the modal
+          onClose();
+        } else {
+          throw new Error(data.message || 'Failed to send verification emails');
+        }
+      } catch (error) {
+        console.error('Error calling claimProcess function:', error);
+        onError(translations?.failedToSendVerification || 'Failed to send verification emails. Please try again later.');
       }
-      
-      // Send OTP email
-      const sent = await sendOTPEmail(formData.businessEmail, otp);
-      if (!sent) {
-        onError(translations?.failedToSendVerification || 'Failed to send verification code');
-        return;
-      }
-      
-      // Move to OTP verification step
-      setCurrentStep(4);
-      onSuccess(`OTP sent to ${formData.businessEmail}. Please check your inbox for the verification code.`);
-      
+
     } catch (error) {
       console.error("Error sending OTP:", error);
       onError(translations?.failedToSendVerification || 'Failed to send verification code');
@@ -612,6 +641,8 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             companyDomain={companyDomain}
             handleDomainChoice={handleDomainChoice}
             translations={translations}
+            supervisorEmail={supervisorEmail}
+            setSupervisorEmail={setSupervisorEmail}
           />
         )}
         
