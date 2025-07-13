@@ -31,10 +31,15 @@ export interface ClaimRequest {
   trackingNumber?: string;
   requesterId?: string; // User ID if logged in
   requesterName?: string; // User name if logged in
+  userId?: string; // Business email user ID
+  supervisorId?: string; // Supervisor email user ID
   contactPhone: string;
   businessEmail: string;
   supervisorEmail: string;
+  businessEmailVerified?: boolean;
+  supervisorEmailVerified?: boolean;
   password?: string; // Password entered by the user during claim process
+  supervisorPassword?: string; // Password for supervisor account
   status: 'pending' | 'approved' | 'rejected';
   domainVerified?: boolean;
   notes?: string; // Admin notes about the request

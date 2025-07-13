@@ -31,9 +31,11 @@ const ClaimRequests: React.FC = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [refreshLoading, setRefreshLoading] = useState<string | null>(null);
 
   // Initialize the cloud function for creating users
   const createUserFunction = httpsCallable(functions, 'createUser');
+  const checkEmailVerificationFunction = httpsCallable(functions, 'checkBusinessEmailVerification');
 
   // Load claim requests from Firestore
   const loadClaimRequests = async () => {
@@ -174,6 +176,49 @@ const ClaimRequests: React.FC = () => {
       setTimeout(() => setError(''), 5000);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // Handle refresh verification status
+  const handleRefreshVerification = async (requestId: string) => {
+    const request = claimRequests.find(r => r.id === requestId);
+    if (!request) return;
+
+    try {
+      setRefreshLoading(requestId);
+      
+      // Check verification status for both business and supervisor emails
+      const businessResult = await checkEmailVerificationFunction({
+        userId: request.userId,
+        claimRequestId: requestId,
+        companyId: request.companyId,
+        isSupervisor: false
+      });
+
+      const supervisorResult = await checkEmailVerificationFunction({
+        userId: request.supervisorId,
+        claimRequestId: requestId,
+        companyId: request.companyId,
+        isSupervisor: true
+      });
+
+      const businessData = businessResult.data as any;
+      const supervisorData = supervisorResult.data as any;
+
+      if (businessData?.bothVerified || supervisorData?.bothVerified) {
+        showSuccessToast(translations?.claimProcessedSuccess || 'Company claim processed successfully!');
+      } else {
+        showSuccessToast(translations?.verificationStatusUpdated || 'Verification status updated successfully');
+      }
+
+      // Reload claim requests to show updated status
+      await loadClaimRequests();
+      
+    } catch (error: any) {
+      console.error('Error refreshing verification status:', error);
+      showErrorToast(error.message || (translations?.failedToRefreshStatus || 'Failed to refresh verification status'));
+    } finally {
+      setRefreshLoading(null);
     }
   };
 
