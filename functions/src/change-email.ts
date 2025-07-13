@@ -22,6 +22,31 @@ export const changeEmail = functions.https.onCall(async (data, context) => {
       );
     }
     
+    // Check if the new email is already in use
+    try {
+      // Get user by email to check if the email already exists
+      const userRecord = await admin.auth().getUserByEmail(newEmail);
+      
+      // If the code executes to this point, it means the email exists
+      // But check if it's the current user's email
+      if (userRecord.uid !== userId) {
+        throw new functions.https.HttpsError(
+          'already-exists',
+          'البريد الإلكتروني مستخدم بالفعل من قبل مستخدم آخر'
+        );
+      }
+    } catch (error: any) {
+      // If error code is auth/user-not-found, it means the email is not in use
+      if (error.code !== 'auth/user-not-found') {
+        // If it's a different error, rethrow it
+        if (error instanceof functions.https.HttpsError) {
+          throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'حدث خطأ أثناء التحقق من البريد الإلكتروني');
+      }
+      // If email is not found, that's good - continue with email change
+    }
+    
     const userId = context.auth.uid;
     
     // Update user email in Firebase Auth
