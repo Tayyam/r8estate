@@ -82,6 +82,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
   };
 
   // Hide content if review is hidden
+  if (review.hidden) {
     // Don't render anything for non-admin users when a review is hidden
     if (!currentUser || currentUser.role !== 'admin') {
       return null;
@@ -99,7 +100,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
           </span>
         </div>
         <div className="filter blur-[2px] pointer-events-none">
-          </p>
+          <p></p>
         </div>
       </div>
     );
