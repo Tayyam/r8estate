@@ -44,6 +44,8 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const [formData, setFormData] = useState({
     contactPhone: '',
     businessEmail: '',
+    displayName: '',
+    password: ''
   });
   
   // OTP and verification state
@@ -159,282 +161,32 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   };
 
   // Send OTP email
-  const sendOTPEmail = async (email: string, otp: string) => {
+  const handleSendOTP = async () => {
     try {
-      // Send OTP email via function
-      const sent = await sendOTPVerificationEmail(email, otp, company.name);
+      setOtpSending(true);
       
+      // Generate OTP
+      const otp = generateOTP();
+      
+      // Store OTP in Firestore
+      const stored = await storeOTP(formData.businessEmail, otp);
+      if (!stored) {
+        throw new Error('Failed to store OTP');
+      }
+      
+      // Send OTP email
+      const sent = await sendOTPEmail(formData.businessEmail, otp);
       if (!sent) {
-        console.error("Failed to send OTP email");
-        return false;
+        throw new Error('Failed to send OTP email');
       }
       
-      return sent;
-    } catch (error) {
-      console.error("Error sending OTP email:", error);
-      return false;
-    }
-          onSuccess(translations?.verificationEmailsSent || 
-            'Verification emails have been sent to both business and supervisor emails. A temporary password has been generated and included in the emails. Please check both inboxes to complete the verification process.');
-            
-          // Close the modal
-          onClose();
-        } else {
-          throw new Error(data.message || 'Failed to send verification emails');
-        }
-      } catch (error) {
-        console.error('Error calling claimProcess function:', error);
-        onError(translations?.failedToSendVerification || 'Failed to send verification emails. Please try again later.');
-      }
-
+      setCurrentStep(4);
+      onSuccess(translations?.otpSent || 'Verification code sent successfully');
     } catch (error) {
       console.error("Error sending OTP:", error);
-      onError(translations?.failedToSendVerification || 'Failed to send verification code');
+      onError(translations?.failedToSendOTP || 'Failed to send verification code');
     } finally {
       setOtpSending(false);
-    }
-  };
-
-  // Handle OTP verification
-  const handleVerifyOTP = async () => {
-    if (otpCode.length !== 6) {
-      onError('Please enter a valid 6-digit verification code');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      
-      // Verify OTP
-      const isValid = await verifyOTP(formData.businessEmail, otpCode);
-      if (!isValid) {
-        onError('Invalid or expired verification code');
-        return;
-      }
-      
-      // Mark OTP as verified
-      setOtpVerified(true);
-      
-      // Create user account with stored info
-      try {
-        // Create user account
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.businessEmail, formData.password);
-        const user = userCredential.user;
-      if (currentStep === 2) {
-        // Update user profile
-        await updateProfile(user, {
-          displayName: formData.displayName,
-          photoURL: photoURL || undefined
-        });
-        
-        // Create user document in Firestore
-        await setDoc(doc(db, 'users', user.uid), {
-          requesterName: currentUser?.displayName || 'Guest User',
-          displayName: formData.displayName,
-          email: formData.businessEmail,
-          companyId: company.id, // Link to the company
-          isEmailVerified: user.emailVerified,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-
-        
-        // Mark the company as claimed
-        await updateDoc(doc(db, 'companies', company.id), {
-          claimed: true,
-          email: formData.businessEmail,
-          updatedAt: serverTimestamp(),
-          claimedByName: formData.displayName // Add name of the user who claimed
-        });
-        
-        // Skip creating a claim request document for domain-verified claims
-        // since they're already verified through the domain email
-        
-        onSuccess(translations?.claimRequestSubmitted || 'Claim request submitted successfully! We will review your request and contact you soon.');
-        onClose();
-      } catch (error: any) {
-        console.error('Error creating account:', error);
-        if (error.code === 'auth/email-already-in-use') {
-          onError(translations?.emailAlreadyInUse || 'This email is already in use by another account');
-        } else {
-          onError(translations?.failedToSubmitRequest || 'Failed to submit claim request. Please try again later.');
-        }
-      }
-      
-    } catch (error) {
-      console.error("Error verifying OTP:", error);
-      onError('Failed to verify code');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Handle non-verification claim request
-  const handleNonVerificationClaim = async () => {
-    try {
-      if (!formData.contactPhone || !formData.businessEmail) {
-        onError(translations?.fillAllFields || 'Please fill in all required fields');
-        return;
-      }
-      
-      setLoading(true);
-
-      // Generate tracking number
-      const trackingNum = generateTrackingNumber();
-      setTrackingNumber(trackingNum);
-      
-      // Store in localStorage
-      localStorage.setItem('claimTrackingNumber', trackingNum);
-      
-      const claimRequestRef = await addDoc(collection(db, 'claimRequests'), {
-        companyId: company.id,
-        companyName: company.name,
-        requesterId: currentUser?.uid || null,
-        requesterName: currentUser?.displayName || 'Guest User',
-        contactPhone: formData.contactPhone,
-        businessEmail: formData.businessEmail,
-        status: 'pending',
-        trackingNumber: trackingNum,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-      
-      // Notify admins about the new claim request
-      await notifyAdminsOfNewClaimRequest(claimRequestRef.id, company.name);
-      
-      onSuccess(
-        (translations?.claimRequestSubmittedWithTracking || 
-         `Claim request submitted successfully! Your tracking number is: ${trackingNum}. Please save this number to check your request status later.`)
-      );
-      onClose();
-    } catch (error) {
-      console.error('Error submitting claim request:', error);
-      onError(translations?.failedToSubmitRequest || 'Failed to submit claim request. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Handle form step navigation
-  const handleNextStep = async () => {
-    if (currentStep === 2) {
-      // For credentials step - validate and move to profile
-      if (!formData.businessEmail) {
-        onError(translations?.emailRequired || 'Email address is required');
-        return;
-      }
-      
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.businessEmail)) {
-        onError(translations?.invalidEmailFormat || 'Please enter a valid email address');
-        return;
-      }
-      
-      // Validate domain if applicable
-      if (hasDomainEmail && !validateEmailDomain(formData.businessEmail)) {
-        onError(translations?.businessEmailDomainMismatch || 'Business email must match the company domain: ' + companyDomain);
-        return;
-      }
-      
-      setCurrentStep(3);
-    } else if (currentStep === 3) {
-      // For profile step - validate, then go to OTP or submit claim
-      if (!formData.displayName.trim()) {
-        onError(translations?.nameRequired || 'Name is required');
-        return;
-      }
-      
-      try {
-        setLoading(true);
-                
-        if (hasDomainEmail) {
-          // Send OTP for domain verification
-          await handleSendOTP();
-        } else {
-          // Submit non-verification claim
-          await handleNonVerificationClaim();
-        }
-      } catch (error) {
-        console.error('Error processing request:', error);
-        onError(translations?.failedToProcess || 'Failed to process your request. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  // Handle OTP for non-logged in users
-  const handleOTPVerificationForGuest = async () => {
-    if (otpCode.length !== 6) {
-      onError('Please enter a valid 6-digit verification code');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      
-      // Verify OTP
-      const isValid = await verifyOTP(formData.businessEmail, otpCode);
-      if (!isValid) {
-        onError('Invalid or expired verification code');
-        return;
-      }
-
-      // Generate tracking number for domain verified requests too
-      const trackingNum = generateTrackingNumber();
-      setTrackingNumber(trackingNum);
-      
-      // Store in localStorage 
-      localStorage.setItem('claimTrackingNumber', trackingNum);
-      
-      // Mark OTP as verified
-      setOtpVerified(true);
-      
-      // Create a claim request for admin review
-      const claimRequestRef = await addDoc(collection(db, 'claimRequests'), {
-        companyId: company.id,
-        companyName: company.name,
-        requesterId: currentUser?.uid || null,
-        requesterName: formData.displayName || 'Guest User',
-        contactPhone: formData.contactPhone || '',
-        businessEmail: formData.businessEmail,
-        displayName: formData.displayName,
-        password: formData.password, // Save password for domain-verified claims too
-        status: 'pending',
-        domainVerified: true, // Mark as domain verified
-        createdAt: serverTimestamp(),
-        trackingNumber: trackingNum,
-        updatedAt: serverTimestamp()
-      });
-      
-      // Notify admins about the new claim request
-      await notifyAdminsOfNewClaimRequest(claimRequestRef.id, company.name);
-      
-      onSuccess(
-        (translations?.claimRequestSubmittedWithTracking || 
-         `Claim request submitted successfully! Your tracking number is: ${trackingNum}. Please save this number to check your request status later.`)
-      );
-      onClose();
-    } catch (error) {
-      console.error("Error processing domain-verified request:", error);
-      onError('Failed to submit your request. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Handle backdrop click to close modal
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      if (loading || otpSending) {
-        // Prevent closing if loading
-        return;
-      }
-      const shouldClose = confirm(translations?.confirmCloseClaim || 'Are you sure you want to close? Your progress will not be saved.');
-      if (shouldClose) {
-        onClose();
-      }
     }
   };
 
