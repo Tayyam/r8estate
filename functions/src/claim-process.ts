@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { Resend } from 'resend';
+import { Request, Response } from 'express';
 
 const RESEND_API_KEY = 're_ZfaXVLi3_94WMKpGCx5XhSkKcQNFsX9nw';
 const resend = new Resend(RESEND_API_KEY);
@@ -83,12 +84,7 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
     
     // Generate verification links for both emails
     const businessActionCodeSettings = {
-      url: 'https://test.r8estate.com/verification',
-      handleCodeInApp: true,
-    };
-    
-    const supervisorActionCodeSettings = {
-      url: 'https://test.r8estate.com/verification',
+      url: 'https://test.r8estate.com',
       handleCodeInApp: true,
     };
     
@@ -226,7 +222,7 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
         message: 'Verification emails sent successfully',
         trackingNumber
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in claim process:', error);
       
       // Clean up if user was created but emails failed
@@ -244,7 +240,7 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
         error
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in claimProcess function:', error);
     throw new functions.https.HttpsError(
       'internal',
@@ -255,40 +251,45 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
 });
 
 // Verify supervisor email function
-export const verifySupervisor = functions.https.onRequest(async (req, res) => {
+export const verifySupervisor = functions.https.onRequest(async (req: Request, res: Response): Promise<void> => {
   try {
     const { token, companyId } = req.query;
     
     if (!token || !companyId) {
-      return res.status(400).send('Missing required parameters');
+      res.status(400).send('Missing required parameters');
+      return;
     }
     
     // Get token document
     const tokenDoc = await admin.firestore().collection('verificationTokens').doc(String(token)).get();
     
     if (!tokenDoc.exists) {
-      return res.status(404).send('Invalid or expired verification token');
+      res.status(404).send('Invalid or expired verification token');
+      return;
     }
     
     const tokenData = tokenDoc.data();
     
     // Check if token is expired
-    if (tokenData.expiresAt.toDate() < new Date()) {
-      return res.status(400).send('Verification token has expired');
+    if (tokenData?.expiresAt.toDate() < new Date()) {
+      res.status(400).send('Verification token has expired');
+      return;
     }
     
     // Check if token is already used
-    if (tokenData.used) {
-      return res.status(400).send('Verification token has already been used');
+    if (tokenData?.used) {
+      res.status(400).send('Verification token has already been used');
+      return;
     }
     
     // Find claim request
-    const claimRequestId = tokenData.claimRequestId;
+    const claimRequestId = tokenData?.claimRequestId;
     const claimRequestRef = admin.firestore().collection('claimRequests').doc(claimRequestId);
     const claimRequestDoc = await claimRequestRef.get();
     
     if (!claimRequestDoc.exists) {
-      return res.status(404).send('Claim request not found');
+      res.status(404).send('Claim request not found');
+      return;
     }
     
     const claimRequestData = claimRequestDoc.data();
@@ -306,13 +307,14 @@ export const verifySupervisor = functions.https.onRequest(async (req, res) => {
     });
     
     // Check if both emails are now verified
-    if (claimRequestData.businessEmailVerified) {
+    if (claimRequestData?.businessEmailVerified) {
       // Both emails are verified, we can now claim the company
       
       // Get user document
       const userDoc = await admin.firestore().collection('users').doc(claimRequestData.userId).get();
       
       if (userDoc.exists) {
+        const userData = userDoc.data();
         // Update user to company role
         await userDoc.ref.update({
           role: 'company',
@@ -323,7 +325,7 @@ export const verifySupervisor = functions.https.onRequest(async (req, res) => {
         // Mark company as claimed
         await admin.firestore().collection('companies').doc(String(companyId)).update({
           claimed: true,
-          claimedByName: userDoc.data().displayName,
+          claimedByName: userData?.displayName || 'Unknown User',
           updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
         
@@ -386,7 +388,7 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
     const updatedClaimRequest = await claimRequestRef.get();
     const claimData = updatedClaimRequest.data();
     
-    if (claimData.supervisorEmailVerified) {
+    if (claimData?.supervisorEmailVerified) {
       // Both emails are verified, update user role and claim company
       await admin.firestore().collection('users').doc(userId).update({
         role: 'company',
@@ -420,7 +422,7 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
       bothVerified: false
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error checking business email verification:', error);
     throw new functions.https.HttpsError(
       'internal',
