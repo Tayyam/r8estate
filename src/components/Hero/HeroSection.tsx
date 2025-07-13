@@ -433,8 +433,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                           {/* Rating */}
                           {company.totalRating > 0 && (
                             <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                   className={`w-3 h-3 ${i < Math.round(company.totalRating || company.rating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                              <span className="font-medium">{company.totalRating.toFixed(1)}</span>
+                              <div className="flex items-center px-2 py-1 bg-green-500 text-white rounded text-xs font-bold">
+                                <Star className="h-3 w-3 fill-current mr-1 rtl:ml-1 rtl:mr-0" />
+                                <span>{company.totalRating.toFixed(1)}</span>
+                              </div>
                               {company.totalReviews > 0 && (
                                 <span className="text-xs text-gray-500">
                                   ({formatReviewCount(company.totalReviews)})
@@ -446,10 +448,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                       </button>
                     ))}
                   </div>
-                          <div className="flex items-center px-2 py-1 bg-green-500 text-white rounded text-xs font-bold">
-                            <Star className="h-3 w-3 fill-current mr-1 rtl:ml-1 rtl:mr-0" />
-                            <span>{company.totalRating.toFixed(1)}</span>
-                          </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Share Experience Button */}
