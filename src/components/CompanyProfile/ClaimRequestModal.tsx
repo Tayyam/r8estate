@@ -8,7 +8,6 @@ import { CompanyProfile } from '../../types/companyProfile';
 import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '../../config/firebase';
 
 interface ClaimRequestModalProps {
   company: CompanyProfile;
