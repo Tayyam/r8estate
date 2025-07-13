@@ -404,10 +404,9 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
     } else {
       // It's a business email verification
       await claimRequestRef.update({
-        businessEmailVerified: true,
+        businessEmailVerified: true, 
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      };
-      )
+      });
     }
     
     // Get claim request
@@ -420,15 +419,6 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
       // Both emails are verified, update user role and claim company
       if (claimData.userId) {
         await admin.firestore().collection('users').doc(claimData.userId).update({
-          role: 'company',
-          companyId: companyId,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-      }
-      
-      // Update supervisor role as well
-      if (claimData.supervisorId) {
-        await admin.firestore().collection('users').doc(claimData.supervisorId).update({
           role: 'company',
           companyId: companyId,
           updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -476,6 +466,15 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
       businessVerified: claimData?.businessEmailVerified || false,
       supervisorVerified: claimData?.supervisorEmailVerified || false
     };
+  } catch (error: any) {
+    console.error('Error checking business email verification:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      error.message || 'Failed to check business email verification',
+      error
+    );
+  }
+});
     
   } catch (error: any) {
     console.error('Error checking business email verification:', error);
