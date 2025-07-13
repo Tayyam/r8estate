@@ -1,8 +1,8 @@
-import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { ClaimRequest } from '../../types/company';
+import { ClaimRequest, Company } from '../../types/company';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase';
 import React, { useState, useEffect } from 'react';
@@ -14,7 +14,11 @@ import {
   AlertCircle, 
   Trash2,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  Copy,
+  CheckCircle,
+  XCircle,
+  User
 } from 'lucide-react';
 
 // ClaimRequests component for admin settings
@@ -33,6 +37,8 @@ const ClaimRequests: React.FC = () => {
   const [accountPassword, setAccountPassword] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState<string | null>(null);
+  const [companyDetails, setCompanyDetails] = useState<Company | null>(null);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,6 +46,20 @@ const ClaimRequests: React.FC = () => {
 
   // Initialize the cloud function for creating users
   const createUserFunction = httpsCallable(functions, 'createUser');
+  
+  // Copy text to clipboard
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        showSuccessToast(
+          translations?.copied || 'Copied!',
+          translations?.textCopiedToClipboard || 'Text copied to clipboard'
+        );
+      })
+      .catch((err) => {
+        console.error('Could not copy text: ', err);
+      });
+  };
   
   // Check if email exists function
   const checkIfEmailExists = async (email: string): Promise<boolean> => {
@@ -323,6 +343,35 @@ const ClaimRequests: React.FC = () => {
     }
   };
 
+  // Toggle details panel
+  const toggleDetails = async (requestId: string) => {
+    if (showDetails === requestId) {
+      setShowDetails(null);
+      return;
+    }
+    
+    setShowDetails(requestId);
+    
+    // Get the selected request
+    const request = claimRequests.find(r => r.id === requestId);
+    if (request) {
+      try {
+        // Fetch company details
+        const companyDoc = await getDoc(doc(db, 'companies', request.companyId));
+        if (companyDoc.exists()) {
+          setCompanyDetails({
+            id: companyDoc.id,
+            ...companyDoc.data(),
+            createdAt: companyDoc.data().createdAt?.toDate() || new Date(),
+            updatedAt: companyDoc.data().updatedAt?.toDate() || new Date()
+          } as Company);
+        }
+      } catch (error) {
+        console.error('Error fetching company details:', error);
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
       {/* Section Header */}
@@ -338,8 +387,14 @@ const ClaimRequests: React.FC = () => {
                 {loading ? (
                   translations?.loadingRequests || 'Loading requests...'
                 ) : (
-                  translations?.totalRequests?.replace('{count}', claimRequests.length.toString()) || 
-                  `Total requests: ${claimRequests.length}`
+                  <>
+                    {translations?.totalRequests?.replace('{count}', claimRequests.length.toString()) || 
+                    `Total requests: ${claimRequests.length}`}
+                    {' | '}
+                    <span className="text-yellow-600">
+                      {claimRequests.filter(r => r.status === 'pending').length} Pending
+                    </span>
+                  </>
                 )}
               </p>
             </div>
@@ -383,6 +438,7 @@ const ClaimRequests: React.FC = () => {
           </div>
           
           <div className="w-full sm:w-48">
+            <label className="block text-xs text-gray-500 mb-1">Status</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'approved' | 'rejected')}
@@ -427,13 +483,10 @@ const ClaimRequests: React.FC = () => {
                   {translations?.company || 'Company'}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {translations?.trackingNumber || 'Tracking Number'}
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {translations?.requester || 'Requester'}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {translations?.contact || 'Contact'}
+                  {translations?.verification || 'Verification'}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {translations?.status || 'Status'}
@@ -451,34 +504,68 @@ const ClaimRequests: React.FC = () => {
                 <tr key={request.id} className="hover:bg-gray-50">
                   {/* Company */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-gray-200">
-                        <Building2 className="h-5 w-5 text-gray-500" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-gray-200">
+                          <Building2 className="h-5 w-5 text-gray-500" />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{request.companyName}</div>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{request.companyName}</div>
-                      </div>
+                      
+                      {/* View Details Button */}
+                      <button
+                        onClick={() => toggleDetails(request.id)}
+                        className={`text-xs py-1 px-2 rounded ${
+                          showDetails === request.id 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {showDetails === request.id ? 'Hide Details' : 'View Details'}
+                      </button>
                     </div>
                   </td>
-                  
-                  {/* Tracking Number */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                      {request.trackingNumber || 'N/A'}
-                    </span>
-                  </td>
-                  
+                    
                   {/* Requester */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{request.requesterName || 'Guest User'}</div>
+                    <div className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded inline-block mt-1">
+                      #{request.trackingNumber}
+                    </div>
                   </td>
                   
-                  {/* Contact */}
+                  {/* Verification */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{request.businessEmail}</div>
-                    <div className="text-sm text-gray-500">{request.contactPhone}</div>
-                    <div className="text-sm text-gray-500">
-                      {translations?.password || 'Password'}: {request.password || translations?.notAvailable || 'N/A'}
+                    {/* Business Email Verification */}
+                    <div className="flex items-center mb-2">
+                      <div className={`inline-flex items-center mr-2 text-xs px-2 py-0.5 rounded-full ${
+                        request.businessEmailVerified 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {request.businessEmailVerified 
+                          ? <CheckCircle className="h-3 w-3 mr-1" />
+                          : <XCircle className="h-3 w-3 mr-1" />
+                        }
+                        Business
+                      </div>
+                    </div>
+                    
+                    {/* Supervisor Email Verification */}
+                    <div className="flex items-center">
+                      <div className={`inline-flex items-center mr-2 text-xs px-2 py-0.5 rounded-full ${
+                        request.supervisorEmailVerified 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {request.supervisorEmailVerified 
+                          ? <CheckCircle className="h-3 w-3 mr-1" />
+                          : <XCircle className="h-3 w-3 mr-1" />
+                        }
+                        Supervisor
+                      </div>
                     </div>
                   </td>
                   
@@ -487,13 +574,13 @@ const ClaimRequests: React.FC = () => {
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${getStatusBadgeColor(request.status)}`}>
                       {getStatusTranslation(request.status)}
                     </span>
-                    {request.domainVerified && (
-                      <div className="text-sm text-gray-500">
+                    <div className="mt-1">
+                      {request.domainVerified && (
                         <span className="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-green-100 text-green-800">
                           {translations?.domainVerified || 'Domain Verified'}
                         </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </td>
                   
                   {/* Date */}
@@ -539,6 +626,191 @@ const ClaimRequests: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              
+              {/* Details Panel */}
+              {showDetails && (
+                <tr className="bg-gray-50">
+                  <td colSpan={7} className="px-6 py-4">
+                    <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        {/* Business Account Details */}
+                        <div>
+                          <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                            <User className="h-4 w-4 text-blue-600 mr-2" />
+                            Business Account Details
+                          </h3>
+                          
+                          <div className="space-y-3 text-sm">
+                            <div className="flex items-start">
+                              <div className="w-32 text-gray-500">Email:</div>
+                              <div className="text-gray-900 flex items-center">
+                                {claimRequests.find(r => r.id === showDetails)?.businessEmail}
+                                <button 
+                                  onClick={() => copyToClipboard(claimRequests.find(r => r.id === showDetails)?.businessEmail || '')}
+                                  className="ml-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                              <div className="w-32 text-gray-500">Password:</div>
+                              <div className="text-gray-900 flex items-center">
+                                {claimRequests.find(r => r.id === showDetails)?.password || 'N/A'}
+                                <button 
+                                  onClick={() => copyToClipboard(claimRequests.find(r => r.id === showDetails)?.password || '')}
+                                  className="ml-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                              <div className="w-32 text-gray-500">User ID:</div>
+                              <div className="text-gray-900 flex items-center">
+                                <span className="truncate max-w-xs">{claimRequests.find(r => r.id === showDetails)?.userId || 'N/A'}</span>
+                                <button 
+                                  onClick={() => copyToClipboard(claimRequests.find(r => r.id === showDetails)?.userId || '')}
+                                  className="ml-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                              <div className="w-32 text-gray-500">Verification:</div>
+                              <div className={`${
+                                claimRequests.find(r => r.id === showDetails)?.businessEmailVerified
+                                  ? 'text-green-600' 
+                                  : 'text-yellow-600'
+                              } flex items-center`}>
+                                {claimRequests.find(r => r.id === showDetails)?.businessEmailVerified
+                                  ? <><CheckCircle className="h-4 w-4 mr-1" /> Verified</>
+                                  : <><XCircle className="h-4 w-4 mr-1" /> Pending</>
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Supervisor Account Details */}
+                        <div>
+                          <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                            <User className="h-4 w-4 text-purple-600 mr-2" />
+                            Supervisor Account Details
+                          </h3>
+                          
+                          <div className="space-y-3 text-sm">
+                            <div className="flex items-start">
+                              <div className="w-32 text-gray-500">Email:</div>
+                              <div className="text-gray-900 flex items-center">
+                                {claimRequests.find(r => r.id === showDetails)?.supervisorEmail}
+                                <button 
+                                  onClick={() => copyToClipboard(claimRequests.find(r => r.id === showDetails)?.supervisorEmail || '')}
+                                  className="ml-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                              <div className="w-32 text-gray-500">Password:</div>
+                              <div className="text-gray-900 flex items-center">
+                                {claimRequests.find(r => r.id === showDetails)?.supervisorPassword || 'N/A'}
+                                <button 
+                                  onClick={() => copyToClipboard(claimRequests.find(r => r.id === showDetails)?.supervisorPassword || '')}
+                                  className="ml-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                              <div className="w-32 text-gray-500">User ID:</div>
+                              <div className="text-gray-900 flex items-center">
+                                <span className="truncate max-w-xs">{claimRequests.find(r => r.id === showDetails)?.supervisorId || 'N/A'}</span>
+                                <button 
+                                  onClick={() => copyToClipboard(claimRequests.find(r => r.id === showDetails)?.supervisorId || '')}
+                                  className="ml-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                              <div className="w-32 text-gray-500">Verification:</div>
+                              <div className={`${
+                                claimRequests.find(r => r.id === showDetails)?.supervisorEmailVerified
+                                  ? 'text-green-600' 
+                                  : 'text-yellow-600'
+                              } flex items-center`}>
+                                {claimRequests.find(r => r.id === showDetails)?.supervisorEmailVerified
+                                  ? <><CheckCircle className="h-4 w-4 mr-1" /> Verified</>
+                                  : <><XCircle className="h-4 w-4 mr-1" /> Pending</>
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Additional Info */}
+                        <div className="md:col-span-2">
+                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-2">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Additional Information</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <span className="text-gray-600">Tracking Number:</span>
+                                <span className="ml-2 font-medium">{claimRequests.find(r => r.id === showDetails)?.trackingNumber}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Domain Verified:</span>
+                                <span className={`ml-2 font-medium ${
+                                  claimRequests.find(r => r.id === showDetails)?.domainVerified 
+                                    ? 'text-green-600' 
+                                    : 'text-red-600'
+                                }`}>
+                                  {claimRequests.find(r => r.id === showDetails)?.domainVerified 
+                                    ? 'Yes' 
+                                    : 'No'
+                                  }
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Contact Phone:</span>
+                                <span className="ml-2 font-medium">
+                                  {claimRequests.find(r => r.id === showDetails)?.contactPhone || 'Not provided'}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Created:</span>
+                                <span className="ml-2 font-medium">
+                                  {claimRequests.find(r => r.id === showDetails)?.createdAt.toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-end mt-4">
+                            <button 
+                              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                              onClick={() => setShowDetails(null)}
+                            >
+                              Close Details
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         )}
@@ -631,47 +903,99 @@ const ClaimRequests: React.FC = () => {
                `Creating an account for ${selectedRequest.companyName}`}
             </p>
             
-            {/* Email Input - Editable */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.email || 'Email'}
-              </label>
-              <input
-                type="text"
-                value={selectedRequest.businessEmail}
-                onChange={(e) => setSelectedRequest({
-                  ...selectedRequest,
-                  businessEmail: e.target.value
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+            <div className="overflow-y-auto max-h-[60vh] p-4">
+              {/* Email Input - Editable */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+                  {translations?.email || 'Email'}
+                  <span className="text-xs text-blue-600">Business Email</span>
+                </label>
+                <input
+                  type="text"
+                  value={selectedRequest.businessEmail}
+                  onChange={(e) => setSelectedRequest({
+                    ...selectedRequest,
+                    businessEmail: e.target.value
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              {/* Password Field */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {translations?.setPassword || 'Password'} 
+                  {accountPassword !== selectedRequest.password && selectedRequest.password && 
+                   <span className="text-xs text-gray-500 ml-2">
+                     ({translations?.originalPasswordAvailable || 'Original password available'})
+                   </span>
+                  }
+                </label>
+                <input
+                  type="text"
+                  value={accountPassword || selectedRequest?.password || ''}
+                  onChange={(e) => setAccountPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={translations?.enterAccountPassword || 'Enter account password (min 6 characters)'}
+                />
+                {(accountPassword || selectedRequest.password) && (accountPassword?.length < 6 && !selectedRequest.password) && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {translations?.passwordTooShort || 'Password must be at least 6 characters long'}
+                  </p>
+                )}
+              </div>
+              
+              {/* Show Supervisor Details */}
+              <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                  <User className="h-4 w-4 text-purple-600 mr-2" />
+                  Supervisor Details
+                </h4>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {translations?.supervisorEmail || 'Supervisor Email'}
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={selectedRequest?.supervisorEmail || ''}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                  />
+                </div>
+                
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {translations?.supervisorPassword || 'Supervisor Password'}
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={selectedRequest?.supervisorPassword || ''}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                  />
+                </div>
+                
+                <div className="text-xs text-gray-500 mb-2">
+                  {translations?.supervisorDetailsExplanation || 'The supervisor will use these credentials after verification to access the company account.'}
+                </div>
+                
+                <div className="flex mt-2">
+                  <div className={`px-2 py-1 rounded text-xs ${
+                    selectedRequest?.supervisorEmailVerified 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  } flex items-center`}>
+                    {selectedRequest?.supervisorEmailVerified
+                      ? <><CheckCircle className="h-3 w-3 mr-1" /> Verified</>
+                      : <><XCircle className="h-3 w-3 mr-1" /> Pending Verification</>
+                    }
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            {/* Password Field */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.setPassword || 'Password'} 
-                {accountPassword !== selectedRequest.password && selectedRequest.password && 
-                 <span className="text-xs text-gray-500 ml-2">
-                   ({translations?.originalPasswordAvailable || 'Original password available'})
-                 </span>
-                }
-              </label>
-              <input
-                type="text"
-                value={accountPassword || selectedRequest.password || ''}
-                onChange={(e) => setAccountPassword(e.target.value)} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={translations?.enterAccountPassword || 'Enter account password (min 6 characters)'}
-              />
-              {(accountPassword || selectedRequest.password) && (accountPassword?.length < 6 && !selectedRequest.password) && (
-                <p className="text-xs text-red-500 mt-1">
-                  {translations?.passwordTooShort || 'Password must be at least 6 characters long'}
-                </p>
-              )}
-            </div>
-            
-            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
+
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
               <button
                 onClick={handleCreateAccount}
                 disabled={actionLoading === selectedRequest.id}
