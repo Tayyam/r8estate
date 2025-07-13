@@ -639,8 +639,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             companyDomain={companyDomain}
             handleDomainChoice={handleDomainChoice}
             translations={translations}
-            supervisorEmail={supervisorEmail}
-            setSupervisorEmail={setSupervisorEmail}
           />
         )}
         
@@ -650,6 +648,8 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             formData={formData}
             hasDomainEmail={hasDomainEmail}
             companyDomain={companyDomain}
+            supervisorEmail={supervisorEmail}
+            setSupervisorEmail={setSupervisorEmail}
             handleInputChange={handleInputChange}
             validateEmailDomain={validateEmailDomain}
             handleNextStep={handleNextStep}

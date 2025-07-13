@@ -1,17 +1,17 @@
 import React from 'react';
-import { Mail, Lock, Phone, Building2, AlertCircle } from 'lucide-react';
+import { Mail, Phone, Building2, AlertCircle } from 'lucide-react';
 import { CompanyProfile } from '../../../types/companyProfile';
 
 interface Step2CredentialsProps {
   company: CompanyProfile;
   formData: {
     businessEmail: string;
-    password: string;
-    confirmPassword: string;
     contactPhone: string;
   };
   hasDomainEmail: boolean | null;
   companyDomain: string;
+  supervisorEmail: string;
+  setSupervisorEmail: (email: string) => void;
   handleInputChange: (field: string, value: string) => void;
   validateEmailDomain: (email: string) => boolean;
   handleNextStep: () => void;
@@ -24,6 +24,8 @@ const Step2Credentials: React.FC<Step2CredentialsProps> = ({
   formData,
   hasDomainEmail,
   companyDomain,
+  supervisorEmail,
+  setSupervisorEmail,
   handleInputChange,
   validateEmailDomain,
   handleNextStep,
@@ -85,43 +87,26 @@ const Step2Credentials: React.FC<Step2CredentialsProps> = ({
           )}
         </div>
         
-        {/* Password Field */}
+        {/* Supervisor Email Field */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            {translations?.password || 'Password'} *
+          <label htmlFor="supervisorEmail" className="block text-sm font-medium text-gray-700 mb-1">
+            {translations?.supervisorEmail || 'Supervisor Email'} *
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
-              id="password"
-              type="password"
+              id="supervisorEmail"
+              type="email"
               required
-              value={formData.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
+              value={supervisorEmail}
+              onChange={(e) => setSupervisorEmail(e.target.value)}
+              placeholder={translations?.enterSupervisorEmail || 'Enter supervisor email address'}
               className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder={translations?.enterPassword || 'Enter password (min. 6 characters)'}
-              minLength={6}
             />
           </div>
-        </div>
-        
-        {/* Confirm Password Field */}
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-            {translations?.confirmPassword || 'Confirm Password'} *
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              value={formData.confirmPassword}
-              onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-              className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder={translations?.confirmPassword || 'Confirm password'}
-            />
-          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {translations?.supervisorEmailHelp || "Your supervisor's email will be used to verify your company claim."}
+          </p>
         </div>
         
         {/* Domain Instructions for domain email users */}

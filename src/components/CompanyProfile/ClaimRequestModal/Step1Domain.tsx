@@ -5,16 +5,12 @@ interface Step1DomainProps {
   companyDomain: string;
   handleDomainChoice: (hasDomain: boolean) => void;
   translations: any;
-  supervisorEmail: string;
-  setSupervisorEmail: (email: string) => void;
 }
 
 const Step1Domain: React.FC<Step1DomainProps> = ({
   companyDomain,
   handleDomainChoice,
   translations,
-  supervisorEmail,
-  setSupervisorEmail
 }) => {
   return (
     <div className="p-6 space-y-6">
@@ -43,23 +39,6 @@ const Step1Domain: React.FC<Step1DomainProps> = ({
                 {translations?.yesHaveDomainEmail || 'Yes, I have an email with'} @{companyDomain}
               </span>
             </button>
-            
-            <div>
-              <label htmlFor="supervisorEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.supervisorEmail || 'Supervisor Email'} *
-              </label>
-              <input
-                id="supervisorEmail"
-                type="email"
-                value={supervisorEmail}
-                onChange={(e) => setSupervisorEmail(e.target.value)}
-                placeholder={translations?.enterSupervisorEmail || 'Enter supervisor email address'}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                {translations?.supervisorEmailHelp || "Your supervisor's email will be used to verify your company claim."}
-              </p>
-            </div>
           </div>
         )}
         
