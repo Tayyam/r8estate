@@ -86,7 +86,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
         />
 
         {/* Verification Badge - for claimed companies */}
-        {isClaimed && !isOwnerOrAdmin && (
+        {isClaimed && (
           <div className="bg-white rounded-2xl shadow-md p-6 border border-green-200">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
