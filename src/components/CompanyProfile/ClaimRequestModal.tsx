@@ -35,15 +35,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   
   // Domain-related state
   const [companyDomain, setCompanyDomain] = useState('');
-  const [hasDomainEmail, setHasDomainEmail] = useState<boolean | null>(() => {
-    // Try to get saved state from localStorage
-    try {
-      const saved = localStorage.getItem(`claimProgress_${company.id}_hasDomainEmail`);
-      return saved ? JSON.parse(saved) : null;
-    } catch (e) {
-      return null;
-    }
-  });
+  const [hasDomainEmail, setHasDomainEmail] = useState<boolean | null>(null);
   
   // Form and verification state
   const [formData, setFormData] = useState({
@@ -67,15 +59,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Step selection (1: Domain choice, 2: Basic info, 3: Profile info, 4: OTP Verification)
-  const [currentStep, setCurrentStep] = useState(() => {
-    // Try to get saved step from localStorage
-    try {
-      const saved = localStorage.getItem(`claimProgress_${company.id}_currentStep`);
-      return saved ? parseInt(saved) : 1;
-    } catch (e) {
-      return 1;
-    }
-  });
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Extract domain from website
   useEffect(() => {
@@ -90,48 +74,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     }
   }, [company.website]);
 
-  // Load saved form data
-  useEffect(() => {
-    try {
-      const savedData = localStorage.getItem(`claimProgress_${company.id}_formData`);
-      if (savedData) {
-        setFormData(JSON.parse(savedData));
-      }
-      
-      const savedOTP = localStorage.getItem(`claimProgress_${company.id}_otpCode`);
-      if (savedOTP) {
-        setOtpCode(savedOTP);
-      }
-      
-      const savedOTPVerified = localStorage.getItem(`claimProgress_${company.id}_otpVerified`);
-      if (savedOTPVerified) {
-        setOtpVerified(JSON.parse(savedOTPVerified));
-      }
-      
-      const savedPhotoPreview = localStorage.getItem(`claimProgress_${company.id}_photoPreview`);
-      if (savedPhotoPreview) {
-        setPhotoPreview(savedPhotoPreview);
-      }
-    } catch (e) {
-      console.error("Error loading saved progress:", e);
-    }
-  }, [company.id]);
-
-  // Save progress when state changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(`claimProgress_${company.id}_hasDomainEmail`, JSON.stringify(hasDomainEmail));
-      localStorage.setItem(`claimProgress_${company.id}_currentStep`, currentStep.toString());
-      localStorage.setItem(`claimProgress_${company.id}_formData`, JSON.stringify(formData));
-      localStorage.setItem(`claimProgress_${company.id}_otpCode`, otpCode);
-      localStorage.setItem(`claimProgress_${company.id}_otpVerified`, JSON.stringify(otpVerified));
-      if (photoPreview) {
-        localStorage.setItem(`claimProgress_${company.id}_photoPreview`, photoPreview);
-      }
-    } catch (e) {
-      console.error("Error saving progress:", e);
-    }
-  }, [company.id, hasDomainEmail, currentStep, formData, otpCode, otpVerified, photoPreview]);
 
   // Generate a random 6-digit OTP
   const generateOTP = (): string => {
@@ -407,14 +349,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         // Skip creating a claim request document for domain-verified claims
         // since they're already verified through the domain email
         
-        // Clear saved data after successful completion
-        localStorage.removeItem(`claimProgress_${company.id}_hasDomainEmail`);
-        localStorage.removeItem(`claimProgress_${company.id}_currentStep`);
-        localStorage.removeItem(`claimProgress_${company.id}_formData`);
-        localStorage.removeItem(`claimProgress_${company.id}_otpCode`);
-        localStorage.removeItem(`claimProgress_${company.id}_otpVerified`);
-        localStorage.removeItem(`claimProgress_${company.id}_photoPreview`);
-        
         onSuccess(translations?.claimRequestSubmitted || 'Claim request submitted successfully! We will review your request and contact you soon.');
         onClose();
       } catch (error: any) {
@@ -465,14 +399,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       
       // Notify admins about the new claim request
       await notifyAdminsOfNewClaimRequest(claimRequestRef.id, company.name);
-      
-      // Clear saved data
-      localStorage.removeItem(`claimProgress_${company.id}_hasDomainEmail`);
-      localStorage.removeItem(`claimProgress_${company.id}_currentStep`);
-      localStorage.removeItem(`claimProgress_${company.id}_formData`);
-      localStorage.removeItem(`claimProgress_${company.id}_otpCode`);
-      localStorage.removeItem(`claimProgress_${company.id}_otpVerified`);
-      localStorage.removeItem(`claimProgress_${company.id}_photoPreview`);
       
       onSuccess(translations?.claimRequestSubmitted || 'Claim request submitted successfully! We will review your request and contact you soon.');
       onClose();
@@ -562,7 +488,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         // Prevent closing if loading
         return;
       }
-      const shouldClose = confirm(translations?.confirmCloseClaim || 'Are you sure you want to close? Your progress will be saved.');
+      const shouldClose = confirm(translations?.confirmCloseClaim || 'Are you sure you want to close? Your progress will not be saved.');
       if (shouldClose) {
         onClose();
       }
