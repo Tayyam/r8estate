@@ -120,24 +120,52 @@ const ClaimRequests: React.FC = () => {
       
       // Use provided password or default to the one from the request
       const finalPassword = accountPassword || selectedRequest.password;
+      const userWithEmailQuery = query(
+        collection(db, 'users'),
+        where('email', '==', selectedRequest.businessEmail)
+      );
+      const userWithEmailSnapshot = await getDocs(userWithEmailQuery);
+      let userId;
       
-      if (!finalPassword || finalPassword.length < 6) {
-        setError(translations?.passwordTooShort || 'Password must be at least 6 characters long');
-        setActionLoading(null);
-        return;
+      if (!userWithEmailSnapshot.empty) {
+        // Email already exists - use existing user
+        const existingUserDoc = userWithEmailSnapshot.docs[0];
+        userId = existingUserDoc.id;
+        
+        // Update existing user to have company role
+        await updateDoc(doc(db, 'users', userId), {
+          role: 'company',
+          companyId: selectedRequest.companyId,
+          updatedAt: new Date()
+        });
+        
+        console.log("Using existing user account for company claim:", userId);
+      } else {
+        // Create new user with email and password
+        const finalPassword = accountPassword || selectedRequest.password;
+        
+        if (!finalPassword || finalPassword.length < 6) {
+          setError(translations?.passwordTooShort || 'Password must be at least 6 characters long');
+          setActionLoading(null);
+        // Create user account for the company
+        const result = await createUserFunction({
+          email: selectedRequest.businessEmail,
+          password: finalPassword,
+          displayName: selectedRequest.displayName || selectedRequest.requesterName || selectedRequest.companyName,
+          role: 'company'
+        });
+        
+        const data = result.data as any;
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to create user account');
+        }
+        
+        userId = data.user.uid;
       }
       
-      // Create user account for the company
-      const result = await createUserFunction({
-        email: selectedRequest.businessEmail,
-        password: finalPassword,
-        displayName: selectedRequest.displayName || selectedRequest.requesterName || selectedRequest.companyName,
-        role: 'company'
-      });
-      
-      const data = result.data as any;
-      
-      if (data.success) {
+      // Regardless of whether we created a new user or used an existing one, update the company
+      if (userId) {
         // Update claim request status
         await updateDoc(doc(db, 'claimRequests', selectedRequest.id), {
           status: 'approved',
@@ -150,6 +178,7 @@ const ClaimRequests: React.FC = () => {
           claimed: true,
           email: selectedRequest.businessEmail,
           phone: selectedRequest.contactPhone || '',
+          phone: selectedRequest.contactPhone || '',
           updatedAt: new Date()
         });
         
@@ -158,8 +187,6 @@ const ClaimRequests: React.FC = () => {
         
         // Reload data
         loadClaimRequests();
-      } else {
-        throw new Error(data.error || 'Failed to create user account');
       }
       
       setShowCreateAccountModal(false);
