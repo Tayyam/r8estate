@@ -247,16 +247,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         return;
       }
       
-      if (formData.password.length < 6) {
-        onError(translations?.passwordTooShort || 'Password must be at least 6 characters long');
-        return;
-      }
-      
-      if (formData.password !== formData.confirmPassword) {
-        onError(translations?.passwordsDoNotMatch || 'Passwords do not match');
-        return;
-      }
-      
       if (!formData.displayName.trim()) {
         onError(translations?.nameRequired || 'Name is required');
         return;
@@ -465,22 +455,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       // Validate domain if applicable
       if (hasDomainEmail && !validateEmailDomain(formData.businessEmail)) {
         onError(translations?.businessEmailDomainMismatch || 'Business email must match the company domain: ' + companyDomain);
-        return;
-      }
-      
-      // Validate password
-      if (!formData.password) {
-        onError(translations?.passwordRequired || 'Password is required');
-        return;
-      }
-      
-      if (formData.password.length < 6) {
-        onError(translations?.passwordTooShort || 'Password must be at least 6 characters long');
-        return;
-      }
-      
-      if (formData.password !== formData.confirmPassword) {
-        onError(translations?.passwordsDoNotMatch || 'Passwords do not match');
         return;
       }
       
