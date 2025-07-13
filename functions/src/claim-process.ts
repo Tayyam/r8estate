@@ -475,13 +475,3 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
     );
   }
 });
-    
-  } catch (error: any) {
-    console.error('Error checking business email verification:', error);
-    throw new functions.https.HttpsError(
-      'internal',
-      error.message || 'Failed to check business email verification',
-      error
-    );
-  }
-});
