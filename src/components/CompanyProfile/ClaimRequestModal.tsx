@@ -400,25 +400,12 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         await updateDoc(doc(db, 'companies', company.id), {
           claimed: true,
           email: formData.businessEmail,
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
+          claimedByName: formData.displayName // Add name of the user who claimed
         });
         
-        // Create claim request document
-        const claimRequestRef = await addDoc(collection(db, 'claimRequests'), {
-          companyId: company.id,
-          companyName: company.name,
-          requesterId: currentUser?.uid || user.uid,
-          requesterName: currentUser?.displayName || formData.displayName,
-          contactPhone: hasDomainEmail ? '' : formData.contactPhone,
-          businessEmail: formData.businessEmail,
-          businessUserUid: user.uid,
-          status: 'pending',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-        
-        // Notify admins about the new claim request
-        await notifyAdminsOfNewClaimRequest(claimRequestRef.id, company.name);
+        // Skip creating a claim request document for domain-verified claims
+        // since they're already verified through the domain email
         
         // Clear saved data after successful completion
         localStorage.removeItem(`claimProgress_${company.id}_hasDomainEmail`);
