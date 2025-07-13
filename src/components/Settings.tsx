@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import UserManagement from './Settings/UserManagement';
 import Companies from './Settings/Companies';
 import Categories from './Settings/Categories';
-import ClaimRequests from './Settings/ClaimRequests/index';
+import ClaimRequests from './Settings/ClaimRequests';
 import Reports from './Settings/Reports';
 import Reviews from './Settings/Reviews';
 

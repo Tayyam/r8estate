@@ -1,6 +1,6 @@
 import React from 'react';
 import { ClaimRequest, Company } from '../../../types/company';
-import { Building2, MessageSquare, CheckCircle, XCircle, User, Copy, RefreshCw } from 'lucide-react';
+import { Building2, MessageSquare, CheckCircle, XCircle, User, Copy } from 'lucide-react';
 import ClaimRequestDetails from './ClaimRequestDetails';
 
 interface ClaimRequestListProps {
@@ -12,8 +12,6 @@ interface ClaimRequestListProps {
   setShowCreateAccountModal: (show: boolean) => void;
   setSelectedRequest: (request: ClaimRequest | null) => void;
   setShowDeleteModal: (show: boolean) => void;
-  refreshLoading: string | null;
-  handleRefreshVerification: (request: ClaimRequest) => Promise<void>;
   companyDetails: Company | null;
 }
 
@@ -26,8 +24,6 @@ const ClaimRequestList: React.FC<ClaimRequestListProps> = ({
   setShowCreateAccountModal,
   setSelectedRequest,
   setShowDeleteModal,
-  refreshLoading,
-  handleRefreshVerification,
   companyDetails
 }) => {
   // Get status badge color
@@ -202,32 +198,15 @@ const ClaimRequestList: React.FC<ClaimRequestListProps> = ({
                   <div className="flex justify-end space-x-2">
                     {request.status === 'pending' && (
                       <>
-                        {request.domainVerified ? (
-                          // For domain-verified requests, show Refresh button
-                          <button
-                            onClick={() => handleRefreshVerification(request)}
-                            disabled={refreshLoading === request.id}
-                            className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50"
-                          >
-                            {refreshLoading === request.id ? (
-                              <div className="w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              <RefreshCw className="h-5 w-5" />
-                            )}
-                            <span className="hidden md:inline ml-1">{translations?.refreshVerification || 'Refresh'}</span>
-                          </button>
-                        ) : (
-                          // For non-domain-verified requests, show Create Account button
-                          <button
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setShowCreateAccountModal(true);
-                            }}
-                            className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50"
-                          >
-                            {translations?.createAccount || 'Create Account'}
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowCreateAccountModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50"
+                        >
+                          {translations?.createAccount || 'Create Account'}
+                        </button>
                         <button
                           onClick={() => {
                             setSelectedRequest(request);
