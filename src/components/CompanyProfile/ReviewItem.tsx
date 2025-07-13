@@ -348,8 +348,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
 
       {/* Reply Button (for company owners and admins) */}
       {currentUser && 
-       ((currentUser.role === 'admin' || 
-        (currentUser.role === 'company' && currentUser.companyId === company.id)) && 
+       (currentUser.role === 'company' && currentUser.companyId === company.id && 
         !review.companyReply) && (
         <div className="mt-4 flex justify-end">
           <button
