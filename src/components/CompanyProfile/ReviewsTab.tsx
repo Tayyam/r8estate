@@ -62,7 +62,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const [showEditReview, setShowEditReview] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
-  const [reviewsLoaded, setReviewsLoaded] = useState(false);
   
   // Filter states
   const [ratingFilter, setRatingFilter] = useState<'all' | 1 | 2 | 3 | 4 | 5>('all');
