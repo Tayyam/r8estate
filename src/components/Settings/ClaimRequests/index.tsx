@@ -24,6 +24,7 @@ const ClaimRequests: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<ClaimRequest | null>(null);
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+ const [refreshLoading, setRefreshLoading] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState<string | null>(null);
   const [companyDetails, setCompanyDetails] = useState<Company | null>(null);
@@ -203,6 +204,88 @@ const ClaimRequests: React.FC = () => {
       } catch (error) {
         console.error('Error fetching company details:', error);
       }
+    }
+  };
+  // Function to refresh verification status
+  const handleRefreshVerification = async (request: ClaimRequest) => {
+    try {
+      setRefreshLoading(request.id);
+      
+      // Check if the users exist
+      if (!request.userId || !request.supervisorId) {
+        throw new Error('User IDs not found for this claim request');
+      }
+      
+      // Get the users from Auth
+      const businessUser = await admin.auth().getUser(request.userId);
+      const supervisorUser = await admin.auth().getUser(request.supervisorId);
+      
+      // Update verification status in the claim request
+      const claimRequestRef = doc(db, 'claimRequests', request.id);
+      
+      // Update verification statuses based on firebase auth emailVerified property
+      await updateDoc(claimRequestRef, {
+        businessEmailVerified: businessUser.emailVerified,
+        supervisorEmailVerified: supervisorUser.emailVerified,
+        updatedAt: new Date()
+      });
+      
+      // Fetch the updated claim request
+      const updatedRequest = await getDoc(claimRequestRef);
+      const updatedData = updatedRequest.data() as ClaimRequest;
+      
+      // If both emails are now verified, process the claim
+      if (updatedData.businessEmailVerified && updatedData.supervisorEmailVerified) {
+        // Update business user to company role
+        await updateDoc(doc(db, 'users', request.userId), {
+          role: 'company',
+          companyId: request.companyId,
+          updatedAt: new Date()
+        });
+        
+        // Update supervisor user to company role
+        await updateDoc(doc(db, 'users', request.supervisorId), {
+          role: 'company',
+          companyId: request.companyId,
+          updatedAt: new Date()
+        });
+        
+        // Mark company as claimed
+        await updateDoc(doc(db, 'companies', request.companyId), {
+          claimed: true,
+          claimedByName: request.requesterName || 'Unknown',
+          email: request.businessEmail,
+          updatedAt: new Date()
+        });
+        
+        // Mark claim request as approved
+        await updateDoc(claimRequestRef, {
+          status: 'approved',
+          updatedAt: new Date()
+        });
+        
+        showSuccessModal(
+          translations?.claimProcessed || 'Claim Request Processed',
+          translations?.bothEmailsVerified || 'Both emails are verified. The company has been claimed successfully.'
+        );
+      } else {
+        // Show the current status
+        showSuccessModal(
+          translations?.verificationStatus || 'Verification Status Updated',
+          `${translations?.businessEmail || 'Business Email'}: ${updatedData.businessEmailVerified ? '✓ Verified' : '✗ Not Verified'}\n
+          ${translations?.supervisorEmail || 'Supervisor Email'}: ${updatedData.supervisorEmailVerified ? '✓ Verified' : '✗ Not Verified'}`
+        );
+      }
+      
+      // Reload data
+      loadClaimRequests();
+      
+    } catch (error: any) {
+      console.error('Error refreshing verification status:', error);
+      setError(error.message || (translations?.failedToRefresh || 'Failed to refresh verification status'));
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setRefreshLoading(null);
     }
   };
 
