@@ -17,7 +17,7 @@ export const sendVerificationEmail = functions.https.onCall(async (data, context
     
     // Generate a verification link
     const actionCodeSettings = {
-      url: 'https://test.r8estate.com/verification?mode=verifyEmail',
+      url: 'https://test.r8estate.com/verification',
       handleCodeInApp: true,
     };
     
