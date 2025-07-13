@@ -115,19 +115,23 @@ const ClaimRequests: React.FC = () => {
   const handleCreateAccount = async () => {
     if (!selectedRequest) return;
     
-    if (!accountPassword || accountPassword.length < 6) {
-      setError(translations?.passwordTooShort || 'Password must be at least 6 characters long');
-      return;
-    }
-
     try {
       setActionLoading(selectedRequest.id);
+      
+      // Use provided password or default to the one from the request
+      const finalPassword = accountPassword || selectedRequest.password;
+      
+      if (!finalPassword || finalPassword.length < 6) {
+        setError(translations?.passwordTooShort || 'Password must be at least 6 characters long');
+        setActionLoading(null);
+        return;
+      }
       
       // Create user account for the company
       const result = await createUserFunction({
         email: selectedRequest.businessEmail,
-        password: accountPassword,
-        displayName: selectedRequest.companyName,
+        password: finalPassword,
+        displayName: selectedRequest.displayName || selectedRequest.requesterName || selectedRequest.companyName,
         role: 'company'
       });
       
@@ -145,7 +149,7 @@ const ClaimRequests: React.FC = () => {
         await updateDoc(doc(db, 'companies', selectedRequest.companyId), {
           claimed: true,
           email: selectedRequest.businessEmail,
-          phone: selectedRequest.contactPhone,
+          phone: selectedRequest.contactPhone || '',
           updatedAt: new Date()
         });
         
@@ -382,11 +386,9 @@ const ClaimRequests: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">{request.businessEmail}</div>
                     <div className="text-sm text-gray-500">{request.contactPhone}</div>
-                    {request.password && (
-                      <div className="text-sm text-gray-500">
-                        {translations?.password || 'Password'}: ****
-                      </div>
-                    )}
+                    <div className="text-sm text-gray-500">
+                      {translations?.password || 'Password'}: {request.password || translations?.notAvailable || 'N/A'}
+                    </div>
                   </td>
                   
                   {/* Status */}
@@ -395,9 +397,11 @@ const ClaimRequests: React.FC = () => {
                       {getStatusTranslation(request.status)}
                     </span>
                     {request.domainVerified && (
-                      <span className="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-green-100 text-green-800">
-                        {translations?.domainVerified || 'Domain Verified'}
-                      </span>
+                      <div className="text-sm text-gray-500">
+                        <span className="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-green-100 text-green-800">
+                          {translations?.domainVerified || 'Domain Verified'}
+                        </span>
+                      </div>
                     )}
                   </td>
                   
@@ -553,31 +557,32 @@ const ClaimRequests: React.FC = () => {
             </div>
             
             {/* Password Field */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.setPassword || 'Password'} *
-                {selectedRequest.password && <span className="text-sm text-gray-500 ml-2">({translations?.defaultFromRequest || 'Default from request'})</span>}
-              </label>
-              <input
-                type="password"
-                defaultValue={selectedRequest.password || ''}
-                value={accountPassword || ''}
-                onChange={(e) => setAccountPassword(e.target.value)} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={translations?.enterAccountPassword || 'Enter account password (min 6 characters)'}
-                minLength={6}
-              />
-              {accountPassword.length > 0 && accountPassword.length < 6 && (
-                <p className="text-xs text-red-500 mt-1">
-                  {translations?.passwordTooShort || 'Password must be at least 6 characters long'}
-                </p>
-              )} 
-            </div>
+            {selectedRequest.password && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {translations?.setPassword || 'Password'} * 
+                </label>
+                <input
+                  type="password"
+                  defaultValue={selectedRequest.password}
+                  value={accountPassword || selectedRequest.password || ''}
+                  onChange={(e) => setAccountPassword(e.target.value)} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={translations?.enterAccountPassword || 'Enter account password (min 6 characters)'}
+                  minLength={6}
+                />
+                {accountPassword && accountPassword.length > 0 && accountPassword.length < 6 && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {translations?.passwordTooShort || 'Password must be at least 6 characters long'}
+                  </p>
+                )} 
+              </div>
+            )}
             
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
               <button
                 onClick={handleCreateAccount}
-                disabled={actionLoading === selectedRequest.id || !accountPassword || accountPassword.length < 6}
+                disabled={actionLoading === selectedRequest.id || (!accountPassword && !selectedRequest.password) || (accountPassword && accountPassword.length < 6)}
                 className="w-full sm:w-auto flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center space-x-2 rtl:space-x-reverse"
               >
                 {actionLoading === selectedRequest.id ? (
