@@ -240,6 +240,13 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
   // Get filtered reviews
   const filteredReviews = getFilteredReviews();
+
+  // Filter out hidden reviews for non-admin users
+  const visibleReviews = filteredReviews.filter(review => {
+    if (!review.hidden) return true;
+    // Show hidden reviews only to admins and the review's author
+    return currentUser && (currentUser.role === 'admin' || currentUser.uid === review.userId);
+  });
   
   // Check if any filters are applied
   const hasFilters = ratingFilter !== 'all' || timeFilter !== 'all' || sortFilter !== 'newest';
@@ -483,7 +490,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       />
 
       {/* Reviews List */}
-      {loading && !reviewsLoaded ? (
+      {visibleReviews.length > 0 ? (
         <div className="animate-pulse space-y-6">
           {[...Array(3)].map((_, index) => (
             <div key={index} className="bg-white rounded-2xl shadow-lg p-8">
@@ -504,7 +511,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         </div>
       ) : filteredReviews.length > 0 ? (
         <div className="space-y-6">
-          {filteredReviews.map(review => (
+          {visibleReviews.map(review => (
             <ReviewItem 
               key={review.id}
               review={review}
@@ -545,7 +552,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
           )}
 
           {/* End of Reviews Indicator */}
-          {!hasMore && reviews.length > 0 && (
+          {!hasMore && visibleReviews.length > 0 && (
             <div className="text-center py-8">
               <div className="inline-flex items-center space-x-2 rtl:space-x-reverse text-gray-500">
                 <div className="h-px bg-gray-300 w-8"></div>
@@ -555,7 +562,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
             </div>
           )}
         </div>
-      ) : filteredReviews.length === 0 && reviews.length > 0 ? (
+      ) : visibleReviews.length === 0 && reviews.length > 0 ? (
         <div className="text-center py-12 bg-white rounded-xl shadow-md">
           <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
             <Filter className="h-8 w-8 text-gray-400" />

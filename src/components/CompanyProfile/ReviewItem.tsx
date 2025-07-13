@@ -83,18 +83,65 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
 
   // Hide content if review is hidden
   if (review.hidden) {
+    // For regular users, don't show hidden reviews at all
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.uid !== review.userId)) {
+      return null;
+    }
+    
+    // For admins and review owners, show a blurred version with a "hidden" tag
     return (
       <div 
         id={`review-${review.id}`}
         className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 relative outline-none"
       >
-        <div className="text-center py-4">
-          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-            <User className="h-6 w-6 text-gray-400" />
+        <div className="absolute top-3 right-3 rtl:right-auto rtl:left-3 z-10">
+          <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full">
+            {translations?.hidden || 'Hidden'}
+          </span>
+        </div>
+        
+        <div className="filter blur-[2px] pointer-events-none opacity-70">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 space-y-3 sm:space-y-0">
+            <div className="flex items-start space-x-4 rtl:space-x-reverse flex-1">
+              {/* User Avatar */}
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-lg">
+                  {review.userName.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 rtl:space-x-reverse mb-1">
+                  <h3 className="font-bold text-gray-900">{review.userName}</h3>
+                  {review.verified && (
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 rtl:space-x-reverse">
+                      <Shield className="h-3 w-3" />
+                      <span>{translations?.verified || 'Verified'}</span>
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                  <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    {formatDate(review.createdAt)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-500 font-medium">
-            {translations?.reviewHidden || 'This review has been hidden by an administrator'}
-          </p>
+
+          <h4 className="font-semibold text-gray-900 mb-3 text-lg">{review.title}</h4>
+          <p className="text-gray-700 leading-relaxed mb-6">{review.content}</p>
         </div>
       </div>
     );
