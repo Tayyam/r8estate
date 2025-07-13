@@ -92,6 +92,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
       </div>
     );
   };
+
   // Handle file selection for attachments
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -139,21 +140,6 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
     setFiles(prev => [...prev, ...validFiles]);
   };
 
-        // Upload new attachments if any
-        let newAttachments: { url: string; type: 'image' | 'pdf'; name: string; }[] = [];
-        if (files.length > 0) {
-          try {
-            newAttachments = await uploadAttachments();
-          } catch (error) {
-            onError(translations?.failedToUploadAttachments || 'Failed to upload attachments');
-            setLoading(false);
-            return;
-          }
-        }
-        
-        // Combine existing (not removed) attachments with new ones
-        const combinedAttachments = [...formData.attachments, ...newAttachments];
-
   // Remove a file from the list
   const removeFile = (index: number) => {
     const file = previewUrls[index];
@@ -165,7 +151,6 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
         setFiles(prev => {
           const newFiles = [...prev];
           newFiles.splice(newFileIndex, 1);
-          attachments: combinedAttachments,
           return newFiles;
         });
       }
@@ -314,75 +299,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
                 {translations?.updateYourReview || 'Update your review'}
               </p>
             </div>
-            
-            {/* File Attachments */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
-                <div className="flex items-center">
-                  <Paperclip className="h-4 w-4 mr-1" />
-                  <span>{translations?.attachments || 'Attachments'}</span>
-                </div>
-                <span className="text-xs text-gray-500">{translations?.maxFiles || 'Max 5 files'} (JPG, PNG, PDF)</span>
-              </label>
-              
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-gray-400 transition-all duration-200">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*,application/pdf"
-                  multiple
-                  onChange={handleFileSelect}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-3 flex flex-col items-center"
-                  disabled={previewUrls.length >= 5}
-                >
-                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <span className="text-gray-500">{translations?.dragDropFiles || 'Drag & drop files here, or click to browse'}</span>
-                  <span className="text-xs text-gray-400 mt-1">{translations?.maxFileSize || 'Max 5MB per file'}</span>
-                </button>
-              </div>
-              
-              {/* File Preview */}
-              {previewUrls.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <h4 className="text-sm font-medium text-gray-700">
-                    {translations?.selectedFiles || 'Selected Files'} ({previewUrls.length}/5)
-                  </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {previewUrls.map((file, index) => (
-                      <div key={index} className="relative group">
-                        <div className="border rounded-lg overflow-hidden bg-gray-50 aspect-square">
-                          {file.type === 'image' ? (
-                            <img 
-                              src={file.url} 
-                              alt={file.name} 
-                              className="w-full h-full object-contain p-2"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center p-2">
-                disabled={loading || uploadingAttachments || calculateAverageRating() === 0 || !formData.title.trim() || !formData.content.trim()}
-                              <span className="text-xs text-center text-gray-500 truncate max-w-full px-2">{file.name}</span>
-                            </div>
-                {loading || uploadingAttachments ? (
-                        </div>
-                        <button
-                    <span>{uploadingAttachments ? (translations?.uploadingAttachments || 'Uploading attachments...') : (translations?.updating || 'Updating...')}</span>
-                          onClick={() => removeFile(index)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-                disabled={loading || uploadingAttachments}
+          </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors duration-200"
