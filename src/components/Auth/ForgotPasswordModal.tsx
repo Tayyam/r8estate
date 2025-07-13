@@ -95,7 +95,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             </label>
             <div className="relative">
               <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
+              <input 
                 type="email"
                 required
                 value={email}
@@ -112,7 +112,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                 onBlur={(e) => {
                   e.target.style.borderColor = '#d1d5db';
                   e.target.style.boxShadow = 'none';
-                }}
+                }} 
                 placeholder={translations?.emailPlaceholder || 'Enter your email address'}
               />
             </div>
