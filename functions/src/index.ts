@@ -6,7 +6,7 @@ import { sendEmail } from './emailService';
 const VERIFICATION_URL = 'https://test.r8estate.com/verification';
 
 // Initialize Firebase Admin
-const app = admin.initializeApp();
+admin.initializeApp();
 
 export const createUser = functions.https.onCall(async (data, context) => {
   try {
@@ -224,8 +224,7 @@ export const sendVerificationEmail = functions.https.onCall(async (data, context
     const verificationUrl = `${VERIFICATION_URL}?mode=verifyEmail&oobCode=${oobCode}`;
     
     // Send email using the existing sendEmail function
-    const sendEmailFunction = functions.httpsCallable(functions.config().projectId, 'sendEmail');
-    await sendEmailFunction({
+    await sendEmail({
       to: email,
       subject: 'Verify Your R8 Estate Email',
       templateType: 'emailVerification',
