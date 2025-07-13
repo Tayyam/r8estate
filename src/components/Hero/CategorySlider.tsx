@@ -35,7 +35,7 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
       } else if (window.innerWidth < 1024) {
         setSlidesPerView(3);
       } else {
-        setSlidesPerView(4);
+        setSlidesPerView(8);
       }
     };
 
@@ -51,8 +51,7 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
         setCategoryLoading(true);
         const categoriesQuery = query(
           collection(db, 'categories'),
-          orderBy('name'),
-          limit(8)
+          orderBy('name')
         );
         const categoriesSnapshot = await getDocs(categoriesQuery);
         const categoriesData = categoriesSnapshot.docs.map(doc => ({
