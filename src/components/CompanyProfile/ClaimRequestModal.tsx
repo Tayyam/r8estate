@@ -3,12 +3,10 @@ import { Building2, X, AlertCircle } from 'lucide-react';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { db, auth, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext'; 
+import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile } from '../../types/companyProfile';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
-import Step3Profile from './ClaimRequestModal/Step3Profile';
 import Step4OTPVerification from './ClaimRequestModal/Step4OTPVerification';
 import { notifyAdminsOfNewClaimRequest } from '../../utils/notificationUtils';
 import { httpsCallable } from 'firebase/functions';
@@ -46,21 +44,13 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const [formData, setFormData] = useState({
     contactPhone: '',
     businessEmail: '',
-    displayName: '',
-    password: '',
-    confirmPassword: '',
   });
-  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   
   // OTP and verification state
   const [otpCode, setOtpCode] = useState('');
   const [otpVerified, setOtpVerified] = useState(false);
-    
-  // File input ref for photo upload
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
-  // Step selection (1: Domain choice, 2: Basic info, 3: Profile info, 4: OTP Verification)
+  // Step selection (1: Domain choice, 2: Basic info, 3: OTP Verification)
   const [currentStep, setCurrentStep] = useState(1);
 
   // Extract domain from website
@@ -100,47 +90,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     }));
   };
 
-  // Handle photo selection
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        onError(translations?.invalidFileType || 'Invalid file type. Please upload an image file.');
-        return;
-      }
-      
-      // Validate file size (max 2MB)
-      const maxSize = 2 * 1024 * 1024; // 2MB
-      if (file.size > maxSize) {
-        onError(translations?.fileTooLarge || 'File too large. Maximum size is 2MB.');
-        return;
-      }
-      
-      setProfilePhoto(file);
-      setPhotoPreview(URL.createObjectURL(file));
-    }
-  };
-  
-  // Handle photo upload
-  const uploadPhoto = async (file: File, userId: string): Promise<string | null> => {
-    try {
-      const timestamp = Date.now();
-      const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${userId}_${timestamp}.${fileExtension}`;
-      const storageRef = ref(storage, `profile-photos/${fileName}`);
-      
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
-    } catch (error) {
-      console.error("Error uploading photo:", error);
-      return null;
-    }
-  };
-  
   // Validate email domain
   const validateEmailDomain = (email: string): boolean => {
     if (!companyDomain || !email) return false;
@@ -225,66 +174,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       console.error("Error sending OTP email:", error);
       return false;
     }
-  };
-
-  // Handle sending OTP
-  const handleSendOTP = async () => {
-    try {
-      if (!formData.businessEmail) {
-        onError(translations?.emailRequired || 'Email address is required');
-        return;
-      }
-      
-      // Basic validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.businessEmail)) {
-        onError(translations?.invalidEmailFormat || 'Please enter a valid email address');
-        return;
-      }
-      
-      if (hasDomainEmail && !validateEmailDomain(formData.businessEmail)) {
-        onError(translations?.businessEmailDomainMismatch || 'Business email must match the company domain: ' + companyDomain);
-        return;
-      }
-      
-      if (!formData.displayName.trim()) {
-        onError(translations?.nameRequired || 'Name is required');
-        return;
-      }
-      
-      // Validate supervisor email
-      if (!supervisorEmail.trim()) {
-        onError(translations?.supervisorEmailRequired || 'Supervisor email is required');
-        return;
-      }
-      
-      if (!emailRegex.test(supervisorEmail)) {
-        onError(translations?.invalidSupervisorEmail || 'Please enter a valid supervisor email address');
-        return;
-      }
-      
-      setOtpSending(true);
-      
-      // Call claim-process cloud function
-      const claimProcessFunction = httpsCallable(functions, 'claimProcess');
-
-      try {
-        const result = await claimProcessFunction({
-          businessEmail: formData.businessEmail,
-          supervisorEmail: supervisorEmail,
-          companyId: company.id,
-          companyName: company.name,
-          contactPhone: formData.contactPhone,
-          displayName: formData.displayName || currentUser?.displayName
-        });
-        
-        const data = result.data as any;
-        
-        if (data.success) {
-          // Store tracking number in localStorage
-          localStorage.setItem('claimTrackingNumber', data.trackingNumber);
-          setTrackingNumber(data.trackingNumber);
-          
           onSuccess(translations?.verificationEmailsSent || 
             'Verification emails have been sent to both business and supervisor emails. A temporary password has been generated and included in the emails. Please check both inboxes to complete the verification process.');
             
@@ -331,13 +220,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         // Create user account
         const userCredential = await createUserWithEmailAndPassword(auth, formData.businessEmail, formData.password);
         const user = userCredential.user;
-        
-        // Upload photo if exists
-        let photoURL = null;
-        if (profilePhoto) {
-          photoURL = await uploadPhoto(profilePhoto, user.uid);
-        }
-        
+      if (currentStep === 2) {
         // Update user profile
         await updateProfile(user, {
           displayName: formData.displayName,
@@ -346,11 +229,9 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         
         // Create user document in Firestore
         await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid,
+          requesterName: currentUser?.displayName || 'Guest User',
           displayName: formData.displayName,
           email: formData.businessEmail,
-          photoURL: photoURL,
-          role: 'company', // Set role as company
           companyId: company.id, // Link to the company
           isEmailVerified: user.emailVerified,
           createdAt: serverTimestamp(),
@@ -391,7 +272,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   // Handle non-verification claim request
   const handleNonVerificationClaim = async () => {
     try {
-      if (!formData.contactPhone || !formData.businessEmail || !formData.displayName) {
+      if (!formData.contactPhone || !formData.businessEmail) {
         onError(translations?.fillAllFields || 'Please fill in all required fields');
         return;
       }
@@ -409,11 +290,9 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         companyId: company.id,
         companyName: company.name,
         requesterId: currentUser?.uid || null,
-        requesterName: formData.displayName || currentUser?.displayName || 'Guest User',
+        requesterName: currentUser?.displayName || 'Guest User',
         contactPhone: formData.contactPhone,
         businessEmail: formData.businessEmail,
-        displayName: formData.displayName,
-        password: formData.password, // Save password for non-domain claim requests
         status: 'pending',
         trackingNumber: trackingNum,
         createdAt: serverTimestamp(),
@@ -633,21 +512,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         )}
         
         {currentStep === 3 && (
-          <Step3Profile
-            formData={formData}
-            handleInputChange={handleInputChange}
-            photoPreview={photoPreview}
-            handlePhotoSelect={handlePhotoSelect}
-            fileInputRef={fileInputRef}
-            loading={loading}
-            hasDomainEmail={hasDomainEmail}
-            setCurrentStep={setCurrentStep}
-            handleNextStep={handleNextStep}
-            translations={translations}
-          />
-        )}
-        
-        {currentStep === 4 && (
           <Step4OTPVerification
             formData={formData}
             otpCode={otpCode}
@@ -656,7 +520,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             otpSending={otpSending}
             handleSendOTP={handleSendOTP}
             handleVerifyOTP={currentUser ? handleVerifyOTP : handleOTPVerificationForGuest}
-            setCurrentStep={setCurrentStep}
+            setCurrentStep={(step) => setCurrentStep(step <= 2 ? step : 2)}
             translations={translations}
           />
         )}
