@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, Mail, Save, RefreshCw, Edit, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { updateProfile, sendEmailVerification, updateEmail, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,7 +12,7 @@ interface BasicInfoProps {
 }
 
 const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
-  const { currentUser, firebaseUser } = useAuth();
+  const { currentUser, firebaseUser, changeEmailWithoutPassword } = useAuth();
   const { translations, language, direction } = useLanguage();
   
   const [loading, setLoading] = useState(false);
@@ -88,46 +88,27 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
   const handleEmailChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!firebaseUser || !currentUser) {
-      setError(translations?.noUserLoggedIn || 'No user logged in');
+    if (!formData.newEmail) {
+      setError(translations?.emailRequired || 'Email address is required');
       return;
     }
-
-    if (!formData.currentPasswordForEmail || !formData.newEmail) {
-      setError(translations?.fillAllEmailFields || 'Please fill in all email fields');
-      return;
-    }
-
+    
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.newEmail)) {
       setError(translations?.invalidEmailFormat || 'Invalid email format');
       return;
     }
-
+    
     try {
       setLoading(true);
       
-      // Re-authenticate user first
-      const credential = EmailAuthProvider.credential(
-        firebaseUser.email!,
-        formData.currentPasswordForEmail
-      );
-      await reauthenticateWithCredential(firebaseUser, credential);
-      
-      // Update email in Firebase Auth
-      await updateEmail(firebaseUser, formData.newEmail);
-      
-      // Update Firestore document
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        email: formData.newEmail,
-        updatedAt: new Date()
-      });
+      // Use the new method to change email without requiring password
+      await changeEmailWithoutPassword(formData.newEmail);
       
       // Clear form
       setFormData(prev => ({
         ...prev,
-        currentPasswordForEmail: '',
         newEmail: ''
       }));
       
@@ -278,75 +259,39 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
           {/* Change Email Form */}
           {showChangeEmail && (
             <div className="mt-6 pt-6 border-t border-gray-200 space-y-6 animate-fadeIn">
-              <form onSubmit={handleEmailChange} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Current Password for Email Change */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {translations?.currentPasswordForEmail || 'Current Password *'}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showCurrentPassword ? 'text' : 'password'}
-                        value={formData.currentPasswordForEmail}
-                        onChange={(e) => setFormData({ ...formData, currentPasswordForEmail: e.target.value })}
-                        className="w-full pl-4 pr-10 rtl:pr-4 rtl:pl-10 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
-                        style={{ 
-                          focusBorderColor: '#194866',
-                          focusRingColor: '#194866'
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = '#194866';
-                          e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = '#d1d5db';
-                          e.target.style.boxShadow = 'none';
-                        }}
-                        placeholder={translations?.enterCurrentPassword || 'Enter your current password'}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className={`absolute ${direction === 'rtl' ? 'left-3' : 'right-3'} top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-all duration-200`}
-                      >
-                        {showCurrentPassword ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
+              <form onSubmit={handleEmailChange} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {translations?.newEmailAddress || 'New Email Address *'}
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type="email"
+                      required
+                      value={formData.newEmail}
+                      onChange={(e) => setFormData({ ...formData, newEmail: e.target.value })}
+                      className="w-full pl-12 rtl:pr-12 rtl:pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+                      style={{ 
+                        focusBorderColor: '#194866',
+                        focusRingColor: '#194866'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#194866';
+                        e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d1d5db';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                      placeholder={translations?.enterNewEmail || 'Enter your new email address'}
+                    />
                   </div>
+                </div>
 
-                  {/* New Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {translations?.newEmailAddress || 'New Email Address *'}
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                      <input
-                        type="email"
-                        value={formData.newEmail}
-                        onChange={(e) => setFormData({ ...formData, newEmail: e.target.value })}
-                        className="w-full pl-12 rtl:pr-12 rtl:pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
-                        style={{ 
-                          focusBorderColor: '#194866',
-                          focusRingColor: '#194866'
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = '#194866';
-                          e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = '#d1d5db';
-                          e.target.style.boxShadow = 'none';
-                        }}
-                        placeholder={translations?.enterNewEmail || 'Enter your new email address'}
-                      />
-                    </div>
-                  </div>
+                <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm text-amber-700 mt-2 mb-4">
+                  <AlertCircle className="h-4 w-4 inline-block mr-1" />
+                  {translations?.emailChangeWarning || 'You will need to verify your new email address. A verification link will be sent to your new email.'}
                 </div>
                 
                 <div className="flex justify-end space-x-3 rtl:space-x-reverse">
@@ -356,7 +301,6 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
                       setShowChangeEmail(false);
                       setFormData(prev => ({
                         ...prev,
-                        currentPasswordForEmail: '',
                         newEmail: ''
                       }));
                     }}
@@ -367,7 +311,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
                   
                   <button
                     type="submit"
-                    disabled={loading || !formData.currentPasswordForEmail || !formData.newEmail}
+                    disabled={loading || !formData.newEmail}
                     className="px-6 py-3 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 flex items-center space-x-2 rtl:space-x-reverse"
                     style={{ backgroundColor: '#194866' }}
                   >
