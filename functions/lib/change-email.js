@@ -78,4 +78,3 @@ exports.changeEmail = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', error instanceof Error ? error.message : 'Failed to change email');
     }
 });
-//# sourceMappingURL=change-email.js.map
