@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Star, MessageSquare, User, AlertCircle, X, Edit } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { Star, MessageSquare, User, AlertCircle, X, Edit, Upload, Paperclip, FileText, XCircle, Eye } from 'lucide-react';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../types/property';
@@ -27,6 +28,7 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const [loading, setLoading] = useState(false);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
   const [formData, setFormData] = useState({
     rating: review.rating,
     title: review.title,
@@ -37,8 +39,14 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
       valueForMoney: 0,
       friendliness: 0,
       responsiveness: 0
-    }
+    },
+    attachments: review.attachments || []
   });
+  const [files, setFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<{ url: string; type: 'image' | 'pdf'; name: string; isNew?: boolean; }[]>(
+    review.attachments?.map(att => ({ ...att, isNew: false })) || []
+  );
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const ratingCategories: RatingCategory[] = [
     { key: 'communication', label: translations?.communication || 'Communication' },
@@ -83,6 +91,129 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
         </span>
       </div>
     );
+  };
+  // Handle file selection for attachments
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const selectedFiles = Array.from(e.target.files);
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    // Check file types and sizes
+    selectedFiles.forEach(file => {
+      // Check if it's an image or PDF
+      const isImage = file.type.startsWith('image/');
+      const isPDF = file.type === 'application/pdf';
+      
+      if (!isImage && !isPDF) {
+        invalidFiles.push(`${file.name} (Invalid format)`);
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        invalidFiles.push(`${file.name} (File too large)`);
+        return;
+      }
+      
+      // Maximum 5 files total
+      if (previewUrls.length + validFiles.length >= 5) {
+        invalidFiles.push(`${file.name} (Maximum 5 files exceeded)`);
+        return;
+      }
+      
+      validFiles.push(file);
+      
+      // Create preview URL
+      const fileType = isImage ? 'image' : 'pdf';
+      const url = URL.createObjectURL(file);
+      setPreviewUrls(prev => [...prev, { url, type: fileType, name: file.name, isNew: true }]);
+    });
+
+    if (invalidFiles.length > 0) {
+      onError(`Some files couldn't be added: ${invalidFiles.join(', ')}`);
+    }
+
+    setFiles(prev => [...prev, ...validFiles]);
+  };
+
+        // Upload new attachments if any
+        let newAttachments: { url: string; type: 'image' | 'pdf'; name: string; }[] = [];
+        if (files.length > 0) {
+          try {
+            newAttachments = await uploadAttachments();
+          } catch (error) {
+            onError(translations?.failedToUploadAttachments || 'Failed to upload attachments');
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Combine existing (not removed) attachments with new ones
+        const combinedAttachments = [...formData.attachments, ...newAttachments];
+
+  // Remove a file from the list
+  const removeFile = (index: number) => {
+    const file = previewUrls[index];
+    
+    // If it's a new file (not yet uploaded)
+    if (file.isNew) {
+      const newFileIndex = previewUrls.filter(p => p.isNew).findIndex(p => p.url === file.url);
+      if (newFileIndex !== -1) {
+        setFiles(prev => {
+          const newFiles = [...prev];
+          newFiles.splice(newFileIndex, 1);
+          attachments: combinedAttachments,
+          return newFiles;
+        });
+      }
+    } else {
+      // It's an existing attachment, mark it for removal from formData
+      setFormData(prev => ({
+        ...prev,
+        attachments: prev.attachments.filter(att => att.url !== file.url)
+      }));
+    }
+    
+    setPreviewUrls(prev => {
+      const newPreviewUrls = [...prev];
+      if (file.isNew) URL.revokeObjectURL(newPreviewUrls[index].url);
+      newPreviewUrls.splice(index, 1);
+      return newPreviewUrls;
+    });
+  };
+
+  // Upload attachments to Firebase Storage
+  const uploadAttachments = async (): Promise<{ url: string; type: 'image' | 'pdf'; name: string; }[]> => {
+    if (files.length === 0) return [];
+    
+    try {
+      setUploadingAttachments(true);
+      const uploadPromises = files.map(async (file) => {
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
+        const fileRef = ref(storage, `review-attachments/${review.companyId}/${currentUser?.uid}/${fileName}`);
+        
+        await uploadBytes(fileRef, file);
+        const downloadUrl = await getDownloadURL(fileRef);
+        
+        const isImage = file.type.startsWith('image/');
+        return {
+          url: downloadUrl,
+          type: isImage ? 'image' as const : 'pdf' as const,
+          name: file.name
+        };
+      });
+      
+      return await Promise.all(uploadPromises);
+    } catch (error) {
+      console.error('Error uploading attachments:', error);
+      throw error;
+    } finally {
+      setUploadingAttachments(false);
+    }
   };
 
   // Handle form submission
@@ -183,7 +314,75 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
                 {translations?.updateYourReview || 'Update your review'}
               </p>
             </div>
-          </div>
+            
+            {/* File Attachments */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+                <div className="flex items-center">
+                  <Paperclip className="h-4 w-4 mr-1" />
+                  <span>{translations?.attachments || 'Attachments'}</span>
+                </div>
+                <span className="text-xs text-gray-500">{translations?.maxFiles || 'Max 5 files'} (JPG, PNG, PDF)</span>
+              </label>
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-gray-400 transition-all duration-200">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*,application/pdf"
+                  multiple
+                  onChange={handleFileSelect}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-3 flex flex-col items-center"
+                  disabled={previewUrls.length >= 5}
+                >
+                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                  <span className="text-gray-500">{translations?.dragDropFiles || 'Drag & drop files here, or click to browse'}</span>
+                  <span className="text-xs text-gray-400 mt-1">{translations?.maxFileSize || 'Max 5MB per file'}</span>
+                </button>
+              </div>
+              
+              {/* File Preview */}
+              {previewUrls.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h4 className="text-sm font-medium text-gray-700">
+                    {translations?.selectedFiles || 'Selected Files'} ({previewUrls.length}/5)
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {previewUrls.map((file, index) => (
+                      <div key={index} className="relative group">
+                        <div className="border rounded-lg overflow-hidden bg-gray-50 aspect-square">
+                          {file.type === 'image' ? (
+                            <img 
+                              src={file.url} 
+                              alt={file.name} 
+                              className="w-full h-full object-contain p-2"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                disabled={loading || uploadingAttachments || calculateAverageRating() === 0 || !formData.title.trim() || !formData.content.trim()}
+                              <span className="text-xs text-center text-gray-500 truncate max-w-full px-2">{file.name}</span>
+                            </div>
+                {loading || uploadingAttachments ? (
+                        </div>
+                        <button
+                    <span>{uploadingAttachments ? (translations?.uploadingAttachments || 'Uploading attachments...') : (translations?.updating || 'Updating...')}</span>
+                          onClick={() => removeFile(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+                disabled={loading || uploadingAttachments}
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors duration-200"

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Star, MessageSquare, User, AlertCircle, X } from 'lucide-react';
-import { collection, addDoc, doc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { Star, MessageSquare, User, AlertCircle, X, Upload, Paperclip, FileText, Image, XCircle, Eye } from 'lucide-react';
+import { collection, addDoc, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
@@ -27,6 +28,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const [loading, setLoading] = useState(false);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
   const [formData, setFormData] = useState({
     rating: 0,
     title: '',
@@ -37,8 +39,12 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
       valueForMoney: 0,
       friendliness: 0,
       responsiveness: 0
-    }
+    },
+    attachments: [] as { url: string; type: 'image' | 'pdf'; name: string; }[]
   });
+  const [files, setFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<{ url: string; type: 'image' | 'pdf'; name: string; }[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const ratingCategories: RatingCategory[] = [
     { key: 'communication', label: translations?.communication || 'Communication' },
@@ -123,6 +129,100 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
     }
   };
 
+  // Handle file selection for attachments
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const selectedFiles = Array.from(e.target.files);
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    // Check file types and sizes
+    selectedFiles.forEach(file => {
+      // Check if it's an image or PDF
+      const isImage = file.type.startsWith('image/');
+      const isPDF = file.type === 'application/pdf';
+      
+      if (!isImage && !isPDF) {
+        invalidFiles.push(`${file.name} (Invalid format)`);
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        invalidFiles.push(`${file.name} (File too large)`);
+        return;
+      }
+      
+      // Maximum 5 files total
+      if (files.length + validFiles.length >= 5) {
+        invalidFiles.push(`${file.name} (Maximum 5 files exceeded)`);
+        return;
+      }
+      
+      validFiles.push(file);
+      
+      // Create preview URL
+      const fileType = isImage ? 'image' : 'pdf';
+      const url = URL.createObjectURL(file);
+      setPreviewUrls(prev => [...prev, { url, type: fileType, name: file.name }]);
+    });
+
+    if (invalidFiles.length > 0) {
+      onError(`Some files couldn't be added: ${invalidFiles.join(', ')}`);
+    }
+
+    setFiles(prev => [...prev, ...validFiles]);
+  };
+
+  // Remove a file from the list
+  const removeFile = (index: number) => {
+    setFiles(prev => {
+      const newFiles = [...prev];
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
+    
+    setPreviewUrls(prev => {
+      const newPreviewUrls = [...prev];
+      URL.revokeObjectURL(newPreviewUrls[index].url);
+      newPreviewUrls.splice(index, 1);
+      return newPreviewUrls;
+    });
+  };
+
+  // Upload attachments to Firebase Storage
+  const uploadAttachments = async (): Promise<{ url: string; type: 'image' | 'pdf'; name: string; }[]> => {
+    if (files.length === 0) return [];
+    
+    try {
+      setUploadingAttachments(true);
+      const uploadPromises = files.map(async (file) => {
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
+        const fileRef = ref(storage, `review-attachments/${company.id}/${currentUser?.uid}/${fileName}`);
+        
+        await uploadBytes(fileRef, file);
+        const downloadUrl = await getDownloadURL(fileRef);
+        
+        const isImage = file.type.startsWith('image/');
+        return {
+          url: downloadUrl,
+          type: isImage ? 'image' as const : 'pdf' as const,
+          name: file.name
+        };
+      });
+      
+      return await Promise.all(uploadPromises);
+    } catch (error) {
+      console.error('Error uploading attachments:', error);
+      throw error;
+    } finally {
+      setUploadingAttachments(false);
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,6 +249,18 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
 
       // Calculate average rating
       const overallRating = calculateAverageRating();
+      
+      // Upload attachments if any
+      let attachments: { url: string; type: 'image' | 'pdf'; name: string; }[] = [];
+      if (files.length > 0) {
+        try {
+          attachments = await uploadAttachments();
+        } catch (error) {
+          onError(translations?.failedToUploadAttachments || 'Failed to upload attachments');
+          setLoading(false);
+          return;
+        }
+      }
 
       // Add review to Firestore
       await addDoc(collection(db, 'reviews'), {
@@ -161,6 +273,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
         title: formData.title.trim(),
         content: formData.content.trim(),
         isAnonymous: formData.isAnonymous,
+        attachments: attachments,
         verified: currentUser.role === 'admin', // Admins are auto-verified
         createdAt: new Date(),
         updatedAt: new Date()
@@ -359,6 +472,73 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
               {translations?.charactersLimit?.replace('{current}', formData.content.length.toString()).replace('{max}', '1000') || `${formData.content.length}/1000 characters`}
             </p>
           </div>
+          
+          {/* File Attachments */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+              <div className="flex items-center">
+                <Paperclip className="h-4 w-4 mr-1" />
+                <span>{translations?.attachments || 'Attachments'}</span>
+              </div>
+              <span className="text-xs text-gray-500">{translations?.maxFiles || 'Max 5 files'} (JPG, PNG, PDF)</span>
+            </label>
+            
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-gray-400 transition-all duration-200">
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*,application/pdf"
+                multiple
+                onChange={handleFileSelect}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full py-3 flex flex-col items-center"
+              >
+                <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                <span className="text-gray-500">{translations?.dragDropFiles || 'Drag & drop files here, or click to browse'}</span>
+                <span className="text-xs text-gray-400 mt-1">{translations?.maxFileSize || 'Max 5MB per file'}</span>
+              </button>
+            </div>
+            
+            {/* File Preview */}
+            {previewUrls.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <h4 className="text-sm font-medium text-gray-700">
+                  {translations?.selectedFiles || 'Selected Files'} ({previewUrls.length}/5)
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {previewUrls.map((file, index) => (
+                    <div key={index} className="relative group">
+                      <div className="border rounded-lg overflow-hidden bg-gray-50 aspect-square">
+                        {file.type === 'image' ? (
+                          <img 
+                            src={file.url} 
+                            alt={file.name} 
+                            className="w-full h-full object-contain p-2"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                            <FileText className="h-8 w-8 text-red-500 mb-2" />
+                            <span className="text-xs text-center text-gray-500 truncate max-w-full px-2">{file.name}</span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Guidelines */}
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
@@ -380,13 +560,13 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
           <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
             <button
               type="submit"
-              disabled={loading || !calculateAverageRating() || !formData.title.trim() || !formData.content.trim()}
+              disabled={loading || uploadingAttachments || !calculateAverageRating() || !formData.title.trim() || !formData.content.trim()}
               className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 rtl:space-x-reverse"
             >
-              {loading ? (
+              {loading || uploadingAttachments ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>{translations?.submitting || 'Submitting...'}</span>
+                  <span>{uploadingAttachments ? (translations?.uploadingAttachments || 'Uploading attachments...') : (translations?.submitting || 'Submitting...')}</span>
                 </>
               ) : (
                 <>
@@ -398,7 +578,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              disabled={loading}
+              disabled={loading || uploadingAttachments}
               className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-400 transition-all duration-200 disabled:opacity-50"
             >
               {translations?.cancel || 'Cancel'}

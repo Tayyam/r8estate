@@ -33,6 +33,11 @@ export interface Review {
   title: string;
   content: string;
   isAnonymous?: boolean;
+  attachments?: {
+    url: string;
+    type: 'image' | 'pdf';
+    name: string;
+  }[];
   companyReply?: {
     content: string;
     repliedAt: Date;
