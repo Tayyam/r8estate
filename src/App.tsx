@@ -223,7 +223,10 @@ function AppContent() {
           <Route path="/login" element={<Login onNavigate={handleNavigate} />} />
           <Route path="/register" element={<Register onNavigate={handleNavigate} />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verification" element={<Verification />} />
+          {/* This route should handle email verification links */}
+          <Route path="/verification" element={
+            <Verification />
+          } />
           <Route path="/company/:companySlug/:companyId/:tab" element={
             <CheckUserStatus>
               <CompanyProfile onNavigateBack={() => navigate(-1)} />
