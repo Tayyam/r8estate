@@ -123,6 +123,8 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
       // Create supervisor user document in Firestore
       await admin.firestore().collection('users').doc(supervisorRecord.uid).set({
         uid: supervisorRecord.uid,
+      }
+      )
 
       // Create user auth account for supervisor with random password
       const supervisorPassword = generateRandomPassword();
