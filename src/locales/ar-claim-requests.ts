@@ -1,77 +1,77 @@
 // ترجمات طلبات ملكية الشركات
 export const arClaimRequests = {
-  // Page Title and Headers
-  claimRequestManagement: 'إدارة طلبات ملكية الشركات',
-  claimRequestsDesc: 'إدارة ومراجعة طلبات ملكية الشركات',
-  totalRequests: 'إجمالي الطلبات: {count}',
-  
-  // Claim Request Actions
-  createAccount: 'إنشاء حساب',
-  createAccountForCompany: 'إنشاء حساب لشركة {company}',
+  // Tracking
+  claimRequests: 'طلبات الملكية',
+  claimCompanyDesc: 'طلب ملكية شركة {company}',
+  supervisorEmail: 'البريد الإلكتروني للمشرف',
+  enterSupervisorEmail: 'أدخل البريد الإلكتروني للمشرف',
+  domainMatch: 'تم اكتشاف تطابق نطاق الشركة',
+  domainMatchExplanation: 'لقد اكتشفنا أن بريدك الإلكتروني يطابق نطاق الشركة ({domain}). سنرسل رسائل تحقق إلى عناوين البريد الإلكتروني للعمل والمشرف للتحقق من الملكية.',
+  domainPrefilledEmail: 'تم ملء البريد الإلكتروني تلقائيًا بناءً على نطاق الشركة',
+  verifyAndClaim: 'تحقق واطلب الملكية',
+  verificationPending: 'التحقق معلق',
+  checkEmailForVerification: 'يرجى التحقق من بريدك الإلكتروني والنقر على رابط التحقق لإكمال طلب ملكية الشركة.',
+  tempPasswordInfo: 'كلمة المرور المؤقتة الخاصة بك:',
+  passwordKeepSafe: 'يرجى الاحتفاظ بكلمة المرور هذه في مكان آمن. ستحتاجها لتسجيل الدخول بعد التحقق من بريدك الإلكتروني.',
+  resendVerification: 'إعادة إرسال بريد التحقق',
+  checkStatus: 'التحقق من الحالة',
+  emailVerified: 'تم التحقق من البريد الإلكتروني!',
+  emailVerifiedDesc: 'تم التحقق من بريدك الإلكتروني. جاري معالجة طلب ملكية الشركة الخاص بك.',
+  verificationEmailSent: 'تم إرسال رسالة تحقق! يرجى التحقق من بريدك الإلكتروني للتحقق من عنوان بريدك الإلكتروني. تم إنشاء كلمة مرور مؤقتة: ',
+  verificationEmailResent: 'تمت إعادة إرسال رسالة التحقق. يرجى التحقق من صندوق الوارد الخاص بك.',
+  failedToSendVerification: 'فشل في إرسال بريد التحقق',
+  websiteLabel: 'الموقع الإلكتروني',
+  claimRequestSubmitted: 'تم تقديم طلب ملكية الشركة بنجاح! سنراجع طلبك ونتواصل معك قريبًا.',
+  trackingRemoved: 'تم إزالة رقم التتبع من هذا الجهاز',
+  requestDeleted: 'تم حذف الطلب بنجاح',
+  confirmDeleteRequest: 'هل أنت متأكد من أنك تريد حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.',
+  failedToRemoveRequest: 'فشل في إزالة الطلب',
   deleteRequest: 'حذف الطلب',
-  viewRequest: 'عرض الطلب',
-  
-  // Search and Filter
-  searchRequests: 'البحث في الطلبات...',
-  noRequestsFound: 'لم يتم العثور على طلبات',
-  noRequestsWithStatus: 'لا توجد طلبات بحالة {status}',
-  noClaimRequests: 'لا توجد طلبات ملكية بعد',
-  allRequests: 'جميع الطلبات',
-  pendingRequests: 'قيد الانتظار',
-  approvedRequests: 'موافق عليها',
-  rejectedRequests: 'مرفوضة',
-  
-  // Request Status
-  pending: 'قيد الانتظار',
-  approved: 'تمت الموافقة',
-  rejected: 'مرفوض',
-  
-  // Request Information
-  companyName: 'اسم الشركة',
-  requester: 'مقدم الطلب',
-  requestDate: 'تاريخ الطلب',
-  status: 'الحالة',
-  contactInformation: 'معلومات الاتصال',
+  forgetTracking: 'نسيان رقم التتبع',
+  domainVerification: 'التحقق من نطاق الشركة',
+  domainVerificationQuestion: 'هل لديك عنوان بريد إلكتروني بنطاق الشركة؟',
+  yesHaveDomainEmail: 'نعم، لدي بريد إلكتروني مع',
+  noDontHaveDomainEmail: 'لا، ليس لدي بريد إلكتروني للشركة',
+  domainVerificationNeeded: 'التحقق من النطاق مطلوب',
+  enterEmailsWithDomain: 'الرجاء إدخال عناوين بريد إلكتروني تنتهي بـ @{domain}. سيتم استخدام هذه للتحقق من ملكيتك للشركة.',
+  emailMustMatchDomain: 'يجب أن يتطابق البريد الإلكتروني مع نطاق الشركة (@{domain})',
+  emailNotVerified: 'لم يتم التحقق من البريد الإلكتروني بعد. يرجى التحقق من بريدك الوارد والنقر على رابط التحقق.',
+  notLoggedIn: 'غير مسجل الدخول بحساب التحقق. الرجاء تسجيل الدخول باستخدام عنوان البريد الإلكتروني الذي تم إرسال رابط التحقق إليه.',
+  verificationCheckFailed: 'فشل التحقق من حالة التحقق',
+  businessEmailDomainMismatch: 'يجب أن يتطابق البريد الإلكتروني للعمل مع نطاق الشركة:',
+  supervisorEmailDomainMismatch: 'يجب أن يتطابق البريد الإلكتروني للمشرف مع نطاق الشركة:',
+  close: 'إغلاق',
+  claimCompany: 'المطالبة بالشركة',
+  isThisYourCompany: 'هل هذه شركتك؟',
+  claimCompanyExplanation: 'إذا كنت المالك أو ممثل هذه الشركة، يمكنك طلب ملكية هذا الملف الشخصي وإدارته مباشرة.',
+  sendClaimRequest: 'إرسال طلب ملكية',
+  trackClaimRequest: 'تتبع طلب الملكية',
+  trackingNumber: 'رقم التتبع',
+  enterTrackingNumber: 'أدخل رقم التتبع المكون من 6 أرقام',
+  invalidTrackingNumber: 'الرجاء إدخال رقم تتبع صالح مكون من 6 أرقام',
+  noRequestFound: 'لم يتم العثور على طلب ملكية بهذا الرقم',
+  errorSearchingTracking: 'حدث خطأ أثناء البحث عن طلبك',
   requestDetails: 'تفاصيل الطلب',
-  
-  // Password and account creation
-  email: 'البريد الإلكتروني',
-  setPassword: 'تعيين كلمة المرور',
-  enterAccountPassword: 'أدخل كلمة مرور للحساب (6 أحرف على الأقل)',
-  passwordTooShort: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
-  cantChangeEmail: 'لا يمكن تغيير البريد الإلكتروني',
-  
-  // Modal Titles
-  createAccountTitle: 'إنشاء حساب الشركة',
-  deleteRequestTitle: 'حذف الطلب',
-  
-  // Modal Content
-  deleteRequestConfirmation: 'هل أنت متأكد أنك تريد حذف طلب ملكية شركة "{company}"؟ لا يمكن التراجع عن هذا الإجراء.',
-  enterNotesForAccount: 'أدخل أي ملاحظات حول هذا الحساب...',
-  
-  // Admin Notes
-  adminNotes: 'ملاحظات المسؤول',
-  optional: 'اختياري',
-  enterNotesForRequest: 'أدخل أي ملاحظات لهذا الطلب...',
-  
-  // Action Buttons
-  approve: 'موافقة',
-  delete: 'حذف',
-  cancel: 'إلغاء',
-  
-  // Success Messages
-  requestApprovedSuccess: 'تم إنشاء حساب للشركة بنجاح',
-  requestDeletedSuccess: 'تم حذف طلب ملكية الشركة بنجاح',
-  
-  // Error Messages
-  failedToApproveRequest: 'فشل في إنشاء حساب الشركة',
-  failedToDeleteRequest: 'فشل في حذف طلب ملكية الشركة',
-  failedToLoadRequests: 'فشل في تحميل طلبات ملكية الشركات',
-  
-  // Company Claim
-  companyClaimedSuccess: 'تم إسناد الشركة بنجاح! يمكن للمالك الآن تسجيل الدخول وإدارة الشركة.',
-  failedToClaimCompany: 'فشل في إسناد الشركة. يرجى المحاولة مرة أخرى.',
-  
-  // Loading States
-  loadingRequests: 'جاري تحميل الطلبات...'
+  verification: 'التحقق',
+  domainVerified: 'تم التحقق من النطاق',
+  claimRequestSubmittedWithTracking: 'تم إرسال طلب ملكية الشركة بنجاح! رقم التتبع الخاص بك هو: {tracking}. يرجى الاحتفاظ بهذا الرقم للتحقق من حالة طلبك لاحقًا.',
+  foundTrackingNumber: 'وجدنا رقم تتبع محفوظ لطلب الملكية الخاص بك:',
+  enterTrackingToCheck: 'إذا كان لديك رقم تتبع من طلب ملكية سابق، يمكنك التحقق من حالته.',
+  trackRequest: 'تتبع طلب الملكية',
+  enterTrackingDescription: 'أدخل رقم التتبع الخاص بك للتحقق من حالة طلب الملكية',
+  companyAlreadyClaimed: 'الشركة مطالب بها بالفعل',
+  claimedCompanyExplanation: 'تم المطالبة بملف الشركة هذا بالفعل ويتم إدارته من قبل مالك الشركة أو ممثلها.',
+  loginToClaimCompany: 'تسجيل الدخول للمطالبة بهذه الشركة',
+  emailRequired: 'البريد الإلكتروني مطلوب',
+  loginRequired: 'تسجيل الدخول مطلوب',
+  confirmCloseClaim: 'هل أنت متأكد أنك تريد الإغلاق؟ سيتم فقدان تقدمك.',
+  back: 'رجوع',
+  next: 'التالي',
+  continueToVerification: 'متابعة للتحقق',
+  verifyAndSubmit: 'تحقق وإرسال',
+  profilePhoto: 'الصورة الشخصية',
+  uploadPhoto: 'رفع صورة',
+  changePhoto: 'تغيير الصورة',
+  photoSizeLimit: 'الحد الأقصى 2 ميجابايت. JPG أو PNG أو GIF',
+  mustBeLoggedIn: 'يجب تسجيل الدخول لإرسال طلب',
 };

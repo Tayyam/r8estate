@@ -22,6 +22,9 @@ import { arPrivacy } from './ar-privacy';
 import { arMyReviews } from './ar-my-reviews';
 import { arSearch } from './ar-search';
 import { arClaimRequests } from './ar-claim-requests';
+import { arReports } from './ar-reports';
+import { arNotifications } from './ar-notifications';
+import { arClaimRequests } from './ar-claim-requests';
 
 export const ar = {
   ...arCommon,
@@ -46,6 +49,9 @@ export const ar = {
   ...arPrivacy,
   ...arMyReviews,
   ...arSearch,
+  ...arClaimRequests,
+  ...arReports,
+  ...arNotifications,
   ...arClaimRequests,
   
   // Table/pagination translations

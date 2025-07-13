@@ -1,0 +1,68 @@
+// ترجمات التقارير والبلاغات
+export const arReports = {
+  // Report functionality
+  report: 'إبلاغ',
+  reportContent: 'الإبلاغ عن المحتوى',
+  reportContentDesc: 'الإبلاغ عن محتوى غير لائق أو مضلل',
+  reportReason: 'سبب الإبلاغ',
+  selectReason: 'اختر سبباً',
+  reportReasonSpam: 'محتوى مزعج',
+  reportReasonInappropriate: 'محتوى غير لائق',
+  reportReasonFake: 'تقييم مزيف',
+  reportReasonOffensive: 'محتوى مسيء',
+  reportReasonOther: 'سبب آخر',
+  additionalDetails: 'تفاصيل إضافية',
+  optional: 'اختياري',
+  reportDetailsPlaceholder: 'يرجى تقديم أي معلومات إضافية قد تساعدنا على فهم المشكلة...',
+  reportGuidelines: 'إرشادات الإبلاغ',
+  reportGuidelinesItem1: '• التقارير مجهولة للمستخدمين الآخرين',
+  reportGuidelinesItem2: '• سيراجع فريقنا تقريرك خلال 24-48 ساعة',
+  reportGuidelinesItem3: '• قد تؤدي التقارير الكاذبة إلى قيود على الحساب',
+  submitReport: 'إرسال الإبلاغ',
+  reportSubmitted: 'تم إرسال الإبلاغ',
+  reportSubmittedDesc: 'شكراً على إبلاغك. سيقوم فريقنا بمراجعته قريباً.',
+  failedToSubmitReport: 'فشل في إرسال الإبلاغ. يرجى المحاولة مرة أخرى.',
+  
+  // Reports Management
+  reports: 'البلاغات',
+  reportManagement: 'إدارة البلاغات',
+  totalReports: 'إجمالي البلاغات: {count}',
+  allReports: 'جميع البلاغات',
+  pendingReports: 'قيد الانتظار',
+  acceptedReports: 'مقبولة',
+  rejectedReports: 'مرفوضة',
+  searchReports: 'البحث في البلاغات...',
+  noReportsFound: 'لم يتم العثور على بلاغات',
+  noReportsWithStatus: 'لا توجد بلاغات بحالة {status}',
+  noReports: 'لا توجد بلاغات بعد',
+  loadingReports: 'جاري تحميل البلاغات...',
+  
+  // Report Information
+  reportInformation: 'معلومات البلاغ',
+  reportType: 'نوع المحتوى',
+  reportReason: 'سبب البلاغ',
+  reportDate: 'تاريخ البلاغ',
+  resolvedDate: 'تاريخ الحل',
+  reportedContent: 'المحتوى المبلغ عنه',
+  contentNotAvailable: 'المحتوى غير متاح',
+  reporterComments: 'تعليقات المبلغ',
+  adminNotes: 'ملاحظات المسؤول',
+  
+  // Report Actions
+  viewContent: 'عرض المحتوى',
+  acceptReport: 'قبول البلاغ',
+  rejectReport: 'رفض البلاغ',
+  acceptReportTitle: 'قبول البلاغ',
+  rejectReportTitle: 'رفض البلاغ',
+  acceptReportConfirmation: 'هل أنت متأكد من أنك تريد قبول هذا البلاغ؟ سيؤدي ذلك إلى إزالة المحتوى المبلغ عنه من المنصة.',
+  rejectReportConfirmation: 'هل أنت متأكد من أنك تريد رفض هذا البلاغ؟ سيبقى المحتوى المبلغ عنه على المنصة.',
+  acceptAndRemove: 'قبول وإزالة المحتوى',
+  enterNotesForReport: 'أدخل أي ملاحظات حول هذا البلاغ...',
+  
+  // Report Status
+  reportAcceptedSuccess: 'تم قبول البلاغ وإزالة المحتوى بنجاح',
+  reportRejectedSuccess: 'تم رفض البلاغ بنجاح',
+  failedToAcceptReport: 'فشل في قبول البلاغ',
+  failedToRejectReport: 'فشل في رفض البلاغ',
+  failedToLoadReports: 'فشل في تحميل البلاغات',
+};
