@@ -3,10 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { verifyPasswordResetCode, confirmPasswordReset } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 
 const ResetPassword = () => {
   const { translations, language } = useLanguage();
+  const { currentUser, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [actionCode, setActionCode] = useState<string | null>(null);
@@ -21,6 +23,20 @@ const ResetPassword = () => {
 
   // Parse query parameters
   useEffect(() => {
+    // Automatically logout if user is logged in
+    const logoutIfNeeded = async () => {
+      if (currentUser) {
+        try {
+          await logout();
+          console.log("User logged out before password reset");
+        } catch (error) {
+          console.error("Error logging out user:", error);
+        }
+      }
+    };
+    
+    logoutIfNeeded();
+
     const searchParams = new URLSearchParams(location.search);
     const mode = searchParams.get('mode');
     const oobCode = searchParams.get('oobCode');
