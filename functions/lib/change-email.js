@@ -7,7 +7,6 @@ const resend_1 = require("resend");
 // Initialize Resend with the API key
 const RESEND_API_KEY = 're_ZfaXVLi3_94WMKpGCx5XhSkKcQNFsX9nw';
 const resend = new resend_1.Resend(RESEND_API_KEY);
-
 exports.changeEmail = functions.https.onCall(async (data, context) => {
     try {
         // Check if user is authenticated
@@ -71,9 +70,8 @@ exports.changeEmail = functions.https.onCall(async (data, context) => {
             // Log more details about the response
             console.error('Email API response:', emailResponse);
         }
-        return { success: true };
         console.log('Email verification sent successfully:', emailResponse.id);
-        
+        return { success: true };
     }
     catch (error) {
         console.error('Error changing email:', error);
