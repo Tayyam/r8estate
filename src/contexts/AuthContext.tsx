@@ -166,7 +166,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
 
       // Generate auth URL for password reset
-      const resetLink = `${window.location.origin}/reset-password?mode=resetPassword&oobCode=PLACEHOLDER&apiKey=${import.meta.env.VITE_FIREBASE_API_KEY}`;
+      // Get the API key from the Firebase config
+      const firebaseApiKey = auth.app.options.apiKey;
+      const resetLink = `${window.location.origin}/reset-password?mode=resetPassword&oobCode=PLACEHOLDER&apiKey=${firebaseApiKey}`;
       
       // Send email using our custom function
       const sendEmailFunction = httpsCallable(functions, 'sendEmail');
