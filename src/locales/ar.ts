@@ -194,7 +194,6 @@ export const ar = {
   requestDeleted: 'تم حذف الطلب بنجاح',
   confirmDeleteRequest: 'هل أنت متأكد من أنك تريد حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.',
   failedToRemoveRequest: 'فشل في إزالة الطلب',
-  editRequest: 'تعديل الطلب',
   deleteRequest: 'حذف الطلب',
   forgetTracking: 'نسيان رقم التتبع',
   domainVerification: 'التحقق من نطاق الشركة',

@@ -107,18 +107,6 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ initialTrackingNumber = '
     }
   };
 
-  // Handle edit request - redirect to claim form
-  const handleEditRequest = () => {
-    // Remove tracking from localStorage so the user can start fresh
-    localStorage.removeItem('claimTrackingNumber');
-    onClose();
-    
-    // The OverviewTab will automatically show the claim form now
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
-  };
-
   // Get status translation
   const getStatusTranslation = (status: string) => {
     switch(status) {
@@ -229,18 +217,10 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ initialTrackingNumber = '
                 )}
               </div>
               
-              {/* Request Management Options */}
-              <div className="mt-4 pt-4 border-t border-blue-200 flex justify-between items-center">
-                <button
-                  onClick={handleEditRequest}
-                  disabled={deleteLoading}
-                  className="px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse text-sm text-blue-700 hover:bg-blue-100 rounded transition-colors disabled:opacity-50"
-                >
-                  <Edit className="h-4 w-4" />
                   <span>{translations?.editRequest || 'Edit Request'}</span>
                 </button>
                 <button
-                  onClick={() => handleRemoveRequest(true)}
+                      className="px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse text-sm text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 ml-auto"
                   disabled={deleteLoading}
                   className="px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse text-sm text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
                 >
