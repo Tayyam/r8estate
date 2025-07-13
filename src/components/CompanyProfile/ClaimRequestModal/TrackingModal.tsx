@@ -7,10 +7,11 @@ import { ClaimRequest } from '../../../types/company';
 interface TrackingModalProps {
   initialTrackingNumber?: string;
   onClose: () => void;
+  onEditRequest?: () => void;
   translations: any;
 }
 
-const TrackingModal: React.FC<TrackingModalProps> = ({ initialTrackingNumber = '', onClose, translations }) => {
+const TrackingModal: React.FC<TrackingModalProps> = ({ initialTrackingNumber = '', onClose, onEditRequest, translations }) => {
   const [trackingNumber, setTrackingNumber] = useState(initialTrackingNumber);
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -109,14 +110,11 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ initialTrackingNumber = '
 
   // Handle edit request - redirect to claim form
   const handleEditRequest = () => {
-    // Remove tracking from localStorage so the user can start fresh
     localStorage.removeItem('claimTrackingNumber');
     onClose();
-    
-    // The OverviewTab will automatically show the claim form now
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
+    if (onEditRequest) {
+      onEditRequest();
+    }
   };
 
   // Get status translation
@@ -234,7 +232,7 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ initialTrackingNumber = '
                 <button
                   onClick={handleEditRequest}
                   disabled={deleteLoading}
-                  className="px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse text-sm text-blue-700 hover:bg-blue-100 rounded transition-colors disabled:opacity-50"
+                  className="px-3 py-1 flex items-center space-x-1 rtl:space-x-reverse text-sm text-blue-700 hover:bg-blue-100 rounded transition-colors disabled:opacity-50" 
                 >
                   <Edit className="h-4 w-4" />
                   <span>{translations?.editRequest || 'Edit Request'}</span>

@@ -37,6 +37,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   const { translations } = useLanguage();
   const { currentUser } = useAuth();
   const [showClaimRequestModal, setShowClaimRequestModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   // Get governorate name
   const getGovernorateName = (governorateId: string) => {
@@ -123,6 +124,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   onClick={() => {
                     // Just open the tracking modal directly
                     setShowClaimRequestModal(true);
+                    setEditMode(false);
+                    // Reset edit mode
+                    setEditMode(false);
                   }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium"
                 >
@@ -133,7 +137,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    {translations?.claimCompany || 'Claim Company'}
+                    {editMode 
+                      ? (translations?.editClaimRequest || 'Edit Claim Request') 
+                      : (translations?.claimCompany || 'Claim Company')}
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
                     {translations?.claimCompanyExplanation || 'Is this your company? Claim ownership to manage your profile and respond to reviews.'}
@@ -154,11 +160,24 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Claim Request Modal */}
       {showClaimRequestModal && (
         localStorage.getItem('claimTrackingNumber') ? (
-          <TrackingModal
-            initialTrackingNumber={localStorage.getItem('claimTrackingNumber') || ''}
-            onClose={() => setShowClaimRequestModal(false)}
-            translations={translations}
-          />
+          editMode ? (
+            <ClaimRequestModal
+              company={company}
+              onClose={() => setShowClaimRequestModal(false)}
+              onSuccess={setSuccess}
+              onError={setError}
+            />
+          ) : (
+            <TrackingModal
+              initialTrackingNumber={localStorage.getItem('claimTrackingNumber') || ''}
+              onClose={() => setShowClaimRequestModal(false)}
+              onEditRequest={() => {
+                setEditMode(true);
+                setShowClaimRequestModal(true);
+              }}
+              translations={translations}
+            />
+          )
         ) : (
           <ClaimRequestModal
             company={company}

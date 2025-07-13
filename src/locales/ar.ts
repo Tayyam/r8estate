@@ -279,6 +279,7 @@ export const ar = {
   searchReports: 'البحث في البلاغات...',
   noReportsFound: 'لم يتم العثور على بلاغات',
   noReportsWithStatus: 'لا توجد بلاغات بحالة {status}',
+  editClaimRequest: 'تعديل طلب الملكية',
   noReports: 'لا توجد بلاغات بعد',
   loadingReports: 'جاري تحميل البلاغات...',
   trackClaimRequest: 'تتبع طلب ملكية الشركة',
