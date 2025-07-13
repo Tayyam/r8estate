@@ -65,4 +65,12 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
                 e.target.style.borderColor = '#EE183F';
                 e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
               }}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 export default SearchHeader;
