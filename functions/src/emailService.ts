@@ -48,6 +48,12 @@ export const sendEmail = functions.https.onCall(async (data) => {
             throw new functions.https.HttpsError('internal', 'Failed to generate password reset link');
           }
           break;
+        case 'emailVerification':
+          if (!templateData?.verificationUrl) {
+            throw new functions.https.HttpsError('invalid-argument', 'Missing verification URL for email verification');
+          }
+          emailHtml = getEmailVerificationTemplate(templateData.verificationUrl, templateData.email);
+          break;
         default:
           throw new functions.https.HttpsError(
             'invalid-argument',
@@ -88,6 +94,120 @@ export const sendEmail = functions.https.onCall(async (data) => {
     );
   }
 });
+
+// Helper function to generate email verification template
+function getEmailVerificationTemplate(verificationUrl: string, email: string): string {
+  const currentYear = new Date().getFullYear();
+  
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R8 Estate Email Verification</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+      }
+      .header {
+        background-color: #194866;
+        padding: 20px;
+        text-align: center;
+      }
+      .logo {
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .content {
+        padding: 30px 20px;
+        border: 1px solid #e5e7eb;
+        border-top: none;
+      }
+      .button {
+        background-color: #194866;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        display: inline-block;
+        margin: 20px 0;
+      }
+      .message {
+        margin-bottom: 20px;
+        font-size: 16px;
+      }
+      .footer {
+        text-align: center;
+        padding: 15px;
+        background-color: #f3f4f6;
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .highlight {
+        color: #194866;
+        font-weight: bold;
+      }
+      .warning {
+        color: #7F1D1D;
+        font-size: 14px;
+        margin-top: 20px;
+      }
+      .button-container {
+        text-align: center;
+        margin: 30px 0;
+      }
+      .help-text {
+        font-size: 14px;
+        color: #6b7280;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">R8 ESTATE</div>
+      </div>
+      <div class="content">
+        <h2>Email Verification</h2>
+        <div class="message">
+          Thank you for registering with R8 Estate. Please click the button below to verify your email address <span class="highlight">${email}</span>.
+        </div>
+        <div class="button-container">
+          <a href="${verificationUrl}" class="button">Verify Your Email</a>
+        </div>
+        <div class="message">
+          This verification link is only valid for the next <strong>24 hours</strong>. If you don't use it within that time, you'll need to request a new one.
+        </div>
+        <div class="help-text">
+          If the button doesn't work, you can also copy and paste the following link into your browser:
+          <br><br>
+          <a href="${verificationUrl}" style="word-break: break-all; color: #194866;">${verificationUrl}</a>
+        </div>
+        <div class="warning">
+          If you didn't request this verification, please ignore this email or contact our support team if you have concerns.
+        </div>
+      </div>
+      <div class="footer">
+        &copy; ${currentYear} R8 Estate. All rights reserved.
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}
 
 // Helper function to generate OTP email template
 function getOTPEmailTemplate(otp: string, companyName: string): string {

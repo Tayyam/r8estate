@@ -19,6 +19,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import CompanyProfile from './components/CompanyProfile';
 import PersonalProfile from './components/PersonalProfile';
+import Verification from './components/Verification';
 import MyReviews from './components/MyReviews';
 import SearchResults from './components/SearchResults';
 import Footer from './components/Footer';
@@ -222,6 +223,7 @@ function AppContent() {
           <Route path="/login" element={<Login onNavigate={handleNavigate} />} />
           <Route path="/register" element={<Register onNavigate={handleNavigate} />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verification" element={<Verification />} />
           <Route path="/company/:companySlug/:companyId/:tab" element={
             <CheckUserStatus>
               <CompanyProfile onNavigateBack={() => navigate(-1)} />
