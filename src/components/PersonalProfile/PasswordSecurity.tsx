@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Key, Lock, Save, Eye, EyeOff } from 'lucide-react';
+import { Key, Lock, Save, Eye, EyeOff , AlertCircle} from 'lucide-react';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
