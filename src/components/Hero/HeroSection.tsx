@@ -133,15 +133,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
     return "bg-red-500";                       // 1-1.4: Red
   };
 
-  // Get rating badge color based on rating value
-  const getRatingBadgeColor = (rating: number): string => {
-    if (rating >= 4.5) return "bg-green-500"; // 4.5-5: Green
-    if (rating >= 3.5) return "bg-lime-500";  // 3.5-4.4: Lime green
-    if (rating >= 2.5) return "bg-yellow-500"; // 2.5-3.4: Yellow
-    if (rating >= 1.5) return "bg-orange-500"; // 1.5-2.4: Orange
-    return "bg-red-500";                       // 1-1.4: Red
-  };
-
   return (
     <section className="relative bg-gradient-to-br from-blue-50 to-gray-50 py-20 lg:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
