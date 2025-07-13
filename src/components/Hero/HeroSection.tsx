@@ -227,7 +227,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
             {translations?.heroTitle || 'The Primary Real Estate Sector Review Platform in Egypt'}
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
-            {translations?.heroSubtitle || 'Discover and rate the best real estate properties and developers in Egypt. Real reviews from real clients'}
+            {translations?.heroSubtitle || 'Discover and review the best real estate and developers in Egypt. Real reviews from real customers'}
           </p>
         </div>
         
