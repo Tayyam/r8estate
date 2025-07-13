@@ -392,7 +392,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                     {searchSuggestions.map((company) => (
                       <button
                         key={company.id}
-                        className="w-full text-left rtl:text-right hover:bg-gray-50 p-3 rounded-lg transition-colors duration-200"
+                        className="w-full text-left hover:bg-gray-50 p-3 rounded-lg transition-colors duration-200 group"
                         onClick={() => {
                           setSearchQuery(company.name);
                           setShowSuggestions(false);
@@ -406,40 +406,49 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                         {/* Company Info Layout */}
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                           {/* Company Logo */}
-                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs flex-shrink-0 group-hover:scale-105 transition-transform duration-200">
                             {company.logoUrl ? (
                               <img 
                                 src={company.logoUrl} 
                                 alt={company.name} 
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover rounded-full"
                               />
                             ) : (
-                              <Building2 className="h-5 w-5 text-gray-400" />
+                              '🏢'
                             )}
                           </div>
                           
                           {/* Company Info */}
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900">{company.name}</div>
-                            
-                            {/* Company Category */}
-                            {company.categoryId && (
-                              <div className="text-sm text-gray-500">
-                                {categories.find(cat => cat.id === company.categoryId)?.name || ''}
-                              </div>
-                            )}
+                          <div className="font-bold text-gray-900 text-base group-hover:text-blue-600 transition-colors duration-200 flex-shrink-0">
+                            {company.name}
                           </div>
                           
-                          {/* Rating */}
+                          {/* Company Category */}
+                          {company.categoryId && (
+                            <>
+                              <span className="text-gray-400 text-sm">•</span>
+                              <div className="text-sm text-gray-500 truncate flex-shrink min-w-0">
+                                {categories.find(cat => cat.id === company.categoryId)?.name || ''}
+                              </div>
+                            </>
+                          )}
+                          
+                          {/* Review Count */}
+                          {company.totalReviews > 0 && (
+                            <>
+                              <span className="text-gray-400 text-sm">•</span>
+                              <span className="text-gray-500 text-sm flex-shrink-0">
+                                {formatReviewCount(company.totalReviews)} {translations?.reviews || 'reviews'}
+                              </span>
+                            </>
+                          )}
+                          
+                          {/* Rating Badge */}
+                          <div className="flex-grow"></div>
                           {company.totalRating > 0 && (
-                            <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                              <span className="font-medium">{company.totalRating.toFixed(1)}</span>
-                              {company.totalReviews > 0 && (
-                                <span className="text-xs text-gray-500">
-                                  ({formatReviewCount(company.totalReviews)})
-                                </span>
-                              )}
+                            <div className="flex items-center space-x-1 rtl:space-x-reverse bg-green-500 text-white px-2 py-1 rounded text-xs font-bold flex-shrink-0">
+                              <Star className="h-3 w-3 fill-current" />
+                              <span>{company.totalRating.toFixed(1)}</span>
                             </div>
                           )}
                         </div>
