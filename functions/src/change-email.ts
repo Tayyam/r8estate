@@ -37,13 +37,19 @@ export const changeEmail = functions.https.onCall(async (data, context) => {
     
     // Generate verification link for the new email
     const actionCodeSettings = {
-      url: 'https://test.r8estate.com/verification',
+      url: 'https://test.r8estate.com',
       handleCodeInApp: true,
     };
     
     const verificationLink = await admin.auth().generateEmailVerificationLink(
       newEmail,
       actionCodeSettings
+    );
+    
+    // Replace the base URL to add /verification path
+    const modifiedVerificationLink = verificationLink.replace(
+      'https://test.r8estate.com',
+      'https://test.r8estate.com/verification'
     );
     
     // Get current year for copyright
@@ -62,10 +68,10 @@ export const changeEmail = functions.https.onCall(async (data, context) => {
           </div>
           <p>You've successfully changed your email address. Please click the button below to verify your new email address:</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
+            <a href="${modifiedVerificationLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
           </div>
           <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
-          <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;"><a href="${verificationLink}">${verificationLink}</a></p>
+          <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;"><a href="${modifiedVerificationLink}">${modifiedVerificationLink}</a></p>
           <p>This link will expire in 1 hour.</p>
           <p>If you didn't request this change, please contact us immediately.</p>
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">

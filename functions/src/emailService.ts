@@ -39,10 +39,17 @@ export const sendEmail = functions.https.onCall(async (data) => {
             const resetLink = await admin.auth().generatePasswordResetLink(
               templateData.email, 
               {
-                url: 'https://test.r8estate.com/reset-password'
+                url: 'https://test.r8estate.com'
               }
             );
-            emailHtml = getPasswordResetEmailTemplate(resetLink);
+            
+            // Replace the base URL to add /reset-password path
+            const modifiedResetLink = resetLink.replace(
+              'https://test.r8estate.com',
+              'https://test.r8estate.com/reset-password'
+            );
+            
+            emailHtml = getPasswordResetEmailTemplate(modifiedResetLink);
           } catch (error) {
             console.error('Error generating reset link:', error);
             throw new functions.https.HttpsError('internal', 'Failed to generate password reset link');
