@@ -12,7 +12,7 @@ interface BasicInfoProps {
 }
 
 const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
-  const { currentUser, firebaseUser, changeEmailWithoutPassword } = useAuth();
+  const { currentUser, firebaseUser, changeEmailWithoutPassword, sendVerificationEmail } = useAuth();
   const { translations, language, direction } = useLanguage();
   
   const [loading, setLoading] = useState(false);
