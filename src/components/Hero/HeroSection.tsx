@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Building2, ArrowRight, Star, ChevronDown, X } from 'lucide-react';
+import { Search, Building2, ArrowRight, Star, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { Category } from '../../types/company';
 
 interface HeroSectionProps {
   onNavigate?: (page: string) => void;
@@ -17,68 +16,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  
-  // Categories state
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
-  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
-  const [categorySearchQuery, setCategorySearchQuery] = useState('');
-  const [loadingCategories, setLoadingCategories] = useState(true);
   
   // Refs for click outside handling
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const categoryDropdownRef = useRef<HTMLDivElement>(null);
-  
-  // Fetch categories on component mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoadingCategories(true);
-        const categoriesQuery = query(
-          collection(db, 'categories'),
-          orderBy('name'),
-          limit(10)
-        );
-        const categoriesSnapshot = await getDocs(categoriesQuery);
-        const categoriesData = categoriesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date()
-        })) as Category[];
-        
-        setCategories(categoriesData);
-        setFilteredCategories(categoriesData);
-      } catch (error) {
-        console.error('Error loading categories:', error);
-        setCategories([]);
-        setFilteredCategories([]);
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
-    
-    fetchCategories();
-  }, []);
-  
-  // Filter categories based on search query
-  useEffect(() => {
-    if (categorySearchQuery.trim() === '') {
-      setFilteredCategories(categories);
-    } else {
-      const filtered = categories.filter(category =>
-        category.name?.toLowerCase().includes(categorySearchQuery.toLowerCase()) || 
-        (category.nameAr && category.nameAr.toLowerCase().includes(categorySearchQuery.toLowerCase()))
-      );
-      setFilteredCategories(filtered);
-    }
-  }, [categorySearchQuery, categories]);
   
   // Handle search suggestions
   const fetchSearchSuggestions = async (searchQueryText: string) => {
@@ -145,15 +89,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
       ) {
         setShowSuggestions(false);
       }
-      
-      // Close category dropdown
-      if (
-        categoryDropdownRef.current && 
-        !categoryDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsCategoryDropdownOpen(false);
-        setCategorySearchQuery('');
-      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -166,9 +101,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   const handleSearch = () => {
     setShowSuggestions(false);
     if (onSearch) {
-      onSearch(searchQuery, selectedCategory === 'all' ? 'all' : selectedCategory);
+      onSearch(searchQuery, 'all');
     } else {
-      navigate(`/search?q=${encodeURIComponent(searchQuery || '')}&category=${selectedCategory === 'all' ? 'all' : (selectedCategory || 'all')}`);
+      navigate(`/search?q=${encodeURIComponent(searchQuery || '')}&category=all`);
     }
   };
   
@@ -179,36 +114,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
     } else {
       navigate('/search');
     }
-  };
-  
-  // Handle category dropdown toggle
-  const handleCategoryDropdownToggle = () => {
-    setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
-    if (isCategoryDropdownOpen) {
-      setCategorySearchQuery('');
-    }
-  };
-  
-  // Handle category selection
-  const handleCategorySelect = (categoryId: string) => {
-    console.log('Selected category:', categoryId);
-    setSelectedCategory(categoryId);
-    setIsCategoryDropdownOpen(false);
-    setCategorySearchQuery('');
-
-    // If search is provided, trigger it with the new category
-    if (onSearch && searchQuery.trim()) {
-      onSearch(searchQuery, categoryId === 'all' ? 'all' : categoryId);
-    }
-  };
-  
-  // Get selected category name
-  const getSelectedCategoryName = () => {
-    if (!selectedCategory || selectedCategory === 'all') return translations?.allCategories || 'All Categories';
-    const category = categories.find(cat => cat.id === selectedCategory);
-    return language === 'ar' 
-      ? (category?.nameAr || category?.name || translations?.allCategories || 'All Categories')
-      : (category?.name || translations?.allCategories || 'All Categories');
   };
   
   // Format review count for display
@@ -231,7 +136,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
           </p>
         </div>
         
-        {/* Search Bar with Categories */}
+        {/* Search Bar - Simplified without Categories */}
         <div className="max-w-3xl mx-auto relative">
           <div className="flex bg-white rounded-xl shadow-2xl border-2 border-gray-100 hover:border-gray-200 transition-colors duration-300 overflow-hidden">
             {/* Text Input Field */}
@@ -256,99 +161,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                 </button>
               )}
             </div>
-
-            {/* Vertical Separator */}
-            <div className="w-px bg-gray-200"></div>
-
-            {/* Category Dropdown */}
-            <div className="relative" ref={categoryDropdownRef}>
-              <button
-                type="button"
-                onClick={handleCategoryDropdownToggle}
-                className="h-full px-6 py-4 text-gray-700 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200 flex items-center space-x-2 rtl:space-x-reverse whitespace-nowrap"
-              >
-                <span className="text-sm font-medium truncate max-w-40">
-                  {getSelectedCategoryName()}
-                </span>
-                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${
-                  isCategoryDropdownOpen ? 'rotate-180' : ''
-                }`} />
-              </button>
-
-              {/* Category Dropdown Menu */}
-              {isCategoryDropdownOpen && (
-                <div className="absolute top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-72 max-h-96 overflow-hidden">
-                  {/* Search Input for Categories */}
-                  <div className="p-3 border-b border-gray-100 bg-gray-50">
-                    <div className="relative">
-                      <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <input
-                        type="text"
-                        value={categorySearchQuery}
-                        onChange={(e) => setCategorySearchQuery(e.target.value)}
-                        placeholder={translations?.searchCategories || 'Search categories...'}
-                        className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        dir={language === 'ar' ? 'rtl' : 'ltr'}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Scrollable Category List */}
-                  <div className="max-h-72 overflow-y-auto">
-                    {loadingCategories ? (
-                      <div className="px-4 py-6 text-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                        <p className="text-gray-500 text-sm">{translations?.loadingCategories || 'Loading categories...'}</p>
-                      </div>
-                    ) : (
-                      <>
-                        {/* All Categories Option */}
-                        <button
-                          type="button"
-                          onClick={() => handleCategorySelect('all')}
-                          className={`w-full text-left rtl:text-right px-4 py-3 hover:bg-gray-50 transition-colors duration-200 ${
-                            !selectedCategory || selectedCategory === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                            <X className="h-4 w-4" />
-                            <span className="font-medium">{translations?.allCategories || 'All Categories'}</span>
-                          </div>
-                        </button>
-                        
-                        {/* Categories List */}
-                        {filteredCategories.length > 0 ? (
-                          filteredCategories.map((category) => (
-                            <button
-                              key={category.id}
-                              type="button"
-                              onClick={() => handleCategorySelect(category.id)}
-                              className={`w-full text-left rtl:text-right px-4 py-3 hover:bg-gray-50 transition-colors duration-200 ${
-                                selectedCategory === category.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                              }`}
-                            >
-                              <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                                <Building2 className="h-4 w-4 text-gray-400" />
-                                <span className="truncate">
-                                  {language === 'ar' ? (category.nameAr || category.name) : category.name}
-                                </span>
-                              </div>
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-4 py-6 text-center text-gray-500 text-sm">
-                            {translations?.noCategoriesFound || 'No categories found'}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Vertical Separator */}
-            <div className="w-px bg-gray-200"></div>
 
             {/* Search Button */}
             <button
@@ -428,16 +240,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                           <div className="font-bold text-gray-900 text-base group-hover:text-blue-600 transition-colors duration-200 flex-shrink-0">
                             {company.name}
                           </div>
-                          
-                          {/* Company Category */}
-                          {company.categoryId && (
-                            <>
-                              <span className="text-gray-400 text-sm">•</span>
-                              <div className="text-sm text-gray-500 truncate flex-shrink min-w-0">
-                                {categories.find(cat => cat.id === company.categoryId)?.name || ''}
-                              </div>
-                            </>
-                          )}
                           
                           {/* Review Count */}
                           {company.totalReviews > 0 && (
