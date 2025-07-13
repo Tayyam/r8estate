@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { sendEmail } from './emailService';
 import { sendVerificationEmail } from './email-verification';
 import { changeEmail } from './change-email';
+import { claimProcess, verifySupervisor, checkBusinessEmailVerification } from './claim-process';
 
 admin.initializeApp();
 export const createUser = functions.https.onCall(async (data, context) => {
@@ -192,3 +193,5 @@ export { sendEmail };
 export { sendVerificationEmail };
 // Export the email change function
 export { changeEmail };
+// Export the claim process functions
+export { claimProcess, verifySupervisor, checkBusinessEmailVerification };
