@@ -31,6 +31,9 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
   
+  // Tracking number state
+  const [trackingNumber, setTrackingNumber] = useState('');
+  
   // Domain-related state
   const [companyDomain, setCompanyDomain] = useState('');
   const [hasDomainEmail, setHasDomainEmail] = useState<boolean | null>(null);
@@ -69,6 +72,10 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     }
   }, [company.website]);
 
+  // Generate a 6-digit tracking number
+  const generateTrackingNumber = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
 
   // Generate a random 6-digit OTP
   const generateOTP = (): string => {
@@ -372,6 +379,13 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       }
       
       setLoading(true);
+
+      // Generate tracking number
+      const trackingNum = generateTrackingNumber();
+      setTrackingNumber(trackingNum);
+      
+      // Store in localStorage
+      localStorage.setItem('claimTrackingNumber', trackingNum);
       
       const claimRequestRef = await addDoc(collection(db, 'claimRequests'), {
         companyId: company.id,
@@ -382,6 +396,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         businessEmail: formData.businessEmail,
         displayName: formData.displayName,
         status: 'pending',
+        trackingNumber: trackingNum,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
@@ -389,7 +404,10 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       // Notify admins about the new claim request
       await notifyAdminsOfNewClaimRequest(claimRequestRef.id, company.name);
       
-      onSuccess(translations?.claimRequestSubmitted || 'Claim request submitted successfully! We will review your request and contact you soon.');
+      onSuccess(
+        (translations?.claimRequestSubmittedWithTracking || 
+         `Claim request submitted successfully! Your tracking number is: ${trackingNum}. Please save this number to check your request status later.`)
+      );
       onClose();
     } catch (error) {
       console.error('Error submitting claim request:', error);
@@ -480,6 +498,13 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         onError('Invalid or expired verification code');
         return;
       }
+
+      // Generate tracking number for domain verified requests too
+      const trackingNum = generateTrackingNumber();
+      setTrackingNumber(trackingNum);
+      
+      // Store in localStorage
+      localStorage.setItem('claimTrackingNumber', trackingNum);
       
       // Mark OTP as verified
       setOtpVerified(true);
@@ -496,13 +521,17 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         status: 'pending',
         domainVerified: true, // Mark as domain verified
         createdAt: serverTimestamp(),
+        trackingNumber: trackingNum,
         updatedAt: serverTimestamp()
       });
       
       // Notify admins about the new claim request
       await notifyAdminsOfNewClaimRequest(claimRequestRef.id, company.name);
       
-      onSuccess(translations?.claimRequestSubmitted || 'Claim request submitted successfully! We will review your request and contact you soon.');
+      onSuccess(
+        (translations?.claimRequestSubmittedWithTracking || 
+         `Claim request submitted successfully! Your tracking number is: ${trackingNum}. Please save this number to check your request status later.`)
+      );
       onClose();
     } catch (error) {
       console.error("Error processing domain-verified request:", error);
