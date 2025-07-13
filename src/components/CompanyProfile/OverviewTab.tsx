@@ -6,6 +6,7 @@ import { Category, egyptianGovernorates } from '../../types/company';
 import PhotoGallery from './PhotoGallery';
 import ContactInfo from './ContactInfo';
 import ClaimRequestModal from './ClaimRequestModal';
+import CheckStatus from './ClaimRequestModal/CheckStatus';
 import { Building2, CheckCircle } from 'lucide-react';
 
 interface OverviewTabProps {
