@@ -163,41 +163,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           />
         )
       )}
-    </>
-  );
-};
-
-export default OverviewTab;
-          <div className="bg-white rounded-2xl shadow-md p-6 border-l-4 border-blue-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">
-                  {translations?.claimCompany || 'Claim Company'}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {translations?.claimCompanyExplanation || 'Is this your company? Claim ownership to manage your profile and respond to reviews.'}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowClaimRequestModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium"
-              >
-                {translations?.claimCompany || 'Claim Company'}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Claim Request Modal */}
-      {showClaimRequestModal && (
-        <ClaimRequestModal
-          company={company}
-          onClose={() => setShowClaimRequestModal(false)}
-          onSuccess={setSuccess}
-          onError={setError}
-        />
-      )}
     </div>
   );
 };
