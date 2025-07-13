@@ -140,15 +140,12 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
       
       // Modify the verification links to include our custom route
       const modifiedBusinessEmailLink = businessEmailLink.replace(
-        'https://test.r8estate.com',
-        'https://test.r8estate.com/verification'
-      );
-      
-      // Modify the supervisor verification link as well
-      const modifiedSupervisorLink = supervisorVerificationLink.replace(
         'https://test.r8estate.com/verify-supervisor',
         'https://test.r8estate.com/verification'
       );
+
+      // Create supervisor verification link directly with /verification path
+      const modifiedSupervisorLink = `https://test.r8estate.com/verification?token=${supervisorToken.id}&companyId=${companyId}`;
 
       // Send batch emails using Resend
       const emailBatch = [
@@ -194,23 +191,17 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
                 <img src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" alt="R8 Estate Logo" style="width: 100px; height: auto; border-radius: 10%;">
                 <h1 style="color: #194866; margin-top: 20px;">Supervisor Verification</h1>
               </div>
-              <p>Someone is attempting to claim <strong>${companyName}</strong> on R8 Estate.</p>
-              <p>As a supervisor, your verification is required to approve this claim request.</p>
-              <p>The business email <strong>${businessEmail}</strong> has requested to claim this company.</p>
-              <p>The login credentials for the company account (after verification) will be:</p>
-              <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p><strong>Email:</strong> ${businessEmail}</p>
-                <p><strong>Temporary Password:</strong> ${randomPassword}</p>
-              </div>
-              <p>To approve this request, please click the button below:</p>
+              <p>An employee from <strong>${companyName}</strong> has requested verification from you as their supervisor.</p>
+              <p>As a supervisor, your verification is required to approve this claim request for company ownership.</p>
+              <p>To verify and approve this request, please click the button below:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${modifiedSupervisorLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify as Supervisor</a>
+                <a href="${supervisorVerificationLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email</a>
               </div>
               <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
               <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;"><a href="${modifiedSupervisorLink}">${modifiedSupervisorLink}</a></p>
               <p>Both business email and supervisor email must be verified to complete the company claim process.</p>
               <p>This link will expire in 7 days.</p>
-              <p>If you weren't expecting this verification request, please ignore this email.</p>
+              <p>If you are not a supervisor at ${companyName}, please ignore this email.</p>
               <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
                 <p>&copy; ${currentYear} R8 Estate. All rights reserved.</p>
               </div>
