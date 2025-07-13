@@ -5,6 +5,7 @@ import { db, auth, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile } from '../../types/companyProfile';
+import { sendOTPEmail } from '../../utils/emailUtils';
 import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
 import Step4OTPVerification from './ClaimRequestModal/Step4OTPVerification';
@@ -84,6 +85,117 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       onClose();
     }
   }, [onClose, loading, otpSending]);
+
+  // Handle next step progression
+  const handleNextStep = async () => {
+    if (currentStep === 2) {
+      // Validate Step 2 fields
+      if (!formData.contactPhone || !formData.businessEmail || !supervisorEmail) {
+        onError(translations?.allFieldsRequired || 'All fields are required');
+        return;
+      }
+
+      if (hasDomainEmail && !validateEmailDomain(formData.businessEmail)) {
+        onError(translations?.invalidEmailDomain || 'Business email must use company domain');
+        return;
+      }
+
+      // Send OTP and move to verification step
+      await handleSendOTP();
+    }
+  };
+
+  // Handle OTP verification
+  const handleVerifyOTP = async () => {
+    if (!otpCode || otpCode.length !== 6) {
+      onError(translations?.invalidOTPLength || 'Please enter a valid 6-digit code');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Verify OTP
+      const isValid = await verifyOTP(formData.businessEmail, otpCode);
+      if (!isValid) {
+        onError(translations?.invalidOTP || 'Invalid or expired verification code');
+        return;
+      }
+
+      setOtpVerified(true);
+      
+      // Submit claim request
+      await handleSubmitClaimRequest();
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      onError(translations?.verificationFailed || 'Verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle OTP verification for guest users
+  const handleOTPVerificationForGuest = async () => {
+    // For guest users, just verify the OTP and submit the claim request
+    await handleVerifyOTP();
+  };
+
+  // Submit claim request
+  const handleSubmitClaimRequest = async () => {
+    try {
+      setLoading(true);
+      
+      // Generate tracking number
+      const newTrackingNumber = generateTrackingNumber();
+      setTrackingNumber(newTrackingNumber);
+      
+      // Prepare claim request data
+      const claimRequestData = {
+        companyId: company.id,
+        companyName: company.name,
+        userId: currentUser?.uid || null,
+        userEmail: currentUser?.email || null,
+        displayName: currentUser?.displayName || 'Anonymous User',
+        contactPhone: formData.contactPhone,
+        businessEmail: formData.businessEmail,
+        supervisorEmail: supervisorEmail,
+        trackingNumber: newTrackingNumber,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        hasDomainEmail: hasDomainEmail,
+        companyDomain: companyDomain
+      };
+      
+      // Add to Firestore
+      await addDoc(collection(db, 'claimRequests'), claimRequestData);
+      
+      // Mark OTP as used
+      const otpQuery = query(
+        collection(db, 'otp'),
+        where('email', '==', formData.businessEmail),
+        where('otp', '==', otpCode),
+        where('used', '==', false)
+      );
+      
+      const otpSnapshot = await getDocs(otpQuery);
+      if (!otpSnapshot.empty) {
+        const otpDoc = otpSnapshot.docs[0];
+        await updateDoc(doc(db, 'otp', otpDoc.id), { used: true });
+      }
+      
+      // Notify admins
+      await notifyAdminsOfNewClaimRequest(claimRequestData);
+      
+      onSuccess(translations?.claimRequestSubmitted?.replace('{trackingNumber}', newTrackingNumber) || 
+               `Claim request submitted successfully! Tracking number: ${newTrackingNumber}`);
+      onClose();
+    } catch (error) {
+      console.error("Error submitting claim request:", error);
+      onError(translations?.claimRequestFailed || 'Failed to submit claim request');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle domain choice
   const handleDomainChoice = (hasDomain: boolean) => {
@@ -278,7 +390,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
             loading={loading}
             otpSending={otpSending}
             handleSendOTP={handleSendOTP}
-            handleVerifyOTP={currentUser ? handleVerifyOTP : handleOTPVerificationForGuest}
+            handleVerifyOTP={handleVerifyOTP}
             setCurrentStep={(step) => setCurrentStep(step <= 2 ? step : 2)}
             translations={translations}
           />
