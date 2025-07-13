@@ -271,14 +271,6 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
                     focusBorderColor: '#194866',
                     focusRingColor: '#194866'
                   }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#194866';
-                    e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#d1d5db';
-                    e.target.style.boxShadow = 'none';
-                  }}
                   placeholder={translations?.emailPlaceholder || 'Enter your email'}
                   autoFocus
                 />
@@ -303,14 +295,6 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
                   style={{ 
                     focusBorderColor: '#194866',
                     focusRingColor: '#194866'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#194866';
-                    e.target.style.boxShadow = `0 0 0 3px rgba(25, 72, 102, 0.1)`;
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#d1d5db';
-                    e.target.style.boxShadow = 'none';
                   }}
                   placeholder={translations?.passwordPlaceholder || 'Enter your password'}
                 />

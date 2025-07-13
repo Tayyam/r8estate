@@ -61,14 +61,6 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
                 focusBorderColor: '#EE183F',
                 focusRingColor: '#EE183F'
               }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#EE183F';
-                e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#d1d5db';
-                e.target.style.boxShadow = 'none';
-              }}
             />
           </div>
         </div>

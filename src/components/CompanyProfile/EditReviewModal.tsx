@@ -222,27 +222,12 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
     if (communication === 0 || valueForMoney === 0 || friendliness === 0 || responsiveness === 0) {
       onError(translations?.pleaseRateAllCategories || 'Please rate all categories');
       return;
-    }
-
-    if (!formData.title.trim() || !formData.content.trim()) {
-      onError(translations?.pleaseFillAllFields || 'Please fill in all fields');
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Calculate average rating
-      const overallRating = calculateAverageRating();
-
-      // Update review in Firestore
       const reviewRef = doc(db, 'reviews', review.id);
       await updateDoc(reviewRef, {
         rating: overallRating,
         ratingDetails: formData.ratingDetails,
         title: formData.title.trim(),
         content: formData.content.trim(),
-        isAnonymous: formData.isAnonymous,
         updatedAt: new Date()
       });
 
