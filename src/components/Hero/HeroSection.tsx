@@ -81,8 +81,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   }, [categorySearchQuery, categories]);
   
   // Handle search suggestions
-  const fetchSearchSuggestions = async (query: string) => {
-    if (!query.trim() || query.length < 2) {
+  const fetchSearchSuggestions = async (searchQueryText: string) => {
+    if (!searchQueryText.trim() || searchQueryText.length < 2) {
       setSearchSuggestions([]);
       return;
     }
@@ -91,11 +91,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
     setShowSuggestions(true);
     
     try {
-      const companiesQuery = query.length >= 3 
-        ? query.collection(db, 'companies')
-          .where('name', '>=', query)
-          .where('name', '<=', query + '\uf8ff')
+      const companiesQuery = searchQueryText.length >= 3 
+        ? query(
+            collection(db, 'companies'),
+            where('name', '>=', searchQueryText),
+            where('name', '<=', searchQueryText + '\uf8ff'),
           .limit(5)
+          )
         : query(
             collection(db, 'companies'),
             orderBy('name'),
