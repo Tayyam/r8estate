@@ -477,8 +477,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
             </span>
           </div>
         </div>
-      </section>
-    </section>
+      </div>
       {/* Enhanced Call-to-Action Section */}
       <section className="py-16 bg-gradient-to-r from-primary-50 to-blue-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -495,3 +494,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
               </button>
             </div>
           </div>
+        </div>
+      </section>
+    </section>
+  );
+};
+
+export default HeroSection;
