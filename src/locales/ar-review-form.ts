@@ -33,4 +33,15 @@ export const arReviewForm = {
   loginToReviewDesc: 'يجب عليك تسجيل الدخول لمشاركة تجربتك مع هذه الشركة',
   anonymousUser: 'مستخدم مجهول',
   signInToReview: 'تسجيل الدخول للكتابة تقييم',
+  
+  // Attachments
+  attachments: 'المرفقات',
+  dragDropFiles: 'اسحب وأفلت الملفات هنا أو انقر للاستعراض',
+  maxFileSize: 'الحد الأقصى 5 ميغابايت لكل ملف',
+  maxFiles: 'الحد الأقصى 5 ملفات',
+  selectedFiles: 'الملفات المختارة',
+  uploadingAttachments: 'جاري رفع المرفقات...',
+  failedToUploadAttachments: 'فشل في رفع المرفقات',
+  someFilesCouldNotBeAdded: 'تعذر إضافة بعض الملفات',
+  removeFile: 'إزالة الملف'
 };

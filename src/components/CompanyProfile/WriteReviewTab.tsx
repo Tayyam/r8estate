@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Star, MessageSquare, User, AlertCircle, Edit } from 'lucide-react';
+import { Star, MessageSquare, User, AlertCircle, Edit, Upload, Paperclip, FileText, XCircle, Eye } from 'lucide-react';
 import { collection, addDoc, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
@@ -28,6 +29,7 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
   const { currentUser } = useAuth();
   const { translations } = useLanguage();
   const [loading, setLoading] = useState(false);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
   const [userReview, setUserReview] = useState<Review | null>(null);
   const [formData, setFormData] = useState({
     rating: 0,
@@ -39,8 +41,12 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
       valueForMoney: 0,
       friendliness: 0,
       responsiveness: 0
-    }
+    },
+    attachments: [] as { url: string; type: 'image' | 'pdf'; name: string; }[]
   });
+  const [files, setFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<{ url: string; type: 'image' | 'pdf'; name: string; isNew?: boolean; }[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const ratingCategories: RatingCategory[] = [
     { key: 'communication', label: translations?.communication || 'Communication' },
@@ -88,7 +94,8 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
               valueForMoney: 0,
               friendliness: 0,
               responsiveness: 0
-            }
+            },
+            attachments: review.attachments || []
           });
         }
       } catch (error) {
@@ -104,6 +111,114 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
     const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
     const sum = communication + valueForMoney + friendliness + responsiveness;
     return sum > 0 ? Math.round(sum / 4) : 0;
+  };
+
+  // Handle file selection for attachments
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const selectedFiles = Array.from(e.target.files);
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    // Check file types and sizes
+    selectedFiles.forEach(file => {
+      // Check if it's an image or PDF
+      const isImage = file.type.startsWith('image/');
+      const isPDF = file.type === 'application/pdf';
+      
+      if (!isImage && !isPDF) {
+        invalidFiles.push(`${file.name} (Invalid format)`);
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        invalidFiles.push(`${file.name} (File too large)`);
+        return;
+      }
+      
+      // Maximum 5 files total
+      if (previewUrls.length + validFiles.length >= 5) {
+        invalidFiles.push(`${file.name} (Maximum 5 files exceeded)`);
+        return;
+      }
+      
+      validFiles.push(file);
+      
+      // Create preview URL
+      const fileType = isImage ? 'image' : 'pdf';
+      const url = URL.createObjectURL(file);
+      setPreviewUrls(prev => [...prev, { url, type: fileType, name: file.name, isNew: true }]);
+    });
+
+    if (invalidFiles.length > 0) {
+      onError(translations?.someFilesCouldNotBeAdded || `Some files couldn't be added: ${invalidFiles.join(', ')}`);
+    }
+
+    setFiles(prev => [...prev, ...validFiles]);
+  };
+
+  // Remove a file from the list
+  const removeFile = (index: number) => {
+    const file = previewUrls[index];
+    
+    // If it's a new file (not yet uploaded)
+    if (file.isNew) {
+      const newFileIndex = previewUrls.filter(p => p.isNew).findIndex(p => p.url === file.url);
+      if (newFileIndex !== -1) {
+        setFiles(prev => {
+          const newFiles = [...prev];
+          newFiles.splice(newFileIndex, 1);
+          return newFiles;
+        });
+      }
+    } else {
+      // It's an existing attachment, mark it for removal from formData
+      setFormData(prev => ({
+        ...prev,
+        attachments: prev.attachments.filter(att => att.url !== file.url)
+      }));
+    }
+    
+    setPreviewUrls(prev => {
+      const newPreviewUrls = [...prev];
+      if (file.isNew) URL.revokeObjectURL(newPreviewUrls[index].url);
+      newPreviewUrls.splice(index, 1);
+      return newPreviewUrls;
+    });
+  };
+
+  // Upload attachments to Firebase Storage
+  const uploadAttachments = async (): Promise<{ url: string; type: 'image' | 'pdf'; name: string; }[]> => {
+    if (files.length === 0) return [];
+    
+    try {
+      setUploadingAttachments(true);
+      const uploadPromises = files.map(async (file) => {
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
+        const fileRef = ref(storage, `review-attachments/${company.id}/${currentUser?.uid}/${fileName}`);
+        
+        await uploadBytes(fileRef, file);
+        const downloadUrl = await getDownloadURL(fileRef);
+        
+        const isImage = file.type.startsWith('image/');
+        return {
+          url: downloadUrl,
+          type: isImage ? 'image' as const : 'pdf' as const,
+          name: file.name
+        };
+      });
+      
+      return await Promise.all(uploadPromises);
+    } catch (error) {
+      console.error('Error uploading attachments:', error);
+      throw error;
+    } finally {
+      setUploadingAttachments(false);
+    }
   };
 
   // Star rating component
@@ -199,6 +314,18 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
     try {
       setLoading(true);
 
+      // Upload new attachments if any
+      let newAttachments: { url: string; type: 'image' | 'pdf'; name: string; }[] = [];
+      if (files.length > 0) {
+        try {
+          newAttachments = await uploadAttachments();
+        } catch (error) {
+          onError(translations?.failedToUploadAttachments || 'Failed to upload attachments');
+          setLoading(false);
+          return;
+        }
+      }
+
       // Calculate average rating
       const overallRating = calculateAverageRating();
 
@@ -213,6 +340,7 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
         title: formData.title.trim(),
         content: formData.content.trim(),
         isAnonymous: formData.isAnonymous,
+        attachments: newAttachments,
         verified: currentUser.role === 'admin', // Admins are auto-verified
         createdAt: new Date(),
         updatedAt: new Date()
@@ -284,6 +412,21 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
     try {
       setLoading(true);
 
+      // Upload new attachments if any
+      let newAttachments: { url: string; type: 'image' | 'pdf'; name: string; }[] = [];
+      if (files.length > 0) {
+        try {
+          newAttachments = await uploadAttachments();
+        } catch (error) {
+          onError(translations?.failedToUploadAttachments || 'Failed to upload attachments');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Combine existing (not removed) attachments with new ones
+      const combinedAttachments = [...formData.attachments, ...newAttachments];
+
       // Calculate average rating
       const overallRating = calculateAverageRating();
 
@@ -295,6 +438,7 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
         title: formData.title.trim(),
         content: formData.content.trim(),
         isAnonymous: formData.isAnonymous,
+        attachments: combinedAttachments,
         updatedAt: new Date()
       });
 
@@ -507,6 +651,76 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
              `${formData.content.length}/1000 characters`}
           </p>
         </div>
+        
+        {/* File Attachments */}
+        <div>
+          <label className="block text-lg font-semibold text-gray-900 mb-2 flex items-center justify-between">
+            <div className="flex items-center">
+              <Paperclip className="h-5 w-5 mr-2" />
+              <span>{translations?.attachments || 'Attachments'}</span>
+            </div>
+            <span className="text-xs text-gray-500">{translations?.maxFiles || 'Max 5 files'} (JPG, PNG, PDF)</span>
+          </label>
+          
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 transition-all duration-200">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*,application/pdf"
+              multiple
+              onChange={handleFileSelect}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-3 flex flex-col items-center"
+              disabled={previewUrls.length >= 5}
+            >
+              <Upload className="h-10 w-10 text-gray-400 mb-3" />
+              <span className="text-gray-600">{translations?.dragDropFiles || 'Drag & drop files here, or click to browse'}</span>
+              <span className="text-sm text-gray-500 mt-2">{translations?.maxFileSize || 'Max 5MB per file'}</span>
+            </button>
+          </div>
+          
+          {/* File Preview */}
+          {previewUrls.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <h4 className="text-lg font-medium text-gray-900">
+                {translations?.selectedFiles || 'Selected Files'} ({previewUrls.length}/5)
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                {previewUrls.map((file, index) => (
+                  <div key={index} className="relative group">
+                    <div className="border rounded-lg overflow-hidden bg-gray-50 aspect-square shadow-sm">
+                      {file.type === 'image' ? (
+                        <img 
+                          src={file.url} 
+                          alt={file.name} 
+                          className="w-full h-full object-contain p-2"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                          <FileText className="h-10 w-10 text-red-500 mb-2" />
+                          <span className="text-xs text-center text-gray-500 truncate max-w-full px-2">{file.name}</span>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
+                      title={translations?.removeFile || "Remove file"}
+                    >
+                      <XCircle className="h-5 w-5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Guidelines */}
         <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
@@ -528,7 +742,7 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
         <div>
           <button
             type="submit"
-            disabled={loading || !calculateAverageRating() || !formData.title.trim() || !formData.content.trim()}
+            disabled={loading || uploadingAttachments || !calculateAverageRating() || !formData.title.trim() || !formData.content.trim()}
             className="w-full sm:w-auto text-white py-4 px-8 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-lg hover:shadow-xl"
             style={{ backgroundColor: isEditing ? '#f97316' : '#194866' }}
             onMouseEnter={(e) => {
@@ -540,8 +754,16 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
               e.target.style.backgroundColor = isEditing ? '#f97316' : '#194866';
             }}
           >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            {loading || uploadingAttachments ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>
+                  {uploadingAttachments 
+                    ? (translations?.uploadingAttachments || 'Uploading attachments...')
+                    : (translations?.submitting || 'Submitting...')
+                  }
+                </span>
+              </>
             ) : (
               <>
                 {isEditing ? <Edit className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />}
