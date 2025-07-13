@@ -83,17 +83,23 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
 
   // Hide content if review is hidden
   if (review.hidden) {
+    // Don't render anything for non-admin users when a review is hidden
+    if (!currentUser || currentUser.role !== 'admin') {
+      return null;
+    }
+    
+    // For admins, show the review with blur effect and hidden tag
     return (
       <div 
         id={`review-${review.id}`}
-        className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 relative outline-none"
+        className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 relative outline-none overflow-hidden"
       >
-        <div className="text-center py-4">
-          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-            <User className="h-6 w-6 text-gray-400" />
-          </div>
-          <p className="text-gray-500 font-medium">
-            {translations?.reviewHidden || 'This review has been hidden by an administrator'}
+        <div className="absolute top-3 right-3 z-10">
+          <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full border border-yellow-300">
+            {translations?.hidden || 'Hidden'}
+          </span>
+        </div>
+        <div className="filter blur-[2px] pointer-events-none">
           </p>
         </div>
       </div>
