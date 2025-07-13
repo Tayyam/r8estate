@@ -106,8 +106,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         companyName: company.name,
         contactPhone: formData.contactPhone,
         displayName: currentUser?.displayName || formData.displayName || company.name
-      };
-      );
+      });
 
       // Extract response data
       const responseData = response.data as any;
