@@ -157,19 +157,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Reset password
   const resetPassword = async (email: string) => {
     try {
-      // Generate password reset link from Firebase
-      const actionCodeSettings = {
-        // URL you want to redirect back to after password reset
-        url: `${window.location.origin}/login`,
-        // Handle the reset code in the app
-        handleCodeInApp: false
-      };
-
-      // Generate auth URL for password reset
-      // Get the API key from the Firebase config
-      const firebaseApiKey = auth.app.options.apiKey;
-      const resetLink = `${window.location.origin}/reset-password?mode=resetPassword&oobCode=PLACEHOLDER&apiKey=${firebaseApiKey}`;
-      
       // Send email using our custom function
       const sendEmailFunction = httpsCallable(functions, 'sendEmail');
       const result = await sendEmailFunction({
@@ -177,7 +164,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         subject: 'Reset Your R8 Estate Password',
         templateType: 'password-reset',
         templateData: {
-          resetLink
+          email: email // Just pass the email; the function will generate the link
         }
       });
       

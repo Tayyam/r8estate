@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import { sendEmail } from './emailService';
 
 // Initialize Firebase Admin
-admin.initializeApp();
+const app = admin.initializeApp();
 
 export const createUser = functions.https.onCall(async (data, context) => {
   try {

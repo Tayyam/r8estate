@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import { Resend } from 'resend';
+import * as admin from 'firebase-admin';
 
 const resend = new Resend('re_ZfaXVLi3_94WMKpGCx5XhSkKcQNFsX9nw');
 
@@ -30,13 +31,22 @@ export const sendEmail = functions.https.onCall(async (data) => {
           emailHtml = getOTPEmailTemplate(templateData.otp, templateData.companyName);
           break;
         case 'password-reset':
-          if (!templateData?.resetLink) {
-            throw new functions.https.HttpsError(
-              'invalid-argument',
-              'Missing reset link for password reset email'
-            );
+          if (!templateData?.email) {
+            throw new functions.https.HttpsError('invalid-argument', 'Missing email for password reset');
           }
-          emailHtml = getPasswordResetEmailTemplate(templateData.resetLink);
+          // Generate actual password reset link using Firebase Admin SDK
+          try {
+            const resetLink = await admin.auth().generatePasswordResetLink(
+              templateData.email, 
+              {
+                url: 'https://test.r8estate.com/reset-password'
+              }
+            );
+            emailHtml = getPasswordResetEmailTemplate(resetLink);
+          } catch (error) {
+            console.error('Error generating reset link:', error);
+            throw new functions.https.HttpsError('internal', 'Failed to generate password reset link');
+          }
           break;
         default:
           throw new functions.https.HttpsError(
