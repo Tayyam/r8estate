@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Building2, Search, Check, X, AlertCircle, Calendar, 
-  Phone, Mail, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, 
+import {
+  Building2, Search, Check, X, AlertCircle, Calendar,
+  Phone, Mail, ArrowLeft, ArrowRight, Tag,
   MessageSquare, Eye, Trash2
 } from 'lucide-react';
 import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where } from 'firebase/firestore';
@@ -231,10 +231,10 @@ const ClaimRequests: React.FC = () => {
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
       {/* Section Header */}
-      <div className="px-4 sm:px-8 py-6 border-b border-gray-200">
+      <div className="px-6 py-6 border-b border-gray-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            <Building2 className="h-6 w-6" style={{ color: '#194866' }} />
+            <Tag className="h-6 w-6" style={{ color: '#194866' }} />
             <div>
               <h2 className="text-xl sm:text-2xl font-bold" style={{ color: '#194866' }}>
                 {translations?.claimRequestManagement || 'Claim Request Management'}
@@ -253,22 +253,24 @@ const ClaimRequests: React.FC = () => {
       </div>
 
       {/* Success/Error Messages */}
-      {error && (
-        <div className="mx-4 sm:mx-8 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-red-700 text-sm sm:text-base">{error}</p>
-        </div>
-      )}
+      <div>
+        {error && (
+          <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
+            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+            <p className="text-red-700 text-sm sm:text-base">{error}</p>
+          </div>
+        )}
 
-      {success && (
-        <div className="mx-4 sm:mx-8 mt-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
-          <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-          <p className="text-green-700 text-sm sm:text-base">{success}</p>
-        </div>
-      )}
+        {success && (
+          <div className="mx-6 mt-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center space-x-3 rtl:space-x-reverse">
+            <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+            <p className="text-green-700 text-sm sm:text-base">{success}</p>
+          </div>
+        )}
+      </div>
 
       {/* Search and Filter */}
-      <div className="px-4 sm:px-8 py-4 border-b border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -304,14 +306,14 @@ const ClaimRequests: React.FC = () => {
         </div>
       </div>
 
-      {/* Claim Requests List */}
-      <div className="p-6">
+      {/* Claim Requests Table */}
+      <div className="overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
           </div>
         ) : filteredRequests.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 px-6">
             <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">
               {searchQuery 
@@ -323,180 +325,143 @@ const ClaimRequests: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {paginatedRequests.map(request => (
-              <div 
-                key={request.id} 
-                className={`bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200 ${
-                  request.status === 'pending' ? 'border-l-4 border-l-yellow-400' : 
-                  request.status === 'approved' ? 'border-l-4 border-l-green-400' : 
-                  'border-l-4 border-l-red-400'
-                }`}
-              >
-                {/* Request Header */}
-                <div 
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:px-6 bg-gray-50 cursor-pointer"
-                  onClick={() => toggleExpand(request.id)}
-                >
-                  <div className="flex items-center space-x-3 rtl:space-x-reverse mb-3 sm:mb-0">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
-                        {request.companyName}
-                      </h3>
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse text-xs text-gray-500">
-                        <Calendar className="h-3 w-3" />
-                        <span>{request.createdAt.toLocaleDateString()}</span>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {translations?.company || 'Company'}
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {translations?.trackingNumber || 'Tracking Number'}
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {translations?.requester || 'Requester'}
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {translations?.contact || 'Contact'}
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {translations?.status || 'Status'}
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {translations?.requestDate || 'Date'}
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {translations?.actions || 'Actions'}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedRequests.map((request) => (
+                <tr key={request.id} className="hover:bg-gray-50">
+                  {/* Company */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-gray-200">
+                        <Building2 className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{request.companyName}</div>
                       </div>
                     </div>
-                  </div>
+                  </td>
                   
-                  <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusBadgeColor(request.status)}`}>
+                  {/* Tracking Number */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      {request.trackingNumber || 'N/A'}
+                    </span>
+                  </td>
+                  
+                  {/* Requester */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{request.requesterName || 'Guest User'}</div>
+                  </td>
+                  
+                  {/* Contact */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{request.businessEmail}</div>
+                    <div className="text-sm text-gray-500">{request.contactPhone}</div>
+                  </td>
+                  
+                  {/* Status */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${getStatusBadgeColor(request.status)}`}>
                       {getStatusTranslation(request.status)}
                     </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleExpand(request.id);
-                      }}
-                      className="p-1.5 hover:bg-gray-200 rounded-full"
-                    >
-                      {expandedRequestId === request.id ? (
-                        <ChevronUp className="h-5 w-5 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-gray-500" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Request Details (Expanded) */}
-                {expandedRequestId === request.id && (
-                  <div className="p-4 sm:p-6 border-t border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      {/* Contact Information */}
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-gray-900 mb-2">
-                          {translations?.contactInformation || 'Contact Information'}
-                        </h4>
-                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                          <Phone className="h-4 w-4 text-gray-500 mt-0.5" />
-                          <span className="text-gray-700">{request.contactPhone}</span>
-                        </div>
-                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                          <Mail className="h-4 w-4 text-gray-500 mt-0.5" />
-                          <span className="text-gray-700">{request.businessEmail}</span>
-                        </div>
-                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                          <Mail className="h-4 w-4 text-gray-500 mt-0.5" />
-                          <span className="text-gray-700">{request.supervisorEmail}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Requester Information */}
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-gray-900 mb-2">
-                          {translations?.requestDetails || 'Request Details'}
-                        </h4>
-                        {request.requesterName && (
-                          <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                            <span className="text-gray-500">{translations?.requester || 'Requester'}:</span>
-                            <span className="text-gray-700">{request.requesterName}</span>
-                          </div>
-                        )}
-                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                          <span className="text-gray-500">{translations?.requestDate || 'Request Date'}:</span>
-                          <span className="text-gray-700">{request.createdAt.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-start space-x-2 rtl:space-x-reverse text-sm">
-                          <span className="text-gray-500">{translations?.status || 'Status'}:</span>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadgeColor(request.status)}`}>
-                            {getStatusTranslation(request.status)}
-                          </span>
-                        </div>
-                        {request.notes && (
-                          <div className="pt-2">
-                            <span className="text-gray-500 text-sm">{translations?.adminNotes || 'Admin Notes'}:</span>
-                            <p className="text-gray-700 text-sm mt-1 p-2 bg-gray-50 rounded-lg border border-gray-100">
-                              {request.notes}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Action Buttons */}
+                    {request.domainVerified && (
+                      <span className="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-green-100 text-green-800">
+                        {translations?.domainVerified || 'Domain Verified'}
+                      </span>
+                    )}
+                  </td>
+                  
+                  {/* Date */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {request.createdAt.toLocaleDateString()}
+                  </td>
+                  
+                  {/* Actions */}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     {request.status === 'pending' ? (
-                      <div className="flex flex-wrap gap-2 justify-end pt-4 border-t border-gray-100">
+                      <div className="flex justify-end space-x-2">
                         <button
                           onClick={() => {
                             setSelectedRequest(request);
                             setShowCreateAccountModal(true);
                           }}
-                          disabled={actionLoading === request.id}
-                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
+                          className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50"
                         >
-                          <Check className="h-4 w-4" />
-                          <span>{translations?.createAccount || 'Create Account'}</span>
+                          {translations?.createAccount || 'Create Account'}
                         </button>
                         <button
                           onClick={() => {
                             setSelectedRequest(request);
                             setShowDeleteModal(true);
                           }}
-                          disabled={actionLoading === request.id}
-                          className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
+                          className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50"
                         >
-                          <Trash2 className="h-4 w-4" />
-                          <span>{translations?.deleteRequest || 'Delete Request'}</span>
+                          {translations?.delete || 'Delete'}
                         </button>
                       </div>
                     ) : (
-                      <div className="flex flex-wrap gap-2 justify-end pt-4 border-t border-gray-100">
-                        <button
-                          onClick={() => {
-                            setSelectedRequest(request);
-                            setShowDeleteModal(true);
-                          }}
-                          disabled={actionLoading === request.id}
-                          className="px-3 py-1.5 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors duration-200 flex items-center space-x-1 rtl:space-x-reverse"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span>{translations?.deleteRequest || 'Delete Request'}</span>
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setShowDeleteModal(true);
+                        }}
+                        className="text-gray-600 hover:text-gray-900 px-2 py-1 rounded hover:bg-gray-50"
+                      >
+                        {translations?.delete || 'Delete'}
+                      </button>
                     )}
-                  </div>
-                )}
-              </div>
-            ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-4 mt-8">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-gray-300 disabled:opacity-50"
-                >
-                  <ArrowLeft className="h-5 w-5 text-gray-600" />
-                </button>
-                <span className="text-sm text-gray-600">
-                  {currentPage} / {totalPages}
-                </span>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-gray-300 disabled:opacity-50"
-                >
-                  <ArrowRight className="h-5 w-5 text-gray-600" />
-                </button>
-              </div>
-            )}
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center space-x-4 p-4 border-t border-gray-200">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg border border-gray-300 disabled:opacity-50"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <span className="text-sm text-gray-600">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg border border-gray-300 disabled:opacity-50"
+            >
+              <ArrowRight className="h-5 w-5 text-gray-600" />
+            </button>
           </div>
         )}
       </div>
@@ -550,7 +515,16 @@ const ClaimRequests: React.FC = () => {
       {showCreateAccountModal && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">{translations?.createAccount || 'Create Account'}</h3>
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Check className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  {translations?.createAccountTitle || 'Create Company Account'}
+                </h3>
+              </div>
+            </div>
             <p className="text-gray-600 mb-4">
               {translations?.createAccountForCompany?.replace('{company}', selectedRequest.companyName) || 
                `Creating an account for ${selectedRequest.companyName} using the supervisor email: ${selectedRequest.supervisorEmail}`}

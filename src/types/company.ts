@@ -28,12 +28,14 @@ export interface ClaimRequest {
   id: string;
   companyId: string;
   companyName: string;
+  trackingNumber?: string;
   requesterId?: string; // User ID if logged in
   requesterName?: string; // User name if logged in
   contactPhone: string;
   businessEmail: string;
   supervisorEmail: string;
   status: 'pending' | 'approved' | 'rejected';
+  domainVerified?: boolean;
   notes?: string; // Admin notes about the request
   createdAt: Date;
   updatedAt: Date;
