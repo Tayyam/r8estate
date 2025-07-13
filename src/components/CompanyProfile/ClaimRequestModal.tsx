@@ -268,8 +268,6 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         return;
       }
       
-      // Basic email validation for supervisor
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(supervisorEmail)) {
         onError(translations?.invalidSupervisorEmail || 'Please enter a valid supervisor email address');
         return;
