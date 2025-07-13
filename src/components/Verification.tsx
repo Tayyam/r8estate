@@ -26,13 +26,6 @@ const Verification: React.FC = () => {
           return;
         }
 
-        // Check that the mode is for email verification
-        if (mode !== 'verifyEmail') {
-          setError(translations?.invalidVerificationLink || 'Invalid verification link');
-          setLoading(false);
-          return;
-        }
-
         // Apply the action code to verify the email
         await applyActionCode(auth, oobCode);
         

@@ -41,16 +41,13 @@ const ResetPassword = () => {
     const mode = searchParams.get('mode');
     const oobCode = searchParams.get('oobCode');
 
-    // Ensure this is only for password reset, not email verification
-    if (mode !== 'resetPassword' || !oobCode) {
-      setError(translations?.invalidResetLink || 'Invalid password reset link');
-      setVerifying(false);
-      return;
-    }
-
-    if (oobCode) {
+    // Verify this is a password reset
+    if (mode === 'resetPassword' && oobCode) {
       setActionCode(oobCode);
       verifyResetCode(oobCode);
+    } else {
+      setError(translations?.invalidResetLink || 'Invalid password reset link');
+      setVerifying(false);
     }
   }, [location]);
 
