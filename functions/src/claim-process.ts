@@ -375,7 +375,7 @@ export const verifySupervisor = functions.https.onRequest(async (req: Request, r
 // Function to check if business email is verified and update claim if both are verified
 export const checkBusinessEmailVerification = functions.https.onCall(async (data, context) => {
   try {
-    const { userId, claimRequestId, companyId } = data;
+    const { userId, claimRequestId, companyId, isSupervisor } = data;
     
     if (!userId || !claimRequestId || !companyId) {
       throw new functions.https.HttpsError(
@@ -383,18 +383,8 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
         'Missing required fields'
       );
     }
-    
-    // Get user
-    const user = await admin.auth().getUser(userId);
-    
-    if (!user.emailVerified) {
-      return { 
-        success: false, 
-        message: 'Business email is not verified yet' 
-      };
-    }
-    
-    // Get claim request
+
+    // Update the claim request with verified email status
     const claimRequestRef = admin.firestore().collection('claimRequests').doc(claimRequestId);
     const claimRequestDoc = await claimRequestRef.get();
     
@@ -404,24 +394,45 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
         'Claim request not found'
       );
     }
-    
-    // Update business email verified status
-    await claimRequestRef.update({
-      businessEmailVerified: true, 
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-    
-    // Check if supervisor email is also verified
-    const updatedClaimRequest = await claimRequestRef.get();
-    const claimData = updatedClaimRequest.data() as any;
-    
-    if (claimData?.supervisorEmailVerified) {
-      // Both emails are verified, update user role and claim company
-      await admin.firestore().collection('users').doc(userId).update({
-        role: 'company',
-        companyId: companyId,
+
+    // If it's a supervisor verification
+    if (isSupervisor) {
+      await claimRequestRef.update({
+        supervisorEmailVerified: true,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
+    } else {
+      // It's a business email verification
+      await claimRequestRef.update({
+        businessEmailVerified: true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+    }
+    
+    // Get claim request
+    // Get the updated claim request
+    const updatedClaimRequest = await claimRequestRef.get();
+    const claimData = updatedClaimRequest.data();
+    
+    // Check if supervisor email is also verified
+    if (claimData?.businessEmailVerified && claimData?.supervisorEmailVerified) {
+      // Both emails are verified, update user role and claim company
+      if (claimData.userId) {
+        await admin.firestore().collection('users').doc(claimData.userId).update({
+          role: 'company',
+          companyId: companyId,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+      
+      // Update supervisor role as well
+      if (claimData.supervisorId) {
+        await admin.firestore().collection('users').doc(claimData.supervisorId).update({
+          role: 'company',
+          companyId: companyId,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
       
       // Update supervisor role as well if we have the supervisor ID
       if (claimData?.supervisorId) {
@@ -435,7 +446,8 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
       // Mark company as claimed
       await admin.firestore().collection('companies').doc(companyId).update({
         claimed: true,
-        claimedByName: user.displayName,
+        claimedByName: claimData.requesterName || 'Unknown',
+        email: claimData.businessEmail,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
       
@@ -448,14 +460,20 @@ export const checkBusinessEmailVerification = functions.https.onCall(async (data
       return { 
         success: true, 
         message: 'Company claimed successfully',
-        bothVerified: true
+        bothVerified: true,
+        businessVerified: true,
+        supervisorVerified: true
       };
     }
     
     return { 
       success: true, 
-      message: 'Business email verified successfully. Waiting for supervisor verification.',
-      bothVerified: false
+      message: isSupervisor 
+        ? 'Supervisor email verified successfully. Waiting for business verification.'
+        : 'Business email verified successfully. Waiting for supervisor verification.',
+      bothVerified: false,
+      businessVerified: claimData?.businessEmailVerified || false,
+      supervisorVerified: claimData?.supervisorEmailVerified || false
     };
     
   } catch (error: any) {
