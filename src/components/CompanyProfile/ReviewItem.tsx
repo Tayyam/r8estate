@@ -88,18 +88,75 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
       return null;
     }
     
-    // For admins, show the review with blur effect and hidden tag
+    // For admins, show the review with a blur effect and hidden tag
     return (
       <div 
         id={`review-${review.id}`}
-        className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 relative outline-none overflow-hidden"
+        className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 relative outline-none overflow-hidden group"
       >
-        <div className="absolute top-3 right-3 z-10">
-          <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full border border-yellow-300">
+        {/* Hidden Badge */}
+        <div className="absolute top-4 right-4 z-10">
+          <div className="bg-yellow-100 text-yellow-800 text-xs font-medium px-3 py-1 rounded-full border border-yellow-200 shadow-sm">
             {translations?.hidden || 'Hidden'}
-          </span>
+          </div>
         </div>
-        <div className="filter blur-[2px] pointer-events-none">
+        
+        {/* Blurred Content */}
+        <div className="filter blur-[2px] hover:blur-[1px] transition-all duration-300 pointer-events-none opacity-75">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 space-y-3 sm:space-y-0">
+            <div className="flex items-center space-x-4 rtl:space-x-reverse flex-1">
+              {/* User Avatar */}
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-lg">
+                  {review.userName.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 rtl:space-x-reverse mb-1">
+                  <h3 className="font-bold text-gray-900">{review.userName}</h3>
+                  {review.verified && (
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 rtl:space-x-reverse">
+                      <Shield className="h-3 w-3" />
+                      <span>{translations?.verified || 'Verified'}</span>
+                    </span>
+                  )}
+                  {review.isAnonymous && (
+                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+                      {translations?.anonymous || 'Anonymous'}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                  <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    {formatDate(review.createdAt)}
+                    {review.updatedAt > review.createdAt && (
+                      <span className="text-xs text-gray-500 ml-2 rtl:ml-0 rtl:mr-2">
+                        {translations?.edited || '(edited)'}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                
+                {/* Detailed Ratings */}
+                {renderDetailedRatings()}
+              </div>
+            </div>
+          </div>
+
+          <h4 className="font-semibold text-gray-900 mb-3 text-lg">{review.title}</h4>
+          <p className="text-gray-700 leading-relaxed mb-6">{review.content}</p>
           <p></p>
         </div>
       </div>
