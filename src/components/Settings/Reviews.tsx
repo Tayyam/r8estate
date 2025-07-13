@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  MessageSquare, Search, Eye, EyeOff, Trash2, CheckCircle, XCircle, 
-  AlertTriangle, ChevronDown, X, Tag, Filter, Calendar, Star, User ,ChevronLeft ,ChevronRight
+  MessageSquare, Search, Eye, EyeOff, Trash2, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, Calendar, Star, User ,ChevronLeft ,ChevronRight, 
+  AlertTriangle, X, Tag, Filter
 } from 'lucide-react';
 import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
@@ -19,12 +19,15 @@ const Reviews: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [verificationDropdowns, setVerificationDropdowns] = useState<Record<string, boolean>>({});
   const [updatingVerification, setUpdatingVerification] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'hidden' | 'published'>('all');
   const [verificationFilter, setVerificationFilter] = useState<'all' | 'verified' | 'unverified'>('all');
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const [companies, setCompanies] = useState<{id: string, name: string}[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
 
   // Load reviews
   useEffect(() => {
@@ -81,6 +84,25 @@ const Reviews: React.FC = () => {
     loadReviews();
   }, []);
 
+  // Load unique companies for filter
+  useEffect(() => {
+    const loadCompanies = async () => {
+      try {
+        const companiesQuery = query(collection(db, 'companies'), orderBy('name'));
+        const snapshot = await getDocs(companiesQuery);
+        const companyList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name
+        }));
+        setCompanies(companyList);
+      } catch (error) {
+        console.error('Error loading companies:', error);
+      }
+    };
+    
+    loadCompanies();
+  }, []);
+
   // Filter reviews
   const filteredReviews = reviews.filter(review => {
     // Search filter
@@ -101,7 +123,10 @@ const Reviews: React.FC = () => {
       (verificationFilter === 'verified' && review.verified) ||
       (verificationFilter === 'unverified' && !review.verified);
       
-    return matchesSearch && matchesStatus && matchesVerification;
+    // Company filter
+    const matchesCompany = companyFilter === 'all' || review.companyId === companyFilter;
+      
+    return matchesSearch && matchesStatus && matchesVerification && matchesCompany;
   });
 
   // Pagination
@@ -151,14 +176,6 @@ const Reviews: React.FC = () => {
     );
   };
 
-  // Toggle verification dropdown
-  const toggleVerificationDropdown = (reviewId: string) => {
-    setVerificationDropdowns(prev => ({
-      ...prev,
-      [reviewId]: !prev[reviewId]
-    }));
-  };
-
   // Handle verification tag update
   const handleVerificationTagUpdate = async (reviewId: string, verified: boolean) => {
     try {
@@ -201,14 +218,16 @@ const Reviews: React.FC = () => {
         if (!confirm(translations?.confirmDeleteReview || 'Are you sure you want to delete this review?')) {
           return;
         }
-        
+
         // Delete review
-        await deleteDoc(reviewRef);
+        await deleteDoc(doc(db, 'reviews', reviewId));
         
         // Remove from local state
         setReviews(prev => prev.filter(review => review.id !== reviewId));
         
         setSuccess(translations?.reviewDeletedSuccess || 'Review deleted successfully');
+        setShowDeleteModal(false);
+        setSelectedReview(null);
       } else {
         // Hide or unhide review
         await updateDoc(reviewRef, {
@@ -229,7 +248,7 @@ const Reviews: React.FC = () => {
       }
       
       setTimeout(() => setSuccess(''), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error ${action}ing review:`, error);
       setError(translations?.failedToUpdateReview || 'Failed to update review');
       setTimeout(() => setError(''), 3000);
@@ -247,6 +266,7 @@ const Reviews: React.FC = () => {
     setSearchQuery('');
     setStatusFilter('all');
     setVerificationFilter('all');
+    setCompanyFilter('all');
     setCurrentPage(1);
   };
 
@@ -339,12 +359,31 @@ const Reviews: React.FC = () => {
             </select>
           </div>
           
+          {/* Company Filter */}
+          <div>
+            <select
+              value={companyFilter}
+              onChange={(e) => {
+                setCompanyFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200"
+            >
+              <option value="all">{translations?.allCompanies || 'All Companies'}</option>
+              {companies.map(company => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
           {/* Reset Filters */}
           <div className="flex items-center">
             <button
               onClick={resetFilters}
               className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200"
-              disabled={!searchQuery && statusFilter === 'all' && verificationFilter === 'all'}
+              disabled={!searchQuery && statusFilter === 'all' && verificationFilter === 'all' && companyFilter === 'all'}
             >
               <Filter className="h-4 w-4" />
               <span>{translations?.resetFilters || 'Reset Filters'}</span>
@@ -397,9 +436,6 @@ const Reviews: React.FC = () => {
                   {translations?.status || 'Status'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {translations?.verification || 'Verification'}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {translations?.createdDate || 'Created'}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -443,26 +479,15 @@ const Reviews: React.FC = () => {
                   
                   {/* Rating */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {renderStars(review.rating)}
+                    <div className="flex items-center space-x-1 rtl:space-x-reverse bg-green-500 text-white px-2 py-1 rounded text-xs font-bold inline-flex w-min">
+                      <Star className="h-3 w-3 fill-current" />
+                      <span>{review.rating}</span>
+                    </div>
                   </td>
                   
                   {/* Status */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getStatusBadge(review.hidden)}
-                  </td>
-                  
-                  {/* Verification */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      review.verified 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {review.verified 
-                        ? <><CheckCircle className="h-3 w-3 mr-1" />{translations?.verified || 'Verified'}</>
-                        : <><XCircle className="h-3 w-3 mr-1" />{translations?.unverified || 'Unverified'}</>
-                      }
-                    </span>
                   </td>
                   
                   {/* Created Date */}
@@ -518,7 +543,10 @@ const Reviews: React.FC = () => {
                       
                       {/* Delete Button */}
                       <button
-                        onClick={() => handleReviewAction(review.id, 'delete')}
+                        onClick={() => {
+                          setSelectedReview(review);
+                          setShowDeleteModal(true);
+                        }}
                         className="text-red-600 hover:text-red-900 p-1"
                         title={translations?.deleteReview || 'Delete Review'}
                       >
@@ -599,6 +627,40 @@ const Reviews: React.FC = () => {
                   <ChevronRight className="h-5 w-5" />
                 </button>
               </nav>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedReview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-4">
+                <AlertCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {translations?.deleteReview || 'Delete Review'}
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                {translations?.confirmDeleteReview || 'Are you sure you want to delete this review? This action cannot be undone.'}
+              </p>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+                >
+                  {translations?.cancel || 'Cancel'}
+                </button>
+                <button
+                  onClick={() => handleReviewAction(selectedReview.id, 'delete')}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                >
+                  {translations?.delete || 'Delete'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
