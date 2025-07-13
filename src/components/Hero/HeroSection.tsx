@@ -96,7 +96,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
             collection(db, 'companies'),
             where('name', '>=', searchQueryText),
             where('name', '<=', searchQueryText + '\uf8ff'),
-          .limit(5)
+            limit(5)
           )
         : query(
             collection(db, 'companies'),
