@@ -166,9 +166,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   const handleSearch = () => {
     setShowSuggestions(false);
     if (onSearch) {
-      onSearch(searchQuery, selectedCategory);
+      onSearch(searchQuery, selectedCategory === 'all' ? 'all' : selectedCategory);
     } else {
-      navigate(`/search?q=${encodeURIComponent(searchQuery || '')}&category=${selectedCategory || 'all'}`);
+      navigate(`/search?q=${encodeURIComponent(searchQuery || '')}&category=${selectedCategory === 'all' ? 'all' : (selectedCategory || 'all')}`);
     }
   };
   
@@ -191,14 +191,20 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   
   // Handle category selection
   const handleCategorySelect = (categoryId: string) => {
+    console.log('Selected category:', categoryId);
     setSelectedCategory(categoryId);
     setIsCategoryDropdownOpen(false);
     setCategorySearchQuery('');
+
+    // If search is provided, trigger it with the new category
+    if (onSearch && searchQuery.trim()) {
+      onSearch(searchQuery, categoryId === 'all' ? 'all' : categoryId);
+    }
   };
   
   // Get selected category name
   const getSelectedCategoryName = () => {
-    if (selectedCategory === 'all') return translations?.allCategories || 'All Categories';
+    if (!selectedCategory || selectedCategory === 'all') return translations?.allCategories || 'All Categories';
     const category = categories.find(cat => cat.id === selectedCategory);
     return language === 'ar' 
       ? (category?.nameAr || category?.name || translations?.allCategories || 'All Categories')
@@ -259,7 +265,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
               <button
                 type="button"
                 onClick={handleCategoryDropdownToggle}
-                className="h-full px-6 py-4 text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-all duration-200 flex items-center space-x-2 rtl:space-x-reverse whitespace-nowrap"
+                className="h-full px-6 py-4 text-gray-700 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200 flex items-center space-x-2 rtl:space-x-reverse whitespace-nowrap"
               >
                 <span className="text-sm font-medium truncate max-w-40">
                   {getSelectedCategoryName()}
@@ -292,7 +298,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                     {loadingCategories ? (
                       <div className="px-4 py-6 text-center">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                        <p className="text-gray-500 text-sm">{translations?.loadingCategories || 'جاري تحميل الفئات...'}</p>
+                        <p className="text-gray-500 text-sm">{translations?.loadingCategories || 'Loading categories...'}</p>
                       </div>
                     ) : (
                       <>
@@ -301,7 +307,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                           type="button"
                           onClick={() => handleCategorySelect('all')}
                           className={`w-full text-left rtl:text-right px-4 py-3 hover:bg-gray-50 transition-colors duration-200 ${
-                            selectedCategory === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                            !selectedCategory || selectedCategory === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                           }`}
                         >
                           <div className="flex items-center space-x-2 rtl:space-x-reverse">
