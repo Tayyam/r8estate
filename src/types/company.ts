@@ -34,6 +34,7 @@ export interface ClaimRequest {
   contactPhone: string;
   businessEmail: string;
   supervisorEmail: string;
+  password?: string; // Password entered by the user during claim process
   status: 'pending' | 'approved' | 'rejected';
   domainVerified?: boolean;
   notes?: string; // Admin notes about the request

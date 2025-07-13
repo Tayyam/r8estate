@@ -125,7 +125,7 @@ const ClaimRequests: React.FC = () => {
       
       // Create user account for the company
       const result = await createUserFunction({
-        email: selectedRequest.supervisorEmail,
+        email: selectedRequest.businessEmail,
         password: accountPassword,
         displayName: selectedRequest.companyName,
         role: 'company'
@@ -144,7 +144,7 @@ const ClaimRequests: React.FC = () => {
         // Update company document
         await updateDoc(doc(db, 'companies', selectedRequest.companyId), {
           claimed: true,
-          email: selectedRequest.supervisorEmail,
+          email: selectedRequest.businessEmail,
           phone: selectedRequest.contactPhone,
           updatedAt: new Date()
         });
@@ -382,6 +382,11 @@ const ClaimRequests: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">{request.businessEmail}</div>
                     <div className="text-sm text-gray-500">{request.contactPhone}</div>
+                    {request.password && (
+                      <div className="text-sm text-gray-500">
+                        {translations?.password || 'Password'}: ****
+                      </div>
+                    )}
                   </td>
                   
                   {/* Status */}
@@ -534,27 +539,30 @@ const ClaimRequests: React.FC = () => {
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {translations?.email || 'Email'}
+                {' '}<span className="text-sm text-gray-500">({translations?.cantChangeEmail || 'Default from request'})</span>
               </label>
               <input
                 type="text"
-                value={selectedRequest.supervisorEmail}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                value={selectedRequest.businessEmail}
+                onChange={(e) => setSelectedRequest({
+                  ...selectedRequest,
+                  businessEmail: e.target.value
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                {translations?.cantChangeEmail || 'Email cannot be changed'}
-              </p>
             </div>
             
             {/* Password Field */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.setPassword || 'Set Password'} *
+                {translations?.setPassword || 'Password'} *
+                {selectedRequest.password && <span className="text-sm text-gray-500 ml-2">({translations?.defaultFromRequest || 'Default from request'})</span>}
               </label>
               <input
                 type="password"
-                value={accountPassword}
-                onChange={(e) => setAccountPassword(e.target.value)}
+                defaultValue={selectedRequest.password || ''}
+                value={accountPassword || ''}
+                onChange={(e) => setAccountPassword(e.target.value)} 
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder={translations?.enterAccountPassword || 'Enter account password (min 6 characters)'}
                 minLength={6}
@@ -563,20 +571,7 @@ const ClaimRequests: React.FC = () => {
                 <p className="text-xs text-red-500 mt-1">
                   {translations?.passwordTooShort || 'Password must be at least 6 characters long'}
                 </p>
-              )}
-            </div>
-            
-            {/* Admin Notes */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.adminNotes || 'Admin Notes'} ({translations?.optional || 'optional'})
-              </label>
-              <textarea
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-20"
-                placeholder={translations?.enterNotesForAccount || 'Enter any notes about this account...'}
-              />
+              )} 
             </div>
             
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse">
