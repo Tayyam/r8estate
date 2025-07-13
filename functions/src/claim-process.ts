@@ -123,32 +123,6 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
       // Create supervisor user document in Firestore
       await admin.firestore().collection('users').doc(supervisorRecord.uid).set({
         uid: supervisorRecord.uid,
-      }
-      )
-
-      // Create user auth account for supervisor with random password
-      const supervisorPassword = generateRandomPassword();
-      const supervisorRecord = await admin.auth().createUser({
-        email: supervisorEmail,
-        password: supervisorPassword,
-        displayName: `${displayName || companyName} (Supervisor)`,
-        emailVerified: false
-      });
-      
-      // Create user documents in Firestore as regular users first
-      await admin.firestore().collection('users').doc(userRecord.uid).set({
-        uid: userRecord.uid,
-        email: businessEmail,
-        displayName: displayName || companyName,
-        role: 'user', // Start as regular user
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        isEmailVerified: false,
-        claimRequestId: claimRequestRef.id // Link to claim request
-      });
-
-      await admin.firestore().collection('users').doc(supervisorRecord.uid).set({
-        uid: supervisorRecord.uid,
         email: supervisorEmail,
         displayName: `${displayName || companyName} (Supervisor)`,
         role: 'user', // Start as regular user
@@ -159,33 +133,46 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
         isSupervisor: true
       });
       
-      // Update claim request with the user IDs
+      // Update claim request with the user ID
       await claimRequestRef.update({
         userId: userRecord.uid,
         supervisorId: supervisorRecord.uid
       });
       
-      // Generate standard email verification links through Firebase Auth
+      // Generate email verification links
       const businessEmailLink = await admin.auth().generateEmailVerificationLink(
         businessEmail,
         businessActionCodeSettings
       );
       
-      const supervisorEmailLink = await admin.auth().generateEmailVerificationLink(
-        supervisorEmail,
-        businessActionCodeSettings
-      );
+      // Generate custom verification link for supervisor
+      // We can't use Firebase's built-in verification for the supervisor
+      // since they don't have an account, so we'll create a custom token
+      const supervisorToken = admin.firestore().collection('verificationTokens').doc();
+      await supervisorToken.set({
+        email: supervisorEmail,
+        claimRequestId: claimRequestRef.id,
+        companyId: companyId,
+        supervisorId: supervisorRecord.uid,
+        businessEmail: businessEmail,
+        expiresAt: admin.firestore.Timestamp.fromDate(
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        ),
+        used: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      
+      const supervisorVerificationLink = `https://test.r8estate.com/verify-supervisor?token=${supervisorToken.id}&companyId=${companyId}`;
       
       // Modify the verification links to include our custom route
       const modifiedBusinessEmailLink = businessEmailLink.replace(
-        'https://test.r8estate.com',
+        'https://test.r8estate.com/verify-supervisor',
         'https://test.r8estate.com/verification'
       );
-      
-      const modifiedSupervisorLink = supervisorEmailLink.replace(
-        'https://test.r8estate.com',
-        'https://test.r8estate.com/verification'
-      );
+
+      // Create supervisor verification link directly with /verification path
+      const modifiedSupervisorLink = `https://test.r8estate.com/verification?token=${supervisorToken.id}&companyId=${companyId}`;
+
       // Send batch emails using Resend
       const emailBatch = [
         {
@@ -228,24 +215,24 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="text-align: center; margin-bottom: 20px;">
                 <img src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" alt="R8 Estate Logo" style="width: 100px; height: auto; border-radius: 10%;">
-                <h1 style="color: #194866; margin-top: 20px;">Verify Your Email</h1>
+                <h1 style="color: #194866; margin-top: 20px;">Supervisor Verification</h1>
               </div>
-              <p>Someone is attempting to claim <strong>${companyName}</strong> on R8 Estate and has listed you as a supervisor.</p>
-              <p>We've created an account for you with the following credentials:</p>
+              <p>An employee from <strong>${companyName}</strong> has requested verification from you as their supervisor.</p>
+              <p>Your account has been created with the following credentials:</p>
               <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
                 <p><strong>Email:</strong> ${supervisorEmail}</p>
                 <p><strong>Password:</strong> ${supervisorPassword}</p>
               </div>
               <p><strong>Important:</strong> Please save this password. You will need it to log in after verification.</p>
-              <p>To verify your email address, please click the button below:</p>
+              <p>To verify and approve this request, please click the button below:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${modifiedSupervisorLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
+                <a href="${supervisorVerificationLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
               </div>
               <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
               <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;"><a href="${modifiedSupervisorLink}">${modifiedSupervisorLink}</a></p>
-              <p>Your verification as a supervisor is required to complete the company claim process.</p>
+              <p>Both business email and supervisor email must be verified to complete the company claim process.</p>
               <p>This link will expire in 7 days.</p>
-              <p>If you are not a supervisor at ${companyName}, please ignore this email or contact support.</p>
+              <p>If you are not a supervisor at ${companyName}, please ignore this email.</p>
               <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
                 <p>&copy; ${currentYear} R8 Estate. All rights reserved.</p>
               </div>
@@ -362,15 +349,6 @@ export const verifySupervisor = functions.https.onRequest(async (req: Request, r
           companyId: companyId,
           updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
-        
-        // Update supervisor role as well if we have the supervisor ID
-        if (claimData?.supervisorId) {
-          await admin.firestore().collection('users').doc(claimData.supervisorId).update({
-            role: 'company',
-            companyId: companyId,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          });
-        }
         
         // Mark company as claimed
         await admin.firestore().collection('companies').doc(String(companyId)).update({
