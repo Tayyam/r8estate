@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { collection, query, where, orderBy, getDocs, limit, startAfter, getDoc, doc, DocumentData } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, limit, startAfter, getDoc, doc, DocumentData, Timestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Category, egyptianGovernorates } from '../../types/company';
