@@ -34,8 +34,10 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
         setSlidesPerView(2);
       } else if (window.innerWidth < 1024) {
         setSlidesPerView(3);
+      } else if (window.innerWidth < 1280) {
+        setSlidesPerView(4);
       } else {
-        setSlidesPerView(8);
+        setSlidesPerView(4); // Show 4 per row
       }
     };
 
@@ -51,7 +53,7 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
         setCategoryLoading(true);
         const categoriesQuery = query(
           collection(db, 'categories'),
-          orderBy('name')
+          orderBy('name') // Removed limit to show all categories
         );
         const categoriesSnapshot = await getDocs(categoriesQuery);
         const categoriesData = categoriesSnapshot.docs.map(doc => ({
@@ -117,6 +119,10 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
               modules={[Navigation, Pagination, Autoplay]}
               spaceBetween={20}
               slidesPerView={slidesPerView}
+              grid={{
+                rows: 2,
+                fill: "row"
+              }}
               navigation={{
                 nextEl: '.swiper-button-next',
                 prevEl: '.swiper-button-prev',
