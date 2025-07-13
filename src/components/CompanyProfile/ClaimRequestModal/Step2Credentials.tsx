@@ -109,28 +109,6 @@ const Step2Credentials: React.FC<Step2CredentialsProps> = ({
           </p>
         </div>
         
-        {/* Supervisor Email Field */}
-        <div>
-          <label htmlFor="supervisorEmail" className="block text-sm font-medium text-gray-700 mb-1">
-            {translations?.supervisorEmail || 'Supervisor Email'} *
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              id="supervisorEmail"
-              type="email"
-              required
-              value={supervisorEmail}
-              onChange={(e) => setSupervisorEmail(e.target.value)}
-              placeholder={translations?.enterSupervisorEmail || 'Enter supervisor email address'}
-              className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            {translations?.supervisorEmailHelp || "Your supervisor's email will be used to verify your company claim."}
-          </p>
-        </div>
-        
         {/* Domain Instructions for domain email users */}
         {hasDomainEmail && companyDomain && (
           <div className="bg-blue-50 p-4 rounded-lg mb-4">
