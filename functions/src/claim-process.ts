@@ -91,6 +91,12 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
       handleCodeInApp: true,
     };
     
+    // Supervisor email verification settings - make it identical to business email
+    const supervisorActionCodeSettings = {
+      url: 'https://test.r8estate.com',
+      handleCodeInApp: true,
+    };
+
     try {
       // Create user auth account with business email and random password
       const userRecord = await admin.auth().createUser({
@@ -136,42 +142,33 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
       // Update claim request with the user ID
       await claimRequestRef.update({
         userId: userRecord.uid,
-        supervisorId: supervisorRecord.uid
+        supervisorId: supervisorRecord.uid,
+        updatedAt: new Date()
       });
       
-      // Generate email verification links
+      // Generate email verification links for both users
       const businessEmailLink = await admin.auth().generateEmailVerificationLink(
         businessEmail,
         businessActionCodeSettings
       );
-      
-      // Generate custom verification link for supervisor
-      // We can't use Firebase's built-in verification for the supervisor
-      // since they don't have an account, so we'll create a custom token
-      const supervisorToken = admin.firestore().collection('verificationTokens').doc();
-      await supervisorToken.set({
-        email: supervisorEmail,
-        claimRequestId: claimRequestRef.id,
-        companyId: companyId,
-        supervisorId: supervisorRecord.uid,
-        businessEmail: businessEmail,
-        expiresAt: admin.firestore.Timestamp.fromDate(
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-        ),
-        used: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-      
-      const supervisorVerificationLink = `https://test.r8estate.com/verify-supervisor?token=${supervisorToken.id}&companyId=${companyId}`;
+
+      // Generate supervisor email verification link (use Firebase's built-in verification)
+      const supervisorEmailLink = await admin.auth().generateEmailVerificationLink(
+        supervisorEmail,
+        supervisorActionCodeSettings
+      );
       
       // Modify the verification links to include our custom route
       const modifiedBusinessEmailLink = businessEmailLink.replace(
-        'https://test.r8estate.com/verify-supervisor',
+        'https://test.r8estate.com',
         'https://test.r8estate.com/verification'
       );
-
-      // Create supervisor verification link directly with /verification path
-      const modifiedSupervisorLink = `https://test.r8estate.com/verification?token=${supervisorToken.id}&companyId=${companyId}`;
+      
+      // Modify supervisor verification link
+      const modifiedSupervisorLink = supervisorEmailLink.replace(
+        'https://test.r8estate.com',
+        'https://test.r8estate.com/verification'
+      );
 
       // Send batch emails using Resend
       const emailBatch = [
@@ -186,7 +183,7 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
                 <h1 style="color: #194866; margin-top: 20px;">Verify Your Business Email</h1>
               </div>
               <p>You're in the process of claiming <strong>${companyName}</strong> on R8 Estate.</p>
-              <p>Your account has been created with the following credentials:</p>
+              <p><strong>Your</strong> account has been created with the following credentials:</p>
               <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
                 <p><strong>Email:</strong> ${businessEmail}</p>
                 <p><strong>Password:</strong> ${randomPassword}</p>
@@ -217,8 +214,8 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
                 <img src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" alt="R8 Estate Logo" style="width: 100px; height: auto; border-radius: 10%;">
                 <h1 style="color: #194866; margin-top: 20px;">Supervisor Verification</h1>
               </div>
-              <p>An employee from <strong>${companyName}</strong> has requested verification from you as their supervisor.</p>
-              <p>Your account has been created with the following credentials:</p>
+              <p>An employee from <strong>${companyName}</strong> has requested verification from you.</p>
+              <p><strong>Your</strong> account has been created with the following credentials:</p>
               <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
                 <p><strong>Email:</strong> ${supervisorEmail}</p>
                 <p><strong>Password:</strong> ${supervisorPassword}</p>
@@ -226,7 +223,7 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
               <p><strong>Important:</strong> Please save this password. You will need it to log in after verification.</p>
               <p>To verify and approve this request, please click the button below:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${supervisorVerificationLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
+                <a href="${modifiedSupervisorLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
               </div>
               <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
               <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;"><a href="${modifiedSupervisorLink}">${modifiedSupervisorLink}</a></p>
@@ -280,6 +277,8 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
 
 // Verify supervisor email function
 export const verifySupervisor = functions.https.onRequest(async (req: Request, res: Response): Promise<void> => {
+  // Note: This function may no longer be needed since we're using Firebase's built-in verification
+  // But we'll keep it for backward compatibility
   try {
     const { token, companyId } = req.query;
     
@@ -366,7 +365,7 @@ export const verifySupervisor = functions.https.onRequest(async (req: Request, r
     }
     
     // Redirect to success page
-    res.redirect('/verification?type=supervisor');
+    res.redirect('/verification');
   } catch (error) {
     console.error('Error verifying supervisor:', error);
     res.status(500).send('An error occurred while verifying supervisor email');
