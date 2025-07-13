@@ -274,6 +274,9 @@ export const ar = {
   noReportsWithStatus: 'لا توجد بلاغات بحالة {status}',
   noReports: 'لا توجد بلاغات بعد',
   loadingReports: 'جاري تحميل البلاغات...',
+  trackClaimRequest: 'تتبع طلب ملكية الشركة',
+  checkRequestStatus: 'تحقق من حالة طلب ملكية الشركة',
+  checkStatus: 'تحقق من الحالة',
   
   // Report Information
   reportInformation: 'معلومات البلاغ',
