@@ -274,7 +274,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                           {company.totalRating > 0 && (
                             <div className={`flex items-center space-x-1 rtl:space-x-reverse ${getRatingBadgeColor(company.totalRating)} text-white px-2 py-1 rounded text-xs font-bold flex-shrink-0`}>
                               <Star className="h-3 w-3 fill-current" />
-                              <span>{company.totalRating.toFixed(1)}</span>
+                             <span>{Math.round(company.totalRating * 10) / 10}</span>
                             </div>
                           )}
                         </div>
