@@ -20,7 +20,7 @@ const Verification: React.FC = () => {
         const mode = searchParams.get('mode');
         const oobCode = searchParams.get('oobCode');
 
-        if (mode !== 'verifyEmail' || !oobCode) {
+        if (!oobCode) {
           setError(translations?.invalidVerificationLink || 'Invalid verification link');
           setLoading(false);
           return;

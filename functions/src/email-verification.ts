@@ -17,7 +17,7 @@ export const sendVerificationEmail = functions.https.onCall(async (data, context
     
     // Generate a verification link
     const actionCodeSettings = {
-      url: 'https://test.r8estate.com/verification',
+      url: 'https://test.r8estate.com/verification?mode=verifyEmail',
       handleCodeInApp: true,
     };
     
@@ -38,9 +38,9 @@ export const sendVerificationEmail = functions.https.onCall(async (data, context
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 20px;">
             <img src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" alt="R8 Estate Logo" style="width: 100px; height: auto; border-radius: 10%;">
-            <h1 style="color: #194866; margin-top: 20px;">Verify Your Email Address</h1>
+            <h1 style="color: #194866; margin-top: 20px;">Verify Your R8 Estate Email Address</h1>
           </div>
-          <p>Thank you for signing up with R8 Estate. Please click the button below to verify your email address:</p>
+          <p>Thank you for signing up with R8 Estate. To verify your email address, please click the button below:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${verificationLink}" style="background-color: #194866; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
           </div>
