@@ -3,7 +3,7 @@ import { Building2, X, AlertCircle } from 'lucide-react';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { db, auth, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext'; 
 import { CompanyProfile } from '../../types/companyProfile';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Step1Domain from './ClaimRequestModal/Step1Domain';
@@ -339,6 +339,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
+
         
         // Mark the company as claimed
         await updateDoc(doc(db, 'companies', company.id), {
@@ -395,6 +396,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         contactPhone: formData.contactPhone,
         businessEmail: formData.businessEmail,
         displayName: formData.displayName,
+        password: formData.password, // Save password for non-domain claim requests
         status: 'pending',
         trackingNumber: trackingNum,
         createdAt: serverTimestamp(),
@@ -503,7 +505,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       const trackingNum = generateTrackingNumber();
       setTrackingNumber(trackingNum);
       
-      // Store in localStorage
+      // Store in localStorage 
       localStorage.setItem('claimTrackingNumber', trackingNum);
       
       // Mark OTP as verified
@@ -518,6 +520,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         contactPhone: formData.contactPhone || '',
         businessEmail: formData.businessEmail,
         displayName: formData.displayName,
+        password: formData.password, // Save password for domain-verified claims too
         status: 'pending',
         domainVerified: true, // Mark as domain verified
         createdAt: serverTimestamp(),
