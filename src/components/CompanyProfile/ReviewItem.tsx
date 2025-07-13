@@ -81,6 +81,25 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
     );
   };
 
+  // Hide content if review is hidden
+  if (review.hidden) {
+    return (
+      <div 
+        id={`review-${review.id}`}
+        className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 relative outline-none"
+      >
+        <div className="text-center py-4">
+          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+            <User className="h-6 w-6 text-gray-400" />
+          </div>
+          <p className="text-gray-500 font-medium">
+            {translations?.reviewHidden || 'This review has been hidden by an administrator'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       id={`review-${review.id}`}

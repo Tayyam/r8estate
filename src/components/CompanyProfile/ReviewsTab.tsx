@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Building2, Star, Plus, Calendar, Shield, Edit, Trash2, AlertCircle, Reply, ChevronDown, ChevronUp, Check, Share2, Filter, Clock } from 'lucide-react';
+import { MessageSquare, Plus, Edit, Trash2, AlertCircle, Reply } from 'lucide-react';
 import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, increment, DocumentData } from 'firebase/firestore';
 import { db, storage } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -405,30 +405,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     navigate(`/login?returnTo=${encodeURIComponent(returnUrl)}`);
   };
 
-  // Show loading placeholder
-  const renderLoadingPlaceholder = () => {
-    return (
-      <div className="animate-pulse space-y-6">
-        {[...Array(3)].map((_, index) => (
-          <div key={index} className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="flex items-start space-x-4 mb-4">
-              <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-              <div className="flex-1">
-                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/3 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-            <div className="h-4 bg-gray-200 rounded w-1/3 mb-3"></div>
-            <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div>
       {/* Write Review Section - Only show if user can review and hasn't reviewed yet */}
@@ -508,7 +484,24 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
       {/* Reviews List */}
       {loading && !reviewsLoaded ? (
-        renderLoadingPlaceholder()
+        <div className="animate-pulse space-y-6">
+          {[...Array(3)].map((_, index) => (
+            <div key={index} className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="flex items-start space-x-4 mb-4">
+                <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/3 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+              <div className="h-4 bg-gray-200 rounded w-1/3 mb-3"></div>
+              <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+            </div>
+          ))}
+        </div>
       ) : filteredReviews.length > 0 ? (
         <div className="space-y-6">
           {filteredReviews.map(review => (
