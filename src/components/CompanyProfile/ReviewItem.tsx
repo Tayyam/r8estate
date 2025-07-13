@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { Star, Shield, ChevronDown, ChevronUp, User, FileText, Image, ExternalLink } from 'lucide-react';
+import { Star, Shield, ChevronDown, ChevronUp, User, FileText, Image, Paperclip } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../types/property';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
 import ReviewVotingButtons from './ReviewVotingButtons';
+import ReviewAttachmentViewer from './ReviewAttachmentViewer';
 
 interface ReviewItemProps {
   review: Review;
@@ -34,6 +35,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
 
   // Handle attachment preview
   const [previewAttachment, setPreviewAttachment] = useState<{url: string; type: 'image' | 'pdf'} | null>(null);
+  const [previewAttachmentIndex, setPreviewAttachmentIndex] = useState<number>(0);
 
   // Render detailed ratings if available
   const renderDetailedRatings = () => {
@@ -161,89 +163,6 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
           <h4 className="font-semibold text-gray-900 mb-3 text-lg">{review.title}</h4>
           <p className="text-gray-700 leading-relaxed mb-6">{review.content}</p>
           <p></p>
-          {/* Attachments */}
-          {review.attachments && review.attachments.length > 0 && (
-            <div className="mb-6">
-              <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                <span>{translations?.attachments || 'Attachments'} ({review.attachments.length})</span>
-              </h5>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {review.attachments.map((attachment, index) => (
-                  <div key={index} className="relative group">
-                    <button
-                      onClick={() => setPreviewAttachment(attachment)}
-                      className="border rounded-lg overflow-hidden bg-gray-50 aspect-square w-full transition-all duration-200 hover:shadow-md"
-                    >
-                      {attachment.type === 'image' ? (
-                        <img 
-                          src={attachment.url} 
-                          alt={attachment.name || `Attachment ${index + 1}`} 
-                          className="w-full h-full object-contain p-2"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-2">
-                          <FileText className="h-8 w-8 text-red-500 mb-2" />
-                          <span className="text-xs text-center text-gray-500 truncate max-w-full px-2">
-                            {attachment.name || `Document ${index + 1}`}
-                          </span>
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-        </div>
-      </div>
-    );
-  };
-  
-  // Attachment Preview Modal
-  const renderAttachmentPreview = () => {
-    if (!previewAttachment) return null;
-    
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4" onClick={() => setPreviewAttachment(null)}>
-        <div className="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-auto" onClick={(e) => e.stopPropagation()}>
-          <div className="p-4 border-b flex items-center justify-between">
-            <h3 className="font-medium text-lg">{previewAttachment.name || 'Attachment Preview'}</h3>
-            <div className="flex space-x-2">
-              <a 
-                href={previewAttachment.url} 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors duration-200"
-              >
-                <ExternalLink className="h-5 w-5" />
-              </a>
-              <button 
-                className="p-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors duration-200"
-                onClick={() => setPreviewAttachment(null)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div className="p-4 flex items-center justify-center bg-gray-100" style={{ minHeight: '60vh' }}>
-            {previewAttachment.type === 'image' ? (
-              <img
-                src={previewAttachment.url}
-                alt={previewAttachment.name || "Image Attachment"}
-                className="max-w-full max-h-[70vh] object-contain"
-              />
-            ) : (
-              <iframe
-                src={previewAttachment.url}
-                title={previewAttachment.name || "PDF Document"}
-                className="w-full h-[70vh]"
-              />
-            )}
-          </div>
         </div>
       </div>
     );
@@ -256,7 +175,13 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
         isHighlighted ? 'highlight-review' : ''
       }`}
     >
-      {previewAttachment && renderAttachmentPreview()}
+      {previewAttachment && (
+        <ReviewAttachmentViewer 
+          attachments={review.attachments || []}
+          initialIndex={previewAttachmentIndex}
+          onClose={() => setPreviewAttachment(null)}
+        />
+      )}
       
       {/* "Shared review" indicator - will be visible when accessed via direct link */}
       <div className="shared-review-indicator hidden absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow-md">
@@ -349,6 +274,45 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
 
       <h4 className="font-semibold text-gray-900 mb-3 text-lg">{review.title}</h4>
       <p className="text-gray-700 leading-relaxed mb-6">{review.content}</p>
+      
+      {/* Attachments */}
+      {review.attachments && review.attachments.length > 0 && (
+        <div className="mb-6">
+          <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+            <Paperclip className="h-4 w-4 mr-1" />
+            <span>{translations?.attachments || 'Attachments'} ({review.attachments.length})</span>
+          </h5>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {review.attachments.map((attachment, index) => (
+              <div key={index} className="relative group">
+                <button
+                  onClick={() => {
+                    setPreviewAttachmentIndex(index);
+                    setPreviewAttachment(attachment);
+                  }}
+                  className="border rounded-lg overflow-hidden bg-gray-50 aspect-square w-full transition-all duration-200 hover:shadow-md"
+                >
+                  {attachment.type === 'image' ? (
+                    <img 
+                      src={attachment.url} 
+                      alt={attachment.name || `Attachment ${index + 1}`} 
+                      className="w-full h-full object-contain p-2"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                      <FileText className="h-8 w-8 text-red-500 mb-2" />
+                      <span className="text-xs text-center text-gray-500 truncate max-w-full px-2">
+                        {attachment.name || `Document ${index + 1}`}
+                      </span>
+                    </div>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Review Voting Buttons */}
       <div className="flex justify-end mb-4">
