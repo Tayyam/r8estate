@@ -78,7 +78,8 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const handleNextStep = async () => {
     if (currentStep === 2) {
       // Validate Step 2 fields
-      if (!formData.contactPhone || !formData.businessEmail || !supervisorEmail) {
+      // Only require contactPhone when not using domain email
+      if ((!hasDomainEmail && !formData.contactPhone) || !formData.businessEmail || !supervisorEmail) {
         onError(translations?.allFieldsRequired || 'All fields are required');
         return;
       }
