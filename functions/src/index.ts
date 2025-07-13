@@ -271,8 +271,8 @@ export const changeUserEmail = functions.https.onCall(async (data, context) => {
     // Check if caller is admin or changing their own email
     if (callerUid !== uid) {
       // If not self, check if admin
-      const callerDoc = await admin.firestore().collection('users').doc(callerUid).get();
-      const callerData = callerDoc.data();
+      const verifyEmailFunction = httpsCallable(functions, 'verifyEmail');
+      const result = await verifyEmailFunction({ oobCode });
       
       if (!callerData || callerData.role !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can change other users\' emails');

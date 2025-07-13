@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin';
 
 const resend = new Resend('re_ZfaXVLi3_94WMKpGCx5XhSkKcQNFsX9nw');
 
-export const sendEmail = functions.https.onCall(async (data) => {
+export const sendEmail = functions.https.onCall(async (data, context) => {
   try {
     const { to, subject, html, templateType, templateData } = data;
     
