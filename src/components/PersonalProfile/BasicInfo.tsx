@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, Mail, Save, RefreshCw, Edit, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { updateProfile, sendEmailVerification } from 'firebase/auth';
+import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -65,7 +65,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
 
   // Send email verification
   const handleSendVerification = async () => {
-    if (!firebaseUser) {
+    if (!firebaseUser || !currentUser) {
       setError(translations?.noUserLoggedIn || 'No user logged in');
       return;
     }
@@ -73,7 +73,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
     try {
       setVerificationLoading(true);
       
-      await sendEmailVerification(firebaseUser);
+      await sendVerificationEmail(currentUser.email);
       
       setSuccess(translations?.verificationEmailSent || 'Verification email has been sent. Please check your inbox.');
     } catch (error: any) {

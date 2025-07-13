@@ -28,6 +28,7 @@ interface AuthContextType {
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
   changeEmailWithoutPassword: (newEmail: string) => Promise<void>;
   verifyEmail: (oobCode: string) => Promise<void>;
+  sendVerificationEmail: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -200,6 +201,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Send verification email
+  const sendVerificationEmail = async (email: string): Promise<void> => {
+    try {
+      const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
+      await sendVerificationEmailFunction({ email });
+    } catch (error: any) {
+      console.error('Error sending verification email:', error);
+      throw new Error(error.message || 'Failed to send verification email');
+    }
+  };
   // Update user profile
   const updateUserProfile = async (updates: Partial<User>) => {
     if (!firebaseUser) throw new Error('No user logged in');
@@ -307,7 +318,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     resetPassword,
     updateUserProfile,
     changeEmailWithoutPassword,
-    verifyEmail
+    verifyEmail,
+    sendVerificationEmail
   };
 
   return (
