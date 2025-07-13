@@ -2,7 +2,9 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { Resend } from 'resend';
 
-const resend = new Resend('re_ZfaXVLi3_94WMKpGCx5XhSkKcQNFsX9nw');
+// Initialize Resend with the API key
+const RESEND_API_KEY = 're_ZfaXVLi3_94WMKpGCx5XhSkKcQNFsX9nw';
+const resend = new Resend(RESEND_API_KEY);
 
 export const changeEmail = functions.https.onCall(async (data, context) => {
   try {
@@ -32,7 +34,8 @@ export const changeEmail = functions.https.onCall(async (data, context) => {
     await admin.firestore().collection('users').doc(userId).update({
       email: newEmail,
       isEmailVerified: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      emailChangeTimestamp: admin.firestore.FieldValue.serverTimestamp() // Add timestamp for email change
     });
     
     // Generate verification link for the new email
@@ -57,7 +60,7 @@ export const changeEmail = functions.https.onCall(async (data, context) => {
     
     // Send verification email to the new address
     const emailResponse = await resend.emails.send({
-      from: 'R8 Estate <verification@r8estate.com>',
+      from: 'R8 Estate <support@r8estate.com>', // Change to a verified sender domain
       to: newEmail,
       subject: 'Verify Your New Email Address',
       html: `
@@ -83,7 +86,11 @@ export const changeEmail = functions.https.onCall(async (data, context) => {
 
     if (!emailResponse.id) {
       throw new Error('Failed to send email: No response ID received');
+      // Log more details about the response
+      console.error('Email API response:', emailResponse);
     }
+    
+    console.log('Email verification sent successfully:', emailResponse.id);
     
     return { success: true };
   } catch (error) {
