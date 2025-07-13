@@ -224,7 +224,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6" style={{ color: '#194866' }}>
-            {translations?.heroTitle || 'First Real Estate Rating Platform in Egypt'}
+            {translations?.heroTitle || 'The Primary Real Estate Sector Review Platform in Egypt'}
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
             {translations?.heroSubtitle || 'Discover and rate the best real estate properties and developers in Egypt. Real reviews from real clients'}
