@@ -222,7 +222,11 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
     if (communication === 0 || valueForMoney === 0 || friendliness === 0 || responsiveness === 0) {
       onError(translations?.pleaseRateAllCategories || 'Please rate all categories');
       return;
+    }
+
+    try {
       const reviewRef = doc(db, 'reviews', review.id);
+      const overallRating = calculateAverageRating();
       await updateDoc(reviewRef, {
         rating: overallRating,
         ratingDetails: formData.ratingDetails,
