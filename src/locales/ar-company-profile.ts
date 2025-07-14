@@ -18,7 +18,7 @@ export const arCompanyProfile = {
   
   // Tabs
   overview: 'نظرة عامة',
-  propertiesTab: 'العقارات',
+  projectsTab: 'المشاريع',
   reviewsTab: 'التقييمات',
   
   // Overview Tab
@@ -44,11 +44,11 @@ export const arCompanyProfile = {
   viewAll: 'عرض جميع الصور',
   showLess: 'عرض أقل',
   
-  // Properties Tab
-  propertiesTitle: 'العقارات',
-  propertiesAvailable: '{count} عقار متاح',
-  noPropertiesYet: 'لا توجد عقارات مدرجة بعد',
-  showcaseProperties: 'ابدأ في عرض عقاراتك للعملاء المحتملين بإضافة أول عقار.',
+  // Projects Tab
+  propertiesTitle: 'المشاريع',
+  propertiesAvailable: '{count} مشروع متاح',
+  noPropertiesYet: 'لا توجد مشاريع مدرجة بعد',
+  showcaseProperties: 'ابدأ في عرض مشاريعك للعملاء المحتملين بإضافة أول مشروع.',
   addProperty: 'إضافة عقار',
   addFirstProperty: 'إضافة أول عقار',
   area: 'المساحة',

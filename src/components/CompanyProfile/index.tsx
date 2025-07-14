@@ -310,7 +310,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
             categories={categories}
           />
         );
-      case 'properties':
+      case 'projects':
         return (
           <PropertiesTab
             properties={properties}
