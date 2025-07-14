@@ -99,19 +99,32 @@ export const createVerifiedUser = functions.https.onCall(async (data, context) =
     
     // Check for existing email error
     // Check for Auth error which could be 'email-already-exists' in Admin SDK
-    // or 'email-already-in-use' in client SDK
-    if (error && typeof error === 'object' && 
-       ((error.code && (error.code === 'auth/email-already-in-use' || error.code === 'auth/email-already-exists')) ||
-        (error.errorInfo && error.errorInfo.code === 'auth/email-already-exists'))) {
+    // Check for existing email error - with proper TypeScript typing
+    if (error && typeof error === 'object') {
+      // Check if it has a code property that matches our expected values
+      if (
+        ('code' in error && 
+          (error.code === 'auth/email-already-in-use' || 
+           error.code === 'auth/email-already-exists')) ||
+        // Check for errorInfo property which might contain the code
+        ('errorInfo' in error && 
+         typeof error.errorInfo === 'object' && 
+         error.errorInfo && 
+         'code' in error.errorInfo && 
+         error.errorInfo.code === 'auth/email-already-exists')
+      ) {
+        throw new functions.https.HttpsError(
+          'already-exists',
+          'This email address is already in use by another account'
+        );
+      }
+    } 
+
+    if (error instanceof functions.https.HttpsError) {
       throw new functions.https.HttpsError(
         'already-exists',
-        'This email address is already in use by another account'
-      );
-    } else if (error instanceof functions.https.HttpsError) {
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+      throw new functions.https.HttpsError('internal', errorMessage);
     }
-    
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
-    throw new functions.https.HttpsError('internal', errorMessage);
   }
 });
