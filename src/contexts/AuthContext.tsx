@@ -66,7 +66,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           updatedAt: userData.updatedAt?.toDate() || new Date(),
           companyId: userData.companyId,
           isEmailVerified: firebaseUser.emailVerified,
-          photoURL: firebaseUser.photoURL || userData.photoURL
+          photoURL: firebaseUser.photoURL || userData.photoURL,
+          status: userData.status || (firebaseUser.emailVerified ? 'active' : 'not-active')
         };
       } else {
         console.log("No user document found for Firebase user:", firebaseUser.uid);
@@ -224,7 +225,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Update local state
       if (currentUser) {
-        setCurrentUser({ ...currentUser, ...updates, updatedAt: new Date() });
+        const updatedUser = { ...currentUser, ...updates, updatedAt: new Date() };
+        
+        // If isEmailVerified is set to true, also update status to 'active'
+        if (updates.isEmailVerified === true && (!updatedUser.status || updatedUser.status === 'not-active')) {
+          updatedUser.status = 'active';
+          
+          // Also update status in Firestore
+          await updateDoc(userRef, { status: 'active' });
+        }
+        
+        setCurrentUser(updatedUser);
       }
     } catch (error: any) {
       console.error('Profile update error:', error);
