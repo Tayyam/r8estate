@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { applyActionCode } from 'firebase/auth';
+import { applyActionCode, checkActionCode } from 'firebase/auth';
 import { auth, db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
@@ -39,13 +39,15 @@ const Verification: React.FC = () => {
         }
 
         // Apply the action code to verify the email
+        addDebugInfo("🔍 Checking action code to extract user email...");
+        const info = await checkActionCode(auth, oobCode);
+        const userEmail = info.data.email;
+        addDebugInfo(`📧 Extracted email from oobCode: ${userEmail}`);
+
         addDebugInfo("🔑 Applying action code to verify email...");
         await applyActionCode(auth, oobCode);
         addDebugInfo("✅ Email verification successful with Firebase Auth");
 
-        // Get the current user email
-        const userEmail = auth.currentUser?.email;
-        
         if (userEmail) {
           addDebugInfo(`📧 Verified email: ${userEmail}`);
           setProcessingClaim(true);
