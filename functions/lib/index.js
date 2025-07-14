@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkBusinessEmailVerification = exports.verifySupervisor = exports.claimProcess = exports.changeEmail = exports.sendVerificationEmail = exports.sendEmail = exports.changeUserPassword = exports.deleteUser = exports.createUser = void 0;
+exports.createVerifiedUser = exports.checkBusinessEmailVerification = exports.verifySupervisor = exports.claimProcess = exports.changeEmail = exports.sendVerificationEmail = exports.sendEmail = exports.changeUserPassword = exports.deleteUser = exports.createUser = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const emailService_1 = require("./emailService");
@@ -13,6 +13,8 @@ const claim_process_1 = require("./claim-process");
 Object.defineProperty(exports, "claimProcess", { enumerable: true, get: function () { return claim_process_1.claimProcess; } });
 Object.defineProperty(exports, "verifySupervisor", { enumerable: true, get: function () { return claim_process_1.verifySupervisor; } });
 Object.defineProperty(exports, "checkBusinessEmailVerification", { enumerable: true, get: function () { return claim_process_1.checkBusinessEmailVerification; } });
+const create_verified_user_1 = require("./create-verified-user");
+Object.defineProperty(exports, "createVerifiedUser", { enumerable: true, get: function () { return create_verified_user_1.createVerifiedUser; } });
 admin.initializeApp();
 exports.createUser = functions.https.onCall(async (data, context) => {
     try {
