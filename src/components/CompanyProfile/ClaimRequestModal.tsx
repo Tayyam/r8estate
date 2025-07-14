@@ -3,7 +3,7 @@ import { Building2, X, AlertCircle } from 'lucide-react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, functions } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext'; 
 import { CompanyProfile } from '../../types/companyProfile';
 import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
@@ -35,6 +35,11 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   // Domain-related state
   const [companyDomain, setCompanyDomain] = useState('');
   const [hasDomainEmail, setHasDomainEmail] = useState<boolean | null>(null);
+  // New UI states
+  const [processingStep, setProcessingStep] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [successTrackingNumber, setSuccessTrackingNumber] = useState('');
 
   // Form and verification state
   const [formData, setFormData] = useState({
@@ -96,9 +101,14 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const handleSubmitClaimRequest = async () => {
     try {
       setLoading(true);
+      setProcessingStep(translations?.processingRequest || 'Processing your request...');
 
       // Call the cloud function for claim process
       const claimProcessFunction = httpsCallable(functions, 'claimProcess');
+      
+      // Update processing step
+      setProcessingStep(translations?.sendingEmails || 'Sending verification emails...');
+      
       const response = await claimProcessFunction({
         businessEmail: formData.businessEmail,
         supervisorEmail: supervisorEmail,
@@ -113,20 +123,24 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
       if (!responseData.success) {
         throw new Error(responseData.message || 'Failed to process claim request');
       }
+      
+      setProcessingStep(translations?.finalizingRequest || 'Finalizing your request...');
 
       // Store tracking number in local storage for future reference
       if (responseData.trackingNumber) {
         localStorage.setItem('claimTrackingNumber', responseData.trackingNumber);
+        setSuccessTrackingNumber(responseData.trackingNumber);
       }
 
-      // Show success message with tracking number
-      onSuccess(translations?.claimRequestSubmitted?.replace('{tracking}', responseData.trackingNumber) || 
-               `Claim request submitted successfully! Your tracking number is: ${responseData.trackingNumber}. Please keep this number for reference.`);
-      onClose();
+      // Show success message within the modal
+      setSuccessMessage(translations?.claimRequestSubmittedWithTracking?.replace('{tracking}', responseData.trackingNumber) || 
+                     `Claim request submitted successfully! Your tracking number is: ${responseData.trackingNumber}. Please keep this number for reference.`);
+      setShowSuccess(true);
 
     } catch (error) {
       console.error("Error submitting claim request:", error);
       onError(translations?.claimRequestFailed || 'Failed to submit claim request');
+      setProcessingStep('');
     } finally {
       setLoading(false);
     }
@@ -203,8 +217,70 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           </div>
         )}
 
+        {/* Loading State */}
+        {loading && !showSuccess && (
+          <div className="p-6 flex flex-col items-center justify-center">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6"></div>
+            <h4 className="text-lg font-medium text-gray-900 mb-3 text-center">
+              {processingStep}
+            </h4>
+            <p className="text-gray-600 text-center mb-4">
+              {translations?.pleaseWaitProcessing || 'Please wait while we process your claim request...'}
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4 dark:bg-gray-700">
+              <div className="bg-blue-600 h-2.5 rounded-full w-3/4 animate-pulse"></div>
+            </div>
+            <p className="text-sm text-gray-500 text-center">
+              {translations?.doNotCloseWindow || 'Do not close this window during the process'}
+            </p>
+          </div>
+        )}
+        
+        {/* Success State */}
+        {showSuccess && (
+          <div className="p-6 flex flex-col items-center justify-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h4 className="text-xl font-bold text-green-700 mb-3 text-center">
+              {translations?.requestSubmittedSuccessfully || 'Request Submitted Successfully!'}
+            </h4>
+            <p className="text-gray-700 text-center mb-6">
+              {successMessage}
+            </p>
+            <div className="bg-blue-50 p-4 rounded-lg w-full mb-6">
+              <h5 className="font-medium text-blue-800 text-center mb-2">
+                {translations?.trackingNumber || 'Tracking Number'}
+              </h5>
+              <p className="text-2xl text-blue-900 font-bold text-center">
+                {successTrackingNumber}
+              </p>
+              <p className="text-sm text-blue-700 text-center mt-2">
+                {translations?.keepTrackingNumber || 'Please save this number for tracking your request status'}
+              </p>
+            </div>
+            <div className="bg-yellow-50 p-4 rounded-lg w-full mb-6">
+              <h5 className="font-medium text-yellow-800 text-center mb-2">
+                {translations?.nextSteps || 'Next Steps'}
+              </h5>
+              <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-2 text-left">
+                <li>{translations?.checkBusinessEmail || 'Check your business email for a verification link'}</li>
+                <li>{translations?.verifySupervisorEmail || 'Ensure your supervisor verifies their email'}</li>
+                <li>{translations?.waitForApproval || 'Once both emails are verified, your claim will be automatically approved'}</li>
+              </ol>
+            </div>
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200">
+              {translations?.close || 'Close'}
+            </button>
+          </div>
+        )}
+
         {/* Step Content */}
-        {currentStep === 1 && (
+        {currentStep === 1 && !loading && !showSuccess && (
           <Step1Domain 
             companyDomain={companyDomain}
             handleDomainChoice={handleDomainChoice}
@@ -212,7 +288,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
           />
         )}
         
-        {currentStep === 2 && (
+        {currentStep === 2 && !loading && !showSuccess && (
           <Step2Credentials
             company={company}
             formData={formData}

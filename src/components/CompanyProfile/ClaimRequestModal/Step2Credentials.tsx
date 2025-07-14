@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, Building2, AlertCircle } from 'lucide-react';
+import { Mail, Phone, Building2, AlertCircle, ArrowRight } from 'lucide-react';
 import { CompanyProfile } from '../../../types/companyProfile';
 
 interface Step2CredentialsProps {
@@ -161,9 +161,10 @@ const Step2Credentials: React.FC<Step2CredentialsProps> = ({
         
         <button
           type="button"
-          onClick={handleNextStep}
+              className="px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse"
           className="px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
+              <span>{translations?.verifyAndSubmit || 'Verify & Submit'}</span>
+              <ArrowRight className="h-5 w-5" />
           {translations?.next || 'Next'}
         </button>
       </div>
