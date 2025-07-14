@@ -59,6 +59,10 @@ export const ar = {
   cannotDeleteAfterReply: 'لا يمكن حذف التقييمات التي تم الرد عليها من قبل الشركة للحفاظ على سلامة المحادثة',
   repliedReview: 'تم الرد من الشركة',
   noHyperlinksAllowed: 'غير مسموح بالروابط في التقييمات',
+  responseFilter: 'ردود الشركة',
+  withResponses: 'بردود الشركة',
+  withoutResponses: 'بدون ردود',
+  allResponses: 'كل التقييمات',
   
   // Email Verification
   verifyingEmail: 'جاري التحقق من بريدك الإلكتروني',

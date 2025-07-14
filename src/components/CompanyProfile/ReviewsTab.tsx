@@ -210,10 +210,10 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     }
     
     // Apply the new response filter
-    if (filters.responseFilter === 'with-response') {
-      result = result.filter(review => Boolean(review.companyReply));
-    } else if (filters.responseFilter === 'without-response') {
-      result = result.filter(review => !review.companyReply);
+    if (responseFilter === 'with-response') {
+      filteredReviews = filteredReviews.filter(review => Boolean(review.companyReply));
+    } else if (responseFilter === 'without-response') {
+      filteredReviews = filteredReviews.filter(review => !review.companyReply);
     }
     
     // Apply time filter
@@ -250,15 +250,15 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const filteredReviews = getFilteredReviews();
   
   // Check if any filters are applied
-  const hasFilters = categoryFilter !== 'all' || locationFilter !== 'all' || ratingFilter !== 'all' || sortFilter !== 'highestRated' || responseFilter !== 'all';
+  const hasFilters = ratingFilter !== 'all' || timeFilter !== 'all' || sortFilter !== 'newest' || responseFilter !== 'all';
 
   // Handle clearing filters
   const handleClearFilters = () => {
     setRatingFilter('all');
     setTimeFilter('all');
     setSortFilter('newest');
-  };
     setResponseFilter('all');
+  };
 
   const averageRating = calculateAverageRating();
 
@@ -498,11 +498,13 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
         ratingFilter={ratingFilter}
         timeFilter={timeFilter}
         sortFilter={sortFilter}
+        responseFilter={responseFilter}
         showFilters={showFilters}
         setShowFilters={setShowFilters}
         setRatingFilter={setRatingFilter}
         setTimeFilter={setTimeFilter}
         setSortFilter={setSortFilter}
+        setResponseFilter={setResponseFilter}
         hasFilters={hasFilters}
         handleClearFilters={handleClearFilters}
         filteredReviews={filteredReviews}
