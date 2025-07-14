@@ -128,7 +128,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login with email and password
   const login = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Check if email is verified
+      if (!userCredential.user.emailVerified) {
+        // Send verification email if not verified
+        try {
+          const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
+          await sendVerificationEmailFunction({ email });
+        } catch (verificationError) {
+          console.error('Error sending verification email:', verificationError);
+          // Fall back to default Firebase verification email
+          await sendEmailVerification(userCredential.user);
+        }
+        
+        // Sign out the user
+        await signOut(auth);
+        throw new Error('email-not-verified');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       throw new Error(error.message);
