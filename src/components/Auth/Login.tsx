@@ -5,7 +5,6 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ForgotPasswordModal from './ForgotPasswordModal';
-import EmailVerificationModal from './EmailVerificationModal';
 
 interface LoginProps {
   onNavigate: (page: string) => void;
@@ -32,8 +31,6 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,13 +55,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
       // Create user-friendly error messages
       let errorMessage = translations?.loginErrorDesc || 'Please check your credentials and try again';
       
-      if (error.message === 'email-not-verified') {
-        // Show verification modal instead of error message
-        setUnverifiedEmail(formData.email);
-        setShowVerificationModal(true);
-        setLoading(false);
-        return;
-      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         errorMessage = translations?.loginErrorDesc || 'Email or password is incorrect';
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = translations?.tooManyAttempts || 'Too many failed login attempts, please try again later';
@@ -410,13 +401,6 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         isOpen={showForgotPassword}
         onClose={() => setShowForgotPassword(false)}
         onSubmit={handleResetPassword}
-      />
-
-      {/* Email Verification Modal */}
-      <EmailVerificationModal
-        email={unverifiedEmail}
-        isOpen={showVerificationModal}
-        onClose={() => setShowVerificationModal(false)}
       />
 
       {/* CSS Animations */}

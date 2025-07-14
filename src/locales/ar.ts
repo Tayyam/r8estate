@@ -54,15 +54,6 @@ export const ar = {
   passwordResetFailed: 'فشل في إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى أو طلب رابط جديد.',
   missingActionCode: 'رمز العملية مفقود',
   
-  // Email Verification Modal
-  verifyYourEmail: 'تحقق من بريدك الإلكتروني',
-  verificationEmailSentDesc: 'تم إرسال رسالة تحقق إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد الخاص بك وتأكيد بريدك الإلكتروني لتنشيط حسابك.',
-  verificationEmailResent: 'تم إعادة إرسال رسالة التحقق! يرجى التحقق من صندوق الوارد الخاص بك.',
-  failedToSendVerification: 'فشل في إرسال رسالة التحقق. يرجى المحاولة مرة أخرى لاحقاً.',
-  resendVerificationEmail: 'إعادة إرسال رسالة التحقق',
-  sending: 'جاري الإرسال...',
-  resendIn: 'إعادة الإرسال خلال',
-  
   // Email Verification
   verifyingEmail: 'جاري التحقق من بريدك الإلكتروني',
   pleaseWait: 'يرجى الانتظار بينما نتحقق من بريدك الإلكتروني...',
@@ -73,7 +64,6 @@ export const ar = {
   genericVerificationError: 'تعذر التحقق من بريدك الإلكتروني. يرجى المحاولة مرة أخرى أو طلب رابط تحقق جديد.',
   invalidVerificationLink: 'رابط التحقق غير صالح',
   emailChangeWarning: 'ستحتاج إلى التحقق من عنوان بريدك الإلكتروني الجديد. سيتم إرسال رابط التحقق إلى بريدك الجديد.',
-  emailNotVerifiedLogin: 'يرجى التحقق من بريدك الإلكتروني قبل تسجيل الدخول. تم إرسال رسالة تحقق جديدة.',
   ...arHero,
   ...arCategories,
   ...arReviews,

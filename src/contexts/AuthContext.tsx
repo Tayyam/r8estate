@@ -81,16 +81,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Register new user
   const register = async (email: string, password: string, displayName: string, role: UserRole = 'user') => {
     try {
-      // Create the user with email/password but don't auto-sign in
       // Create the user with email/password
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       
       // Update Firebase profile
-      try {
-        await updateProfile(user, { displayName });
-      } catch (profileError) {
-        // Continue even if profile update fails
-      }
+      await updateProfile(user, { displayName });
 
       // Create user document in Firestore
       const userData: Omit<User, 'uid'> = {
@@ -113,11 +108,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Fall back to default Firebase verification email if our custom one fails
         await sendEmailVerification(user);
       }
-
-      // Sign out immediately after registration
-      await signOut(auth);
       
-      return { success: true, user: user };
+      // No need to manually sign in since createUserWithEmailAndPassword
+      // already signs the user in. Just update the current user state.
+      const newUserData: User = {
+        uid: user.uid,
+        ...userData
+      };
+      
+      setCurrentUser(newUserData);
+      setFirebaseUser(user);
+      
     } catch (error: any) {
       console.error('Registration error:', error);
       throw new Error(error.message);
@@ -127,36 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login with email and password
   const login = async (email: string, password: string) => {
     try {
-      // First attempt to sign in
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // Check if email is verified
-      if (!userCredential.user.emailVerified) {
-        // User exists but email is not verified - send verification email again
-        try {
-          const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
-          await sendVerificationEmailFunction({ email });
-        } catch (verificationError) {
-          console.error('Error sending verification email:', verificationError);
-          // Fall back to default Firebase verification email
-          await sendEmailVerification(userCredential.user);
-        }
-        
-        // Send verification email if not verified
-        try {
-          const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
-          await sendVerificationEmailFunction({ email });
-        } catch (verificationError) {
-          console.error('Error sending verification email:', verificationError);
-          // Fall back to default Firebase verification email
-          await sendEmailVerification(userCredential.user);
-        }
-        
-        // Sign out the user
-        await signOut(auth);
-        
-        throw new Error('email-not-verified');
-      }
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error('Login error:', error);
       throw new Error(error.message);
@@ -318,19 +290,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Auth state observer
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true); 
+      setLoading(true);
       
       if (user) {
-        await user.reload(); // Ensure we have latest user data
-        if (!user.emailVerified) {
-          console.warn("⛔ Email not verified, signing out...");
-          await signOut(auth);
-          setFirebaseUser(null);
-          setCurrentUser(null);
-          setLoading(false);
-          return;
-        }
-        
         setFirebaseUser(user);
         const userData = await loadUserData(user);
         setCurrentUser(userData);
