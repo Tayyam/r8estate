@@ -7,11 +7,12 @@ import { functions } from '../config/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const Verification: React.FC = () => {
   const { translations } = useLanguage();
   const { firebaseUser } = useAuth();
+  const oobCodeRef = useRef<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -62,6 +63,7 @@ const Verification: React.FC = () => {
         const searchParams = new URLSearchParams(location.search);
         const mode = searchParams.get('mode');
         const oobCode = searchParams.get('oobCode');
+        oobCodeRef.current = oobCode;
 
         if (!oobCode) {
           addDebugInfo("❌ No oobCode found in URL");
@@ -140,7 +142,7 @@ const Verification: React.FC = () => {
       addDebugInfo("☁️ Calling createVerifiedUser Cloud Function");
       try {
         // Get user record from auth
-        const userInfo = await checkActionCode(auth, oobCode);
+        const userInfo = await checkActionCode(auth, oobCodeRef.current!);
         const userId = userInfo.data.email ? (await auth.fetchSignInMethodsForEmail(userInfo.data.email)).length > 0 : null;
         
         if (userInfo.data.email) {
