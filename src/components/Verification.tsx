@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { applyActionCode, checkActionCode } from 'firebase/auth';
 import { auth, db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { functions } from '../config/firebase';
+import { httpsCallable } from 'firebase/functions';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
 
 const Verification: React.FC = () => {
   const { translations } = useLanguage();
@@ -135,52 +136,33 @@ const Verification: React.FC = () => {
     if (businessResults.empty && supervisorResults.empty) {
       addDebugInfo("👤 Regular user registration detected (not a claim request)");
       
+      // Call the Cloud Function to create the user document
+      addDebugInfo("☁️ Calling createVerifiedUser Cloud Function");
       try {
-        // Create user document in Firestore now that email is verified
-        if (firebaseUser) {
-          addDebugInfo(`📝 Creating user document for verified user: ${firebaseUser.uid || 'unknown'}`);
-          
-          await setDoc(doc(db, 'users', firebaseUser.uid), {
-            uid: firebaseUser.uid,
+        // Get user record from auth
+        const userInfo = await checkActionCode(auth, oobCode);
+        const userId = userInfo.data.email ? (await auth.fetchSignInMethodsForEmail(userInfo.data.email)).length > 0 : null;
+        
+        if (userInfo.data.email) {
+          // Call our Cloud Function to create the user document
+          const createUserDoc = httpsCallable(functions, 'createVerifiedUser');
+          const result = await createUserDoc({ 
+            uid: firebaseUser?.uid, 
             email: userEmail,
-            displayName: firebaseUser.displayName || '',
-            role: 'user',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            isEmailVerified: true
+            displayName: firebaseUser?.displayName || ''
           });
           
-          addDebugInfo("✅ User document created successfully");
-        } else {
-          // If firebaseUser is null, we need to create a user document directly with the verified email
-          addDebugInfo("🔄 Firebase user not available, creating user document by email lookup");
-          
-          // Try to find a user with this email in Firebase Auth
-          try {
-            const userRecord = await admin.auth().getUserByEmail(userEmail);
-            if (userRecord) {
-              addDebugInfo(`📝 Found user record by email: ${userRecord.uid}`);
-              
-              // Create user document using the UID from the found user
-              await setDoc(doc(db, 'users', userRecord.uid), {
-                uid: userRecord.uid,
-                email: userEmail,
-                displayName: userRecord.displayName || '',
-                role: 'user',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                isEmailVerified: true
-              });
-              
-              addDebugInfo("✅ User document created successfully via email lookup");
-            }
-          } catch (userLookupError) {
-            addDebugInfo(`❌ Could not find user by email: ${JSON.stringify(userLookupError)}`);
+          const data = result.data as any;
+          if (data.success) {
+            addDebugInfo("✅ User document created successfully via Cloud Function");
+          } else {
+            throw new Error(data.message || 'Failed to create user document');
           }
+        } else {
+          addDebugInfo("❌ Could not get user email from action code");
         }
-        
       } catch (error) {
-        addDebugInfo(`❌ Error creating user document: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
+        addDebugInfo(`❌ Error calling createVerifiedUser function: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
       
       return;
