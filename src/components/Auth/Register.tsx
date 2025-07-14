@@ -62,7 +62,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     try {
       // Call the Cloud Function to create a verified user
       const createVerifiedUserFunction = httpsCallable(functions, 'createVerifiedUser');
-      const result = await createUnverifiedUserFunction({
+      const result = await createVerifiedUserFunction({
         email: formData.email,
         password: formData.password,
         displayName: formData.displayName,
