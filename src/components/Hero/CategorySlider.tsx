@@ -185,10 +185,13 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
                 );
               })}
             </Swiper>
-           
-            
-            {/* Custom pagination */}
-            
+            {/* Custom Navigation Arrows */}
+            <div className="swiper-button-prev absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors duration-200">
+              <ArrowLeft className="h-5 w-5 text-gray-700" />
+            </div>
+            <div className="swiper-button-next absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors duration-200">
+              <ArrowRight className="h-5 w-5 text-gray-700" />
+            </div>
           </div>
         ) : (
           <div className="text-center py-12">
@@ -203,7 +206,38 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
       <style jsx global>{`
         .swiper-button-next::after,
         .swiper-button-prev::after {
-          display: none;
+          content: '';
+          display: none !important;
+        }
+        
+        .swiper-button-prev,
+        .swiper-button-next {
+          width: 40px !important;
+          height: 40px !important;
+          margin-top: -20px !important;
+          transition: all 0.2s ease;
+        }
+        
+        .swiper-button-prev:hover,
+        .swiper-button-next:hover {
+          background: #f3f4f6 !important;
+          transform: scale(1.05);
+        }
+        
+        .swiper-button-disabled {
+          opacity: 0.3 !important;
+          cursor: not-allowed !important;
+        }
+        
+        /* RTL support */
+        html[dir="rtl"] .swiper-button-next {
+          right: auto !important;
+          left: 0 !important;
+        }
+        
+        html[dir="rtl"] .swiper-button-prev {
+          left: auto !important;
+          right: 0 !important;
         }
                 
         @media (max-width: 640px) {
