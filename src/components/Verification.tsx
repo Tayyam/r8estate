@@ -83,147 +83,121 @@ const Verification: React.FC = () => {
 
   // New function to handle verification directly
   const handleEmailVerification = async (userEmail: string) => {
-    addDebugInfo(`🔍 Checking if ${userEmail} is associated with a claim request`);
+    addDebugInfo(`✅ Email verification successful for ${userEmail}`);
     
-    // Check if this email is associated with a claim request
-    const businessQuery = query(
-      collection(db, 'claimRequests'),
-      where('businessEmail', '==', userEmail)
-    );
+    // For regular users, just update the isEmailVerified flag
+    if (firebaseUser) {
+      addDebugInfo(`📝 Updating verified status for user: ${firebaseUser.uid}`);
+      
+      await updateDoc(doc(db, 'users', firebaseUser.uid), {
+        isEmailVerified: true,
+        updatedAt: new Date()
+      });
+      
+      addDebugInfo("✅ User verification status updated successfully");
+    } else {
+      addDebugInfo("❌ Firebase user not found, cannot update verification status");
+    }
+
+    // Check if this email is associated with a claim request (this part remains the same)
+    const businessQuery = query(collection(db, 'claimRequests'), where('businessEmail', '==', userEmail));
+    const supervisorQuery = query(collection(db, 'claimRequests'), where('supervisorEmail', '==', userEmail));
     
-    const supervisorQuery = query(
-      collection(db, 'claimRequests'),
-      where('supervisorEmail', '==', userEmail)
-    );
-    
-    addDebugInfo("🔎 Running queries for business and supervisor emails");
     const businessResults = await getDocs(businessQuery);
     const supervisorResults = await getDocs(supervisorQuery);
-    addDebugInfo(`📊 Results - Business: ${businessResults.size}, Supervisor: ${supervisorResults.size}`);
     
-    // Check if this is a regular user registration (not a claim request)
-    if (businessResults.empty && supervisorResults.empty) {
-      addDebugInfo("👤 Regular user registration detected (not a claim request)");
+    if (!businessResults.empty || !supervisorResults.empty) {
+      addDebugInfo(`📊 Found claim request - Business: ${businessResults.size}, Supervisor: ${supervisorResults.size}`);
+    
+      let claimRequestRef;
+      let claimRequest;
+      let isSupervisor = false;
       
-      try {
-        // Create user document in Firestore now that email is verified
-        if (firebaseUser) {
-          addDebugInfo(`📝 Creating user document for verified user: ${firebaseUser.uid}`);
-          
-          await setDoc(doc(db, 'users', firebaseUser.uid), {
-            uid: firebaseUser.uid,
-            email: userEmail,
-            displayName: firebaseUser.displayName || '',
-            role: 'user',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            isEmailVerified: true
+      // Determine if business or supervisor email
+      if (!businessResults.empty) {
+        addDebugInfo("✅ Found business email in claim requests");
+        claimRequestRef = businessResults.docs[0].ref;
+        claimRequest = businessResults.docs[0].data();
+        addDebugInfo(`📄 Claim request data: ${JSON.stringify(claimRequest)}`);
+        
+        // Update business email verified status
+        addDebugInfo("🔄 Updating business email verified status to TRUE");
+        await updateDoc(claimRequestRef, {
+          businessEmailVerified: true,
+          updatedAt: new Date()
+        });
+        addDebugInfo("✅ Business email verified status updated");
+        
+      } else if (!supervisorResults.empty) {
+        addDebugInfo("✅ Found supervisor email in claim requests");
+        claimRequestRef = supervisorResults.docs[0].ref;
+        claimRequest = supervisorResults.docs[0].data();
+        isSupervisor = true;
+        addDebugInfo(`📄 Claim request data: ${JSON.stringify(claimRequest)}`);
+        
+        // Update supervisor email verified status
+        addDebugInfo("🔄 Updating supervisor email verified status to TRUE");
+        await updateDoc(claimRequestRef, {
+          supervisorEmailVerified: true,
+          updatedAt: new Date()
+        });
+        addDebugInfo("✅ Supervisor email verified status updated");
+      }
+      
+      // Get the updated claim request to check both verification statuses
+      addDebugInfo("🔄 Getting updated claim request to check both verification statuses");
+      const updatedRequest = await getDoc(claimRequestRef);
+      const updatedData = updatedRequest.data();
+      addDebugInfo(`📄 Updated claim request data: ${JSON.stringify(updatedData)}`);
+      
+      // Check if both emails are verified
+      if (updatedData?.businessEmailVerified && updatedData?.supervisorEmailVerified) {
+        addDebugInfo("🎉 Both emails are verified! Updating company status...");
+        
+        // Update business user role
+        if (updatedData.userId) {
+          addDebugInfo(`🔄 Updating business user ${updatedData.userId} to company role`);
+          await updateDoc(doc(db, 'users', updatedData.userId), {
+            role: 'company',
+            companyId: updatedData.companyId,
+            updatedAt: new Date()
           });
-          
-          addDebugInfo("✅ User document created successfully");
-        } else {
-          addDebugInfo("❌ Firebase user not found, cannot create user document");
+          addDebugInfo("✅ Business user role updated");
         }
         
-        return;
-      } catch (error) {
-        addDebugInfo(`❌ Error creating user document: ${JSON.stringify(error)}`);
-        return;
-      }
-    }
-    
-    let claimRequestRef;
-    let claimRequest;
-    let isSupervisor = false;
-    
-    // Determine if business or supervisor email
-    if (!businessResults.empty) {
-      addDebugInfo("✅ Found business email in claim requests");
-      claimRequestRef = businessResults.docs[0].ref;
-      claimRequest = businessResults.docs[0].data();
-      addDebugInfo(`📄 Claim request data: ${JSON.stringify(claimRequest)}`);
-      
-      // Update business email verified status
-      addDebugInfo("🔄 Updating business email verified status to TRUE");
-      await updateDoc(claimRequestRef, {
-        businessEmailVerified: true,
-        updatedAt: new Date()
-      });
-      addDebugInfo("✅ Business email verified status updated");
-      
-    } else if (!supervisorResults.empty) {
-      addDebugInfo("✅ Found supervisor email in claim requests");
-      claimRequestRef = supervisorResults.docs[0].ref;
-      claimRequest = supervisorResults.docs[0].data();
-      isSupervisor = true;
-      addDebugInfo(`📄 Claim request data: ${JSON.stringify(claimRequest)}`);
-      
-      // Update supervisor email verified status
-      addDebugInfo("🔄 Updating supervisor email verified status to TRUE");
-      await updateDoc(claimRequestRef, {
-        supervisorEmailVerified: true,
-        updatedAt: new Date()
-      });
-      addDebugInfo("✅ Supervisor email verified status updated");
-    } else {
-      // Not a claim request email
-      addDebugInfo("ℹ️ Not a claim request email");
-      return;
-    }
-    
-    // Get the updated claim request to check both verification statuses
-    addDebugInfo("🔄 Getting updated claim request to check both verification statuses");
-    const updatedRequest = await getDoc(claimRequestRef);
-    const updatedData = updatedRequest.data();
-    addDebugInfo(`📄 Updated claim request data: ${JSON.stringify(updatedData)}`);
-    
-    // Check if both emails are verified
-    if (updatedData?.businessEmailVerified && updatedData?.supervisorEmailVerified) {
-      addDebugInfo("🎉 Both emails are verified! Updating company status...");
-      
-      // Update business user role
-      if (updatedData.userId) {
-        addDebugInfo(`🔄 Updating business user ${updatedData.userId} to company role`);
-        await updateDoc(doc(db, 'users', updatedData.userId), {
-          role: 'company',
-          companyId: updatedData.companyId,
+        // Update supervisor user role
+        if (updatedData.supervisorId) {
+          addDebugInfo(`🔄 Updating supervisor user ${updatedData.supervisorId} to company role`);
+          await updateDoc(doc(db, 'users', updatedData.supervisorId), {
+            role: 'company',
+            companyId: updatedData.companyId,
+            updatedAt: new Date()
+          });
+          addDebugInfo("✅ Supervisor user role updated");
+        }
+        
+        // Mark company as claimed
+        addDebugInfo(`🔄 Marking company ${updatedData.companyId} as claimed`);
+        await updateDoc(doc(db, 'companies', updatedData.companyId), {
+          claimed: true,
+          claimedByName: updatedData.requesterName || 'Unknown',
+          email: updatedData.businessEmail,
           updatedAt: new Date()
         });
-        addDebugInfo("✅ Business user role updated");
-      }
-      
-      // Update supervisor user role
-      if (updatedData.supervisorId) {
-        addDebugInfo(`🔄 Updating supervisor user ${updatedData.supervisorId} to company role`);
-        await updateDoc(doc(db, 'users', updatedData.supervisorId), {
-          role: 'company',
-          companyId: updatedData.companyId,
+        addDebugInfo("✅ Company marked as claimed");
+        
+        // Update claim request status
+        addDebugInfo("🔄 Updating claim request status to approved");
+        await updateDoc(claimRequestRef, {
+          status: 'approved',
           updatedAt: new Date()
         });
-        addDebugInfo("✅ Supervisor user role updated");
+        addDebugInfo("✅ Claim request status updated to approved");
+        
+        addDebugInfo("🎉 Company claimed successfully!");
+      } else {
+        addDebugInfo(`⏳ ${isSupervisor ? 'Supervisor' : 'Business'} email verified, waiting for other verification`);
       }
-      
-      // Mark company as claimed
-      addDebugInfo(`🔄 Marking company ${updatedData.companyId} as claimed`);
-      await updateDoc(doc(db, 'companies', updatedData.companyId), {
-        claimed: true,
-        claimedByName: updatedData.requesterName || 'Unknown',
-        email: updatedData.businessEmail,
-        updatedAt: new Date()
-      });
-      addDebugInfo("✅ Company marked as claimed");
-      
-      // Update claim request status
-      addDebugInfo("🔄 Updating claim request status to approved");
-      await updateDoc(claimRequestRef, {
-        status: 'approved',
-        updatedAt: new Date()
-      });
-      addDebugInfo("✅ Claim request status updated to approved");
-      
-      addDebugInfo("🎉 Company claimed successfully!");
-    } else {
-      addDebugInfo(`⏳ ${isSupervisor ? 'Supervisor' : 'Business'} email verified, waiting for other verification`);
     }
   };
 
