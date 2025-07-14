@@ -161,11 +161,11 @@ const Step2Credentials: React.FC<Step2CredentialsProps> = ({
         
         <button
           type="button"
-              className="px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse"
-          className="px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              <span>{translations?.verifyAndSubmit || 'Verify & Submit'}</span>
-              <ArrowRight className="h-5 w-5" />
-          {translations?.next || 'Next'}
+          onClick={handleNextStep}
+          className="px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse"
+        >
+          <span>{translations?.verifyAndSubmit || 'Verify & Submit'}</span>
+          <ArrowRight className="h-5 w-5" />
         </button>
       </div>
     </form>
