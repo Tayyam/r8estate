@@ -121,10 +121,10 @@ export const createVerifiedUser = functions.https.onCall(async (data, context) =
     } 
 
     if (error instanceof functions.https.HttpsError) {
-      throw new functions.https.HttpsError(
-        'already-exists',
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
-      throw new functions.https.HttpsError('internal', errorMessage);
+      throw error;
     }
+    
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+    throw new functions.https.HttpsError('internal', errorMessage);
   }
 });
