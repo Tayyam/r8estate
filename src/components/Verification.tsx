@@ -90,12 +90,13 @@ const Verification: React.FC = () => {
           // First, try to look up the user by email
           addDebugInfo(`🔍 Looking up user by email: ${userEmail}`);
           const userDoc = await admin.auth().getUserByEmail(userEmail);
+          addDebugInfo(`📦 UserDoc from lookup: ${JSON.stringify(userDoc || 'Not found')}`);
           
           try {
             addDebugInfo("🔄 Handling email verification in the frontend...");
             // Direct implementation instead of calling cloud function
             setProcessingClaim(true);
-            await handleEmailVerification(userEmail);
+            await handleEmailVerification(userEmail, userDoc);
             
             setProcessingClaim(false);
             addDebugInfo("✅ Email verification processing completed");
@@ -121,7 +122,7 @@ const Verification: React.FC = () => {
   }, [location, translations]);
 
   // New function to handle verification directly
-  const handleEmailVerification = async (userEmail: string) => {
+  const handleEmailVerification = async (userEmail: string, userDoc: any) => {
     addDebugInfo(`🔍 Using email from previous checkActionCode: ${userEmail}`);
     
     // Check if this email is associated with a claim request
@@ -143,14 +144,9 @@ const Verification: React.FC = () => {
     // Check if this is a regular user registration (not a claim request)
     if (businessResults.empty && supervisorResults.empty) {
       addDebugInfo("👤 Regular user registration detected (not a claim request)");
-      
-      // Call the Cloud Function to create the user document
+
       addDebugInfo("☁️ Calling createVerifiedUser Cloud Function");
       try {
-        // Lookup the user by email first
-        const userDoc = await admin.auth().getUserByEmail(userEmail);
-        addDebugInfo(`📦 UserDoc from lookup: ${JSON.stringify(userDoc || 'Not found')}`);
-
         if (userDoc && userDoc.uid && userEmail) {
           addDebugInfo(`📦 Calling cloud function with: uid=${userDoc.uid}, email=${userEmail}, displayName=${userDoc.displayName || ''}`);
           // Call our Cloud Function to create the user document
