@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { applyActionCode, checkActionCode } from 'firebase/auth';
 import { auth, db } from '../config/firebase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; 
 import { functions } from '../config/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useLanguage } from '../contexts/LanguageContext'; 
@@ -87,6 +87,10 @@ const Verification: React.FC = () => {
         if (userEmail) {
           addDebugInfo(`📧 Verified email: ${userEmail}`);
           
+          // First, try to look up the user by email
+          addDebugInfo(`🔍 Looking up user by email: ${userEmail}`);
+          const userDoc = await admin.auth().getUserByEmail(userEmail);
+          
           try {
             addDebugInfo("🔄 Handling email verification in the frontend...");
             // Direct implementation instead of calling cloud function
@@ -146,13 +150,17 @@ const Verification: React.FC = () => {
         // No need to check action code again - we already have the email
         // Just call the Cloud Function with the verified email
         
-        if (userEmail) {
+        // Use userDoc from lookup instead of relying on firebaseUser
+        addDebugInfo(`📦 UserDoc from lookup: ${JSON.stringify(userDoc || 'Not found')}`);
+        
+        if (userDoc?.uid && userEmail) {
+          addDebugInfo(`📦 Calling cloud function with: uid=${userDoc.uid}, email=${userEmail}, displayName=${userDoc.displayName || ''}`);
           // Call our Cloud Function to create the user document
           const createUserDoc = httpsCallable(functions, 'createVerifiedUser');
           const result = await createUserDoc({ 
-            uid: firebaseUser?.uid, 
+            uid: userDoc.uid, 
             email: userEmail,
-            displayName: firebaseUser?.displayName || ''
+            displayName: userDoc.displayName || ''
           });
           
           const data = result.data as any;
@@ -162,7 +170,8 @@ const Verification: React.FC = () => {
             throw new Error(data.message || 'Failed to create user document');
           }
         } else {
-          addDebugInfo("❌ Could not get user email from action code");
+          addDebugInfo("❌ User document or email is missing - cannot create user document");
+          addDebugInfo(`ℹ️ Available data: userDoc=${!!userDoc}, userEmail=${!!userEmail}`);
         }
       } catch (error) {
         addDebugInfo(`❌ Error calling createVerifiedUser function: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
