@@ -5,6 +5,7 @@ import { auth, db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 
 const Verification: React.FC = () => {
   const { translations } = useLanguage();
@@ -14,36 +15,51 @@ const Verification: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [processingClaim, setProcessingClaim] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+
+  // Helper function to add debug info
+  const addDebugInfo = (info: string) => {
+    console.log(info); // Log to console
+    setDebugInfo(prev => [...prev, info]); // Add to state for display
+  };
 
   useEffect(() => {
     const verifyEmail = async () => {
       try {
+        addDebugInfo("🔍 Starting email verification process...");
         const searchParams = new URLSearchParams(location.search);
         const mode = searchParams.get('mode');
         const oobCode = searchParams.get('oobCode');
 
         if (!oobCode) {
+          addDebugInfo("❌ No oobCode found in URL");
           setError(translations?.invalidVerificationLink || 'Invalid verification link');
           setLoading(false);
           return;
         }
 
         // Apply the action code to verify the email
+        addDebugInfo("🔑 Applying action code to verify email...");
         await applyActionCode(auth, oobCode);
+        addDebugInfo("✅ Email verification successful with Firebase Auth");
 
         // Get the current user email
         const userEmail = auth.currentUser?.email;
         
         if (userEmail) {
+          addDebugInfo(`📧 Verified email: ${userEmail}`);
           setProcessingClaim(true);
           
           try {
+            addDebugInfo("🔄 Handling email verification in the frontend...");
             // Direct implementation instead of calling cloud function
             await handleEmailVerification(userEmail);
             
             setProcessingClaim(false);
+            addDebugInfo("✅ Email verification processing completed");
           } catch (claimError) {
             console.error('Error processing claim verification:', claimError);
+            addDebugInfo(`❌ Error processing claim: ${JSON.stringify(claimError)}`);
             // Continue with success flow even if claim processing fails
             setProcessingClaim(false);
           }
@@ -53,6 +69,7 @@ const Verification: React.FC = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error verifying email:', error);
+        addDebugInfo(`❌ Error in verification: ${JSON.stringify(error)}`);
         setError(translations?.failedToVerifyEmail || 'Failed to verify email. The link may have expired.');
         setLoading(false);
       }
@@ -63,6 +80,8 @@ const Verification: React.FC = () => {
 
   // New function to handle verification directly
   const handleEmailVerification = async (userEmail: string) => {
+    addDebugInfo(`🔍 Checking if ${userEmail} is associated with a claim request`);
+
     // Check if this email is associated with a claim request
     const businessQuery = query(
       collection(db, 'claimRequests'),
@@ -74,8 +93,10 @@ const Verification: React.FC = () => {
       where('supervisorEmail', '==', userEmail)
     );
     
+    addDebugInfo("🔎 Running queries for business and supervisor emails");
     const businessResults = await getDocs(businessQuery);
     const supervisorResults = await getDocs(supervisorQuery);
+    addDebugInfo(`📊 Results - Business: ${businessResults.size}, Supervisor: ${supervisorResults.size}`);
     
     let claimRequestRef;
     let claimRequest;
@@ -83,73 +104,92 @@ const Verification: React.FC = () => {
     
     // Determine if business or supervisor email
     if (!businessResults.empty) {
+      addDebugInfo("✅ Found business email in claim requests");
       claimRequestRef = businessResults.docs[0].ref;
       claimRequest = businessResults.docs[0].data();
+      addDebugInfo(`📄 Claim request data: ${JSON.stringify(claimRequest)}`);
       
       // Update business email verified status
+      addDebugInfo("🔄 Updating business email verified status to TRUE");
       await updateDoc(claimRequestRef, {
         businessEmailVerified: true,
         updatedAt: new Date()
       });
+      addDebugInfo("✅ Business email verified status updated");
       
     } else if (!supervisorResults.empty) {
+      addDebugInfo("✅ Found supervisor email in claim requests");
       claimRequestRef = supervisorResults.docs[0].ref;
       claimRequest = supervisorResults.docs[0].data();
       isSupervisor = true;
+      addDebugInfo(`📄 Claim request data: ${JSON.stringify(claimRequest)}`);
       
       // Update supervisor email verified status
+      addDebugInfo("🔄 Updating supervisor email verified status to TRUE");
       await updateDoc(claimRequestRef, {
         supervisorEmailVerified: true,
         updatedAt: new Date()
       });
+      addDebugInfo("✅ Supervisor email verified status updated");
     } else {
       // Not a claim request email
+      addDebugInfo("ℹ️ Not a claim request email");
       return;
     }
     
     // Get the updated claim request to check both verification statuses
+    addDebugInfo("🔄 Getting updated claim request to check both verification statuses");
     const updatedRequest = await getDoc(claimRequestRef);
     const updatedData = updatedRequest.data();
+    addDebugInfo(`📄 Updated claim request data: ${JSON.stringify(updatedData)}`);
     
     // Check if both emails are verified
     if (updatedData?.businessEmailVerified && updatedData?.supervisorEmailVerified) {
-      console.log("Both emails verified, updating company status...");
+      addDebugInfo("🎉 Both emails are verified! Updating company status...");
       
       // Update business user role
       if (updatedData.userId) {
+        addDebugInfo(`🔄 Updating business user ${updatedData.userId} to company role`);
         await updateDoc(doc(db, 'users', updatedData.userId), {
           role: 'company',
           companyId: updatedData.companyId,
           updatedAt: new Date()
         });
+        addDebugInfo("✅ Business user role updated");
       }
       
       // Update supervisor user role
       if (updatedData.supervisorId) {
+        addDebugInfo(`🔄 Updating supervisor user ${updatedData.supervisorId} to company role`);
         await updateDoc(doc(db, 'users', updatedData.supervisorId), {
           role: 'company',
           companyId: updatedData.companyId,
           updatedAt: new Date()
         });
+        addDebugInfo("✅ Supervisor user role updated");
       }
       
       // Mark company as claimed
+      addDebugInfo(`🔄 Marking company ${updatedData.companyId} as claimed`);
       await updateDoc(doc(db, 'companies', updatedData.companyId), {
         claimed: true,
         claimedByName: updatedData.requesterName || 'Unknown',
         email: updatedData.businessEmail,
         updatedAt: new Date()
       });
+      addDebugInfo("✅ Company marked as claimed");
       
       // Update claim request status
+      addDebugInfo("🔄 Updating claim request status to approved");
       await updateDoc(claimRequestRef, {
         status: 'approved',
         updatedAt: new Date()
       });
+      addDebugInfo("✅ Claim request status updated to approved");
       
-      console.log("Company claimed successfully");
+      addDebugInfo("🎉 Company claimed successfully!");
     } else {
-      console.log(`${isSupervisor ? 'Supervisor' : 'Business'} email verified, waiting for other verification`);
+      addDebugInfo(`⏳ ${isSupervisor ? 'Supervisor' : 'Business'} email verified, waiting for other verification`);
     }
   };
 
@@ -184,6 +224,21 @@ const Verification: React.FC = () => {
             <p className="text-gray-600 mb-6">
               {translations?.emailVerifiedMessage || 'Your email has been verified! Please log in to your account.'}
             </p>
+            
+            {/* Debug Information Section */}
+            <div className="mt-6 border-t border-gray-200 pt-4">
+              <div className="bg-gray-50 p-4 rounded-lg text-left overflow-auto max-h-96">
+                <h3 className="font-bold text-red-600 mb-2">Debug Information (will be removed later)</h3>
+                <pre className="text-xs overflow-auto whitespace-pre-wrap">
+                  {debugInfo.map((info, index) => (
+                    <div key={index} className="mb-1 border-b border-dashed border-gray-200 pb-1">
+                      {info}
+                    </div>
+                  ))}
+                </pre>
+              </div>
+            </div>
+            
             <button
               onClick={handleGoToLogin}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200"
