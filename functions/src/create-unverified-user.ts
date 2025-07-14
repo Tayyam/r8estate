@@ -7,7 +7,7 @@ const resend = new Resend(RESEND_API_KEY);
 
 export const createUnverifiedUser = functions.https.onCall(async (data, context) => {
   try {
-    const { email, password, displayName, role = 'user' } = data;
+    const { email, password, displayName } = data;
     
     // Validate input
     if (!email || !password || !displayName) {
@@ -22,7 +22,7 @@ export const createUnverifiedUser = functions.https.onCall(async (data, context)
       email: email,
       password: password,
       displayName: displayName,
-      emailVerified: false // Explicitly not verified
+      emailVerified: false // Explicitly mark as not verified
     });
     
     // Generate a verification link
@@ -92,9 +92,7 @@ export const createUnverifiedUser = functions.https.onCall(async (data, context)
       throw error;
     }
     
-    throw new functions.https.HttpsError(
-      'internal',
-      error.message || 'Failed to create unverified user'
-    );
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create unverified user';
+    throw new functions.https.HttpsError('internal', errorMessage);
   }
 });
