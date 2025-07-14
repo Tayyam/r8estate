@@ -36,10 +36,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState(''); 
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    // Explicitly prevent default to avoid page refresh
-    event.preventDefault(); 
-    event.stopPropagation();
+  const handleRegister = async () => {
+    // Prevent default is no longer needed as we're using a regular button, not a form submission
     
     setRegisterError('');
     
@@ -252,7 +250,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             {/* Display Name Field */}
             <div className="animate-slideInLeft" style={{ animationDelay: '0.3s' }}>
               <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -413,7 +411,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                     checked={agreeToTerms}
                     onChange={(e) => setAgreeToTerms(e.target.checked)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    required
                   />
                 </div>
                 <div className="ml-3 text-sm">
@@ -424,7 +421,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                       className="text-blue-600 hover:text-blue-800 hover:underline"
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
                     >
                       {translations?.termsOfService || 'Terms of Service'}
                     </Link>
@@ -436,7 +432,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             {/* Submit Button */}
             <div className="animate-slideInUp" style={{ animationDelay: '0.75s' }}>
               <button
-                type="submit"
+                type="button" // Changed to button type
+                onClick={handleRegister}
                 disabled={loading || socialLoading !== null}
                 className="w-full text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                 style={{ backgroundColor: '#194866' }}
@@ -461,7 +458,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                 )}
               </button>
             </div>
-          </form>
+          </div>
 
           {/* Login Link */}
           <div className="mt-8 pt-6 border-t border-gray-200 text-center animate-slideInUp" style={{ animationDelay: '0.8s' }}>
