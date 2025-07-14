@@ -50,6 +50,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
 
   // Handle account creation
   const handleCreateAccount = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setRegisterError('');
     
     // Validation
@@ -186,6 +187,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   };
   
   // Render Create Account step
+  const renderCreateAccountStep = () => {
     return (
       <>
         {/* Social Signup Buttons */}
