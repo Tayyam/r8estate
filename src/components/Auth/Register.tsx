@@ -40,6 +40,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     e.preventDefault();
     setRegisterError('');
     
+    
     // Validation
     if (formData.password !== formData.confirmPassword) {
       setRegisterError(translations?.passwordMismatchDesc || 'Passwords do not match. Please try again.');
@@ -59,8 +60,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     setLoading(true);
 
     try {
-      // Register user but don't auto-sign in
-      const result = await register(formData.email, formData.password, formData.displayName, 'user');
+      // Register user without auto sign-in
+      await register(formData.email, formData.password, formData.displayName, 'user');
       
       // Store the registered email and show verification modal
       setRegisteredEmail(formData.email);
@@ -75,6 +76,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       });
       
     } catch (error: any) {
+      setLoading(false);
       // Create user-friendly error messages
       let errorMessage = translations?.registrationErrorDesc || 'Failed to create account. Please try again.';
       
@@ -89,8 +91,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       }
       
       setRegisterError(errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -465,7 +465,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
           <div className="mt-8 pt-6 border-t border-gray-200 text-center animate-slideInUp" style={{ animationDelay: '0.8s' }}>
             <p className="text-gray-600">
               {translations?.haveAccount || 'Already have an account?'}{' '}
-              <button
+              <a
                 onClick={() => {
                   if (onNavigate) {
                     onNavigate('login');
@@ -483,7 +483,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                 }}
               >
                 {translations?.login || 'Sign In'}
-              </button>
+              </a>
             </p>
           </div>
         </div>
