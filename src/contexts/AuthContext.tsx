@@ -81,6 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Register new user
   const register = async (email: string, password: string, displayName: string, role: UserRole = 'user') => {
     try {
+      console.log('⚠️ AuthContext.register() called');
       // Create the user with email/password but don't auto-sign in
       // Create the user with email/password
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
@@ -112,9 +113,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Sign out immediately so they have to verify email before logging in
       await signOut(auth);
+      console.log('⚠️ AuthContext.register() - signed out user after registration');
       
       return { success: true };
     } catch (error: any) {
+      console.log('⚠️ AuthContext.register() error:', error);
       console.error('Registration error:', error);
       throw new Error(error.message);
     }
