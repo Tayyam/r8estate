@@ -81,7 +81,7 @@ export const arClaimRequests = {
   continueToVerification: 'متابعة للتحقق',
   verifyAndSubmit: 'تحقق وإرسال',
   profilePhoto: 'الصورة الشخصية',
-  uploadPhoto: 'رفع صورة'
+  uploadPhoto: 'رفع صورة',
   changePhoto: 'تغيير الصورة',
   photoSizeLimit: 'الحد الأقصى 2 ميجابايت. JPG أو PNG أو GIF',
   mustBeLoggedIn: 'يجب تسجيل الدخول لإرسال طلب',
