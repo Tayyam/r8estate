@@ -80,7 +80,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       
     } catch (error: any) {
       // Create user-friendly error messages
-      let errorMessage = translations?.registrationErrorDesc || 'Failed to create account. Please try again.';
+      let errorMessage = '';
       
       if (error.code === 'auth/email-already-in-use') {
         errorMessage = translations?.emailAlreadyInUse || 'This email address is already in use by another account';
@@ -90,6 +90,10 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         errorMessage = translations?.passwordTooWeak || 'The password is too weak. Please choose a stronger password';
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = translations?.networkError || 'Network error, please check your connection';
+      } else if (error.message && error.message.includes('email-already-in-use')) {
+        errorMessage = translations?.emailAlreadyInUse || 'This email address is already in use by another account';
+      } else {
+        errorMessage = translations?.registrationErrorDesc || 'Failed to create account. Please try again.';
       }
       
       setRegisterError(errorMessage);
