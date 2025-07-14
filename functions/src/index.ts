@@ -192,6 +192,8 @@ export const changeUserPassword = functions.https.onCall(async (data, context) =
 export { sendEmail };
 // Export the email verification function
 export { sendVerificationEmail };
+// Export the verified user creation function
+export { createVerifiedUser } from './create-verified-user';
 // Export the email change function
 export { changeEmail };
 // Export the claim process functions
