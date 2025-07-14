@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { applyActionCode } from 'firebase/auth';
-import { auth, db, functions } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 const Verification: React.FC = () => {
   const { translations } = useLanguage();
@@ -39,49 +38,8 @@ const Verification: React.FC = () => {
           setProcessingClaim(true);
           
           try {
-            // Check if this email is associated with a claim request
-            const businessQuery = query(
-              collection(db, 'claimRequests'),
-              where('businessEmail', '==', userEmail)
-            );
-            
-            const supervisorQuery = query(
-              collection(db, 'claimRequests'),
-              where('supervisorEmail', '==', userEmail)
-            );
-            
-            const businessResults = await getDocs(businessQuery);
-            const supervisorResults = await getDocs(supervisorQuery);
-            
-            let claimRequest = null;
-            let isBusinessEmail = false;
-            
-            // Check if this is a business email verification
-            if (!businessResults.empty) {
-              claimRequest = businessResults.docs[0].data();
-              isBusinessEmail = true;
-              
-              // Call the cloud function to update businessEmailVerified
-              const checkBusinessEmailVerification = httpsCallable(functions, 'checkBusinessEmailVerification');
-              await checkBusinessEmailVerification({
-                userId: auth.currentUser?.uid,
-                claimRequestId: businessResults.docs[0].id,
-                companyId: claimRequest.companyId
-              });
-            } 
-            // Check if this is a supervisor email verification
-            else if (!supervisorResults.empty) {
-              claimRequest = supervisorResults.docs[0].data();
-              
-              // Call the cloud function to handle supervisor verification
-              const checkBusinessEmailVerification = httpsCallable(functions, 'checkBusinessEmailVerification');
-              await checkBusinessEmailVerification({
-                userId: auth.currentUser?.uid,
-                claimRequestId: supervisorResults.docs[0].id,
-                companyId: claimRequest.companyId,
-                isSupervisor: true
-              });
-            }
+            // Direct implementation instead of calling cloud function
+            await handleEmailVerification(userEmail);
             
             setProcessingClaim(false);
           } catch (claimError) {
@@ -103,6 +61,98 @@ const Verification: React.FC = () => {
     verifyEmail();
   }, [location, translations]);
 
+  // New function to handle verification directly
+  const handleEmailVerification = async (userEmail: string) => {
+    // Check if this email is associated with a claim request
+    const businessQuery = query(
+      collection(db, 'claimRequests'),
+      where('businessEmail', '==', userEmail)
+    );
+    
+    const supervisorQuery = query(
+      collection(db, 'claimRequests'),
+      where('supervisorEmail', '==', userEmail)
+    );
+    
+    const businessResults = await getDocs(businessQuery);
+    const supervisorResults = await getDocs(supervisorQuery);
+    
+    let claimRequestRef;
+    let claimRequest;
+    let isSupervisor = false;
+    
+    // Determine if business or supervisor email
+    if (!businessResults.empty) {
+      claimRequestRef = businessResults.docs[0].ref;
+      claimRequest = businessResults.docs[0].data();
+      
+      // Update business email verified status
+      await updateDoc(claimRequestRef, {
+        businessEmailVerified: true,
+        updatedAt: new Date()
+      });
+      
+    } else if (!supervisorResults.empty) {
+      claimRequestRef = supervisorResults.docs[0].ref;
+      claimRequest = supervisorResults.docs[0].data();
+      isSupervisor = true;
+      
+      // Update supervisor email verified status
+      await updateDoc(claimRequestRef, {
+        supervisorEmailVerified: true,
+        updatedAt: new Date()
+      });
+    } else {
+      // Not a claim request email
+      return;
+    }
+    
+    // Get the updated claim request to check both verification statuses
+    const updatedRequest = await getDoc(claimRequestRef);
+    const updatedData = updatedRequest.data();
+    
+    // Check if both emails are verified
+    if (updatedData?.businessEmailVerified && updatedData?.supervisorEmailVerified) {
+      console.log("Both emails verified, updating company status...");
+      
+      // Update business user role
+      if (updatedData.userId) {
+        await updateDoc(doc(db, 'users', updatedData.userId), {
+          role: 'company',
+          companyId: updatedData.companyId,
+          updatedAt: new Date()
+        });
+      }
+      
+      // Update supervisor user role
+      if (updatedData.supervisorId) {
+        await updateDoc(doc(db, 'users', updatedData.supervisorId), {
+          role: 'company',
+          companyId: updatedData.companyId,
+          updatedAt: new Date()
+        });
+      }
+      
+      // Mark company as claimed
+      await updateDoc(doc(db, 'companies', updatedData.companyId), {
+        claimed: true,
+        claimedByName: updatedData.requesterName || 'Unknown',
+        email: updatedData.businessEmail,
+        updatedAt: new Date()
+      });
+      
+      // Update claim request status
+      await updateDoc(claimRequestRef, {
+        status: 'approved',
+        updatedAt: new Date()
+      });
+      
+      console.log("Company claimed successfully");
+    } else {
+      console.log(`${isSupervisor ? 'Supervisor' : 'Business'} email verified, waiting for other verification`);
+    }
+  };
+
   const handleGoToLogin = () => {
     navigate('/login');
   };
@@ -111,7 +161,7 @@ const Verification: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
         {loading ? (
-          <div>
+          <div className="py-6">
             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               {translations?.verifyingEmail || 'Verifying Your Email'}
@@ -121,7 +171,7 @@ const Verification: React.FC = () => {
             </p>
           </div>
         ) : success ? (
-          <div>
+          <div className="py-6">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-6" />
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               {translations?.emailVerified || 'Email Verified!'}
@@ -142,7 +192,7 @@ const Verification: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div>
+          <div className="py-6">
             <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-6" />
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               {translations?.verificationFailed || 'Verification Failed'}
