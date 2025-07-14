@@ -34,12 +34,14 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const [registerError, setRegisterError] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [registeredEmail, setRegisteredEmail] = useState(''); 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegisterError('');
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    // Explicitly prevent default to avoid page refresh
+    event.preventDefault(); 
+    event.stopPropagation();
     
+    setRegisterError('');
     
     // Validation
     if (formData.password !== formData.confirmPassword) {
@@ -175,7 +177,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         <div className="text-center mb-8 animate-slideInUp">
           <div className="flex items-center justify-center mb-6">
             <img 
-              src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" 
+              src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png"
               alt="R8ESTATE Logo" 
               className="w-12 h-12 object-contain rounded-full mr-3"
             />
@@ -465,7 +467,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
           <div className="mt-8 pt-6 border-t border-gray-200 text-center animate-slideInUp" style={{ animationDelay: '0.8s' }}>
             <p className="text-gray-600">
               {translations?.haveAccount || 'Already have an account?'}{' '}
-              <a
+              <button
+                type="button"
                 onClick={() => {
                   if (onNavigate) {
                     onNavigate('login');
@@ -473,7 +476,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                     navigate('/login' + (returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''));
                   }
                 }}
-                className="font-semibold transition-all duration-200 hover:scale-105"
+                className="font-semibold transition-all duration-200 hover:scale-105 bg-transparent border-none p-0 cursor-pointer"
                 style={{ color: '#194866' }}
                 onMouseEnter={(e) => {
                   e.target.style.color = '#EE183F';
@@ -483,7 +486,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                 }}
               >
                 {translations?.login || 'Sign In'}
-              </a>
+              </button>
             </p>
           </div>
         </div>
