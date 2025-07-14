@@ -113,15 +113,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Fall back to default Firebase verification email if our custom one fails
         await sendEmailVerification(user);
       }
-      
-      // Sign out immediately so they have to verify email before logging in
-      setTimeout(async () => {
-        try {
-          await signOut(auth);
-        } catch (signOutError) {
-          console.error('Error signing out after registration:', signOutError);
-        }
-      }, 500); // Delay sign out to ensure we've updated the UI first
+
+      // Sign out immediately after registration
+      await signOut(auth);
       
       return { success: true, user: user };
     } catch (error: any) {
@@ -324,9 +318,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Auth state observer
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true);
+      setLoading(true); 
       
       if (user) {
+        await user.reload(); // Ensure we have latest user data
+        if (!user.emailVerified) {
+          console.warn("⛔ Email not verified, signing out...");
+          await signOut(auth);
+          setFirebaseUser(null);
+          setCurrentUser(null);
+          setLoading(false);
+          return;
+        }
+        
         setFirebaseUser(user);
         const userData = await loadUserData(user);
         setCurrentUser(userData);

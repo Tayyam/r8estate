@@ -50,7 +50,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
 
   // Handle account creation
   const handleCreateAccount = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // Explicitly prevent form submission
     setRegisterError('');
     
     // Validation
@@ -72,10 +71,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     setLoading(true);
 
     try {
-      // Register user without auto sign-in
       await register(formData.email, formData.password, formData.displayName, 'user');
-      
-      // Move to step 2 (verification)
+      await register(formData.email, formData.password, formData.displayName, 'user'); 
       setCurrentStep(2);
       setCountdown(60);
       setLoading(false); // Important: set loading to false here
@@ -189,7 +186,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   };
   
   // Render Create Account step
-  const renderCreateAccountStep = () => {
     return (
       <>
         {/* Social Signup Buttons */}
