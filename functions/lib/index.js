@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createUnverifiedUser = exports.checkBusinessEmailVerification = exports.verifySupervisor = exports.claimProcess = exports.changeEmail = exports.createVerifiedUser = exports.sendVerificationEmail = exports.sendEmail = exports.changeUserPassword = exports.deleteUser = exports.createUser = void 0;
+exports.checkBusinessEmailVerification = exports.verifySupervisor = exports.claimProcess = exports.changeEmail = exports.sendVerificationEmail = exports.sendEmail = exports.changeUserPassword = exports.deleteUser = exports.createUser = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const emailService_1 = require("./emailService");
@@ -13,8 +13,6 @@ const claim_process_1 = require("./claim-process");
 Object.defineProperty(exports, "claimProcess", { enumerable: true, get: function () { return claim_process_1.claimProcess; } });
 Object.defineProperty(exports, "verifySupervisor", { enumerable: true, get: function () { return claim_process_1.verifySupervisor; } });
 Object.defineProperty(exports, "checkBusinessEmailVerification", { enumerable: true, get: function () { return claim_process_1.checkBusinessEmailVerification; } });
-const create_unverified_user_1 = require("./create-unverified-user");
-Object.defineProperty(exports, "createUnverifiedUser", { enumerable: true, get: function () { return create_unverified_user_1.createUnverifiedUser; } });
 admin.initializeApp();
 exports.createUser = functions.https.onCall(async (data, context) => {
     try {
@@ -161,7 +159,4 @@ exports.changeUserPassword = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'An error occurred while changing the password');
     }
 });
-// Export the verified user creation function
-var create_verified_user_1 = require("./create-verified-user");
-Object.defineProperty(exports, "createVerifiedUser", { enumerable: true, get: function () { return create_verified_user_1.createVerifiedUser; } });
 //# sourceMappingURL=index.js.map

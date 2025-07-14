@@ -1,19 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { applyActionCode, checkActionCode } from 'firebase/auth';
 import { auth, db } from '../config/firebase';
-import { useAuth } from '../contexts/AuthContext'; 
-import { functions } from '../config/firebase';
-import { httpsCallable } from 'firebase/functions';
-import { useLanguage } from '../contexts/LanguageContext'; 
+import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 
 const Verification: React.FC = () => {
   const { translations } = useLanguage();
-  const { firebaseUser } = useAuth();
-  const oobCodeRef = useRef<string | null>(null);
-  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -21,34 +16,6 @@ const Verification: React.FC = () => {
   const [success, setSuccess] = useState<boolean>(false);
   const [processingClaim, setProcessingClaim] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
-
-  // Reference to admin for user lookup
-  const admin = {
-    auth: () => ({
-      getUserByEmail: async (email: string) => {
-        // We can't directly use admin.auth() in the frontend, so we'll do a Firestore lookup instead
-        try {
-          const usersQuery = query(
-            collection(db, 'users'),
-            where('email', '==', email)
-          );
-          const userSnapshot = await getDocs(usersQuery);
-          if (!userSnapshot.empty) {
-            const userData = userSnapshot.docs[0].data();
-            return {
-              uid: userSnapshot.docs[0].id,
-              displayName: userData.displayName || '',
-              email: userData.email
-            };
-          }
-          return null;
-        } catch (error) {
-          console.error("Error looking up user by email:", error);
-          return null;
-        }
-      }
-    })
-  };
 
   // Helper function to add debug info
   const addDebugInfo = (info: string) => {
@@ -64,7 +31,6 @@ const Verification: React.FC = () => {
         const searchParams = new URLSearchParams(location.search);
         const mode = searchParams.get('mode');
         const oobCode = searchParams.get('oobCode');
-        oobCodeRef.current = oobCode;
 
         if (!oobCode) {
           addDebugInfo("❌ No oobCode found in URL");
@@ -77,7 +43,6 @@ const Verification: React.FC = () => {
         addDebugInfo("🔍 Checking action code to extract user email...");
         const info = await checkActionCode(auth, oobCode);
         const userEmail = info.data.email;
-        setVerifiedEmail(userEmail);
         addDebugInfo(`📧 Extracted email from oobCode: ${userEmail}`);
 
         addDebugInfo("🔑 Applying action code to verify email...");
@@ -87,16 +52,11 @@ const Verification: React.FC = () => {
         if (userEmail) {
           addDebugInfo(`📧 Verified email: ${userEmail}`);
           
-          // First, try to look up the user by email
-          addDebugInfo(`🔍 Looking up user by email: ${userEmail}`);
-          const userDoc = await admin.auth().getUserByEmail(userEmail);
-          addDebugInfo(`📦 UserDoc from lookup: ${JSON.stringify(userDoc || 'Not found')}`);
-          
           try {
             addDebugInfo("🔄 Handling email verification in the frontend...");
             // Direct implementation instead of calling cloud function
             setProcessingClaim(true);
-            await handleEmailVerification(userEmail, userDoc);
+            await handleEmailVerification(userEmail);
             
             setProcessingClaim(false);
             addDebugInfo("✅ Email verification processing completed");
@@ -122,8 +82,8 @@ const Verification: React.FC = () => {
   }, [location, translations]);
 
   // New function to handle verification directly
-  const handleEmailVerification = async (userEmail: string, userDoc: any) => {
-    addDebugInfo(`🔍 Using email from previous checkActionCode: ${userEmail}`);
+  const handleEmailVerification = async (userEmail: string) => {
+    addDebugInfo(`🔍 Checking if ${userEmail} is associated with a claim request`);
     
     // Check if this email is associated with a claim request
     const businessQuery = query(
@@ -144,34 +104,32 @@ const Verification: React.FC = () => {
     // Check if this is a regular user registration (not a claim request)
     if (businessResults.empty && supervisorResults.empty) {
       addDebugInfo("👤 Regular user registration detected (not a claim request)");
-
-      addDebugInfo("☁️ Calling createVerifiedUser Cloud Function");
+      
       try {
-        if (userDoc && userDoc.uid && userEmail) {
-          addDebugInfo(`📦 Calling cloud function with: uid=${userDoc.uid}, email=${userEmail}, displayName=${userDoc.displayName || ''}`);
-          // Call our Cloud Function to create the user document
-          const createUserDoc = httpsCallable(functions, 'createVerifiedUser');
-          const result = await createUserDoc({ 
-            uid: userDoc.uid, 
+        // Create user document in Firestore now that email is verified
+        if (firebaseUser) {
+          addDebugInfo(`📝 Creating user document for verified user: ${firebaseUser.uid}`);
+          
+          await setDoc(doc(db, 'users', firebaseUser.uid), {
+            uid: firebaseUser.uid,
             email: userEmail,
-            displayName: userDoc.displayName || ''
+            displayName: firebaseUser.displayName || '',
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isEmailVerified: true
           });
           
-          const data = result.data as any;
-          if (data.success) {
-            addDebugInfo("✅ User document created successfully via Cloud Function");
-          } else {
-            throw new Error(data.message || 'Failed to create user document');
-          }
+          addDebugInfo("✅ User document created successfully");
         } else {
-          addDebugInfo("❌ User document or email is missing - cannot create user document");
-          addDebugInfo(`ℹ️ Available data: userDoc=${!!userDoc}, userEmail=${!!userEmail}`);
+          addDebugInfo("❌ Firebase user not found, cannot create user document");
         }
+        
+        return;
       } catch (error) {
-        addDebugInfo(`❌ Error calling createVerifiedUser function: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
+        addDebugInfo(`❌ Error creating user document: ${JSON.stringify(error)}`);
+        return;
       }
-      
-      return;
     }
     
     let claimRequestRef;
@@ -180,7 +138,7 @@ const Verification: React.FC = () => {
     
     // Determine if business or supervisor email
     if (!businessResults.empty) {
-      addDebugInfo(`✅ Found business email in claim requests: ${userEmail}`);
+      addDebugInfo("✅ Found business email in claim requests");
       claimRequestRef = businessResults.docs[0].ref;
       claimRequest = businessResults.docs[0].data();
       addDebugInfo(`📄 Claim request data: ${JSON.stringify(claimRequest)}`);
@@ -194,7 +152,7 @@ const Verification: React.FC = () => {
       addDebugInfo("✅ Business email verified status updated");
       
     } else if (!supervisorResults.empty) {
-      addDebugInfo(`✅ Found supervisor email in claim requests: ${userEmail}`);
+      addDebugInfo("✅ Found supervisor email in claim requests");
       claimRequestRef = supervisorResults.docs[0].ref;
       claimRequest = supervisorResults.docs[0].data();
       isSupervisor = true;

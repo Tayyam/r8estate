@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import { sendEmail } from './emailService';
 import { sendVerificationEmail } from './email-verification';
 import { changeEmail } from './change-email';
-import { claimProcess } from './claim-process';
+import { claimProcess, verifySupervisor, checkBusinessEmailVerification } from './claim-process';
 import { createUnverifiedUser } from './create-unverified-user';
 
 admin.initializeApp();
@@ -192,11 +192,9 @@ export const changeUserPassword = functions.https.onCall(async (data, context) =
 export { sendEmail };
 // Export the email verification function
 export { sendVerificationEmail };
-// Export the verified user creation function
-export { createVerifiedUser } from './create-verified-user';
 // Export the email change function
 export { changeEmail };
 // Export the claim process functions
-export { claimProcess };
+export { claimProcess, verifySupervisor, checkBusinessEmailVerification };
 // Export the create unverified user function
 export { createUnverifiedUser };
