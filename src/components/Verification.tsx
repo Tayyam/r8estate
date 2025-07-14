@@ -5,14 +5,15 @@ import { auth, db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { functions } from '../config/firebase';
 import { httpsCallable } from 'firebase/functions';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/LanguageContext'; 
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 
 const Verification: React.FC = () => {
   const { translations } = useLanguage();
   const { firebaseUser } = useAuth();
   const oobCodeRef = useRef<string | null>(null);
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -76,6 +77,7 @@ const Verification: React.FC = () => {
         addDebugInfo("🔍 Checking action code to extract user email...");
         const info = await checkActionCode(auth, oobCode);
         const userEmail = info.data.email;
+        setVerifiedEmail(userEmail);
         addDebugInfo(`📧 Extracted email from oobCode: ${userEmail}`);
 
         addDebugInfo("🔑 Applying action code to verify email...");
@@ -116,7 +118,7 @@ const Verification: React.FC = () => {
 
   // New function to handle verification directly
   const handleEmailVerification = async (userEmail: string) => {
-    addDebugInfo(`🔍 Checking if ${userEmail} is associated with a claim request`);
+    addDebugInfo(`🔍 Using email from previous checkActionCode: ${userEmail}`);
     
     // Check if this email is associated with a claim request
     const businessQuery = query(
@@ -141,11 +143,10 @@ const Verification: React.FC = () => {
       // Call the Cloud Function to create the user document
       addDebugInfo("☁️ Calling createVerifiedUser Cloud Function");
       try {
-        // Get user record from auth
-        const userInfo = await checkActionCode(auth, oobCodeRef.current!);
-        const userId = userInfo.data.email ? (await auth.fetchSignInMethodsForEmail(userInfo.data.email)).length > 0 : null;
+        // No need to check action code again - we already have the email
+        // Just call the Cloud Function with the verified email
         
-        if (userInfo.data.email) {
+        if (userEmail) {
           // Call our Cloud Function to create the user document
           const createUserDoc = httpsCallable(functions, 'createVerifiedUser');
           const result = await createUserDoc({ 
