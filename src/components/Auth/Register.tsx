@@ -3,6 +3,8 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Globe, AlertCircl
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../config/firebase';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 interface RegisterProps {
@@ -32,6 +34,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,24 +60,23 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     setLoading(true);
 
     try {
-      await register(formData.email, formData.password, formData.displayName, 'user');
+      // Call the Cloud Function to create an unverified user
+      const createUnverifiedUserFunction = httpsCallable(functions, 'createUnverifiedUser');
+      const result = await createUnverifiedUserFunction({
+        email: formData.email,
+        password: formData.password,
+        displayName: formData.displayName,
+        role: 'user'
+      });
       
-      // Show success toast and immediately navigate
-      showSuccessToast(
-        translations?.accountCreated || 'Account Created Successfully!',
-        translations?.welcomeToR8Estate || 'Welcome to R8 Estate! Your account has been created and you are now logged in.',
-      );
+      const data = result.data as any;
       
-      // Navigate to return URL if provided
-      setTimeout(() => {
-        if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
-          navigate(returnTo);
-        } else if (onNavigate) {
-          onNavigate('home');
-        } else {
-          navigate('/');
-        }
-      }, 500);
+      if (data.success) {
+        setUserId(data.userId);
+        setRegistrationSuccess(true);
+      } else {
+        throw new Error(data.message || 'Registration failed');
+      }
       
     } catch (error: any) {
       // Create user-friendly error messages
@@ -90,6 +93,31 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       }
       
       setRegisterError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle resending verification email
+  const handleResendVerification = async () => {
+    if (!formData.email) return;
+    
+    try {
+      setLoading(true);
+      
+      const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
+      await sendVerificationEmailFunction({ email: formData.email });
+      
+      showSuccessToast(
+        translations?.verificationEmailResent || 'Verification Email Resent',
+        translations?.verificationEmailResentDesc || 'We have sent another verification email to your inbox. Please check your email and click on the verification link.'
+      );
+    } catch (error) {
+      console.error('Error resending verification email:', error);
+      showErrorToast(
+        translations?.error || 'Error',
+        translations?.failedToSendVerification || 'Failed to send verification email. Please try again later.'
+      );
     } finally {
       setLoading(false);
     }
@@ -146,6 +174,43 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {registrationSuccess ? (
+        // Success message after registration
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="h-10 w-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            {translations?.thankYou || 'شكراً لك!'}
+          </h2>
+          <p className="text-lg text-gray-700 mb-6">
+            {translations?.accountRegistered || 'لقد قمنا بتسجيل حسابك، يرجى التحقق منه'}
+          </p>
+          <p className="text-sm text-gray-600 mb-8">
+            {translations?.verificationEmailSent || 'تم إرسال رسالة تأكيد إلى بريدك الإلكتروني. يرجى التحقق من بريدك الإلكتروني والنقر على رابط التأكيد.'}
+          </p>
+          <div className="space-y-4">
+            <button
+              onClick={handleResendVerification}
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50"
+            >
+              {loading ? 
+                (translations?.sending || 'جاري الإرسال...') : 
+                (translations?.resendVerification || 'إعادة إرسال رابط التأكيد')}
+            </button>
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-medium hover:bg-gray-300 transition-colors duration-200"
+            >
+              {translations?.goToLogin || 'الذهاب إلى تسجيل الدخول'}
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="max-w-md w-full">
         {/* Header with Language Toggle and Back Button */}
         <div className="flex items-center justify-between mb-8 animate-slideInDown">
@@ -555,6 +620,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
           animation-fill-mode: both;
         }
       `}</style>
+      )}
     </div>
   );
 };

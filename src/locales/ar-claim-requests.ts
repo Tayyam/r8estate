@@ -83,6 +83,7 @@ export const arClaimRequests = {
   profilePhoto: 'الصورة الشخصية',
   uploadPhoto: 'رفع صورة',
   changePhoto: 'تغيير الصورة',
+  changePhoto: 'تغيير الصورة',
   photoSizeLimit: 'الحد الأقصى 2 ميجابايت. JPG أو PNG أو GIF',
   mustBeLoggedIn: 'يجب تسجيل الدخول لإرسال طلب',
 };

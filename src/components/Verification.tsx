@@ -4,7 +4,7 @@ import { applyActionCode, checkActionCode } from 'firebase/auth';
 import { auth, db } from '../config/firebase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 
 const Verification: React.FC = () => {
@@ -25,8 +25,9 @@ const Verification: React.FC = () => {
 
   useEffect(() => {
     const verifyEmail = async () => {
+      addDebugInfo("🔍 Starting email verification process with debug info enabled");
       try {
-        addDebugInfo("🔍 Starting email verification process...");
+        addDebugInfo("🔍 Starting email verification process");
         const searchParams = new URLSearchParams(location.search);
         const mode = searchParams.get('mode');
         const oobCode = searchParams.get('oobCode');
@@ -50,11 +51,11 @@ const Verification: React.FC = () => {
 
         if (userEmail) {
           addDebugInfo(`📧 Verified email: ${userEmail}`);
-          setProcessingClaim(true);
           
           try {
             addDebugInfo("🔄 Handling email verification in the frontend...");
             // Direct implementation instead of calling cloud function
+            setProcessingClaim(true);
             await handleEmailVerification(userEmail);
             
             setProcessingClaim(false);
@@ -83,7 +84,7 @@ const Verification: React.FC = () => {
   // New function to handle verification directly
   const handleEmailVerification = async (userEmail: string) => {
     addDebugInfo(`🔍 Checking if ${userEmail} is associated with a claim request`);
-
+    
     // Check if this email is associated with a claim request
     const businessQuery = query(
       collection(db, 'claimRequests'),
@@ -99,6 +100,37 @@ const Verification: React.FC = () => {
     const businessResults = await getDocs(businessQuery);
     const supervisorResults = await getDocs(supervisorQuery);
     addDebugInfo(`📊 Results - Business: ${businessResults.size}, Supervisor: ${supervisorResults.size}`);
+    
+    // Check if this is a regular user registration (not a claim request)
+    if (businessResults.empty && supervisorResults.empty) {
+      addDebugInfo("👤 Regular user registration detected (not a claim request)");
+      
+      try {
+        // Create user document in Firestore now that email is verified
+        if (firebaseUser) {
+          addDebugInfo(`📝 Creating user document for verified user: ${firebaseUser.uid}`);
+          
+          await setDoc(doc(db, 'users', firebaseUser.uid), {
+            uid: firebaseUser.uid,
+            email: userEmail,
+            displayName: firebaseUser.displayName || '',
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isEmailVerified: true
+          });
+          
+          addDebugInfo("✅ User document created successfully");
+        } else {
+          addDebugInfo("❌ Firebase user not found, cannot create user document");
+        }
+        
+        return;
+      } catch (error) {
+        addDebugInfo(`❌ Error creating user document: ${JSON.stringify(error)}`);
+        return;
+      }
+    }
     
     let claimRequestRef;
     let claimRequest;
