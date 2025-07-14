@@ -64,6 +64,7 @@ export const ar = {
   genericVerificationError: 'تعذر التحقق من بريدك الإلكتروني. يرجى المحاولة مرة أخرى أو طلب رابط تحقق جديد.',
   invalidVerificationLink: 'رابط التحقق غير صالح',
   emailChangeWarning: 'ستحتاج إلى التحقق من عنوان بريدك الإلكتروني الجديد. سيتم إرسال رابط التحقق إلى بريدك الجديد.',
+  emailNotVerifiedLogin: 'يرجى التحقق من بريدك الإلكتروني قبل تسجيل الدخول. تم إرسال رسالة تحقق جديدة.',
   ...arHero,
   ...arCategories,
   ...arReviews,
