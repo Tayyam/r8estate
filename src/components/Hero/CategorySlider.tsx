@@ -185,14 +185,7 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
                 );
               })}
             </Swiper>
-            
-            {/* Custom navigation buttons */}
-            <button className="swiper-button-prev absolute top-1/2 transform -translate-y-1/2 left-0 z-10 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center focus:outline-none">
-              <ArrowLeft className="w-5 h-5 text-gray-700" />
-            </button>
-            <button className="swiper-button-next absolute top-1/2 transform -translate-y-1/2 right-0 z-10 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center focus:outline-none">
-              <ArrowRight className="w-5 h-5 text-gray-700" />
-            </button>
+           
             
             {/* Custom pagination */}
             <div className="swiper-pagination bottom-0 !relative"></div>
