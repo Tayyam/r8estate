@@ -272,3 +272,5 @@ export const claimProcess = functions.https.onCall(async (data, context) => {
       error
     );
   }
+}
+)
