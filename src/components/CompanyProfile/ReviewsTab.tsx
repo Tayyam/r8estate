@@ -364,12 +364,30 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
   // Open edit modal
   const openEditModal = (review: Review) => {
+    // Prevent editing if company has replied
+    if (review.companyReply) {
+      showErrorToast(
+        translations?.error || 'Error',
+        translations?.cannotEditAfterReply || 'Reviews with company replies cannot be edited to maintain conversation integrity'
+      );
+      return;
+    }
+    
     setSelectedReview(review);
     setShowEditReview(true);
   };
 
   // Open delete confirmation
   const openDeleteConfirm = (review: Review) => {
+    // Prevent deletion if company has replied
+    if (review.companyReply) {
+      showErrorToast(
+        translations?.error || 'Error', 
+        translations?.cannotDeleteAfterReply || 'Reviews with company replies cannot be deleted to maintain conversation integrity'
+      );
+      return;
+    }
+    
     setSelectedReview(review);
     setShowDeleteConfirm(true);
   };

@@ -53,6 +53,11 @@ export const ar = {
   passwordResetSuccessDesc: 'تم إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.',
   passwordResetFailed: 'فشل في إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى أو طلب رابط جديد.',
   missingActionCode: 'رمز العملية مفقود',
+  cannotEditReview: 'لا يمكن تعديل التقييم',
+  cannotDeleteReview: 'لا يمكن حذف التقييم',
+  cannotEditAfterReply: 'لا يمكن تعديل التقييمات التي تم الرد عليها من قبل الشركة للحفاظ على سلامة المحادثة',
+  cannotDeleteAfterReply: 'لا يمكن حذف التقييمات التي تم الرد عليها من قبل الشركة للحفاظ على سلامة المحادثة',
+  repliedReview: 'تم الرد من الشركة',
   
   // Email Verification
   verifyingEmail: 'جاري التحقق من بريدك الإلكتروني',

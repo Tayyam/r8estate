@@ -163,12 +163,30 @@ const MyReviews: React.FC<MyReviewsProps> = ({ onNavigate }) => {
 
   // Open edit modal
   const openEditModal = (review: Review) => {
+    // Check if review has company reply
+    if (review.companyReply) {
+      showErrorToast(
+        translations?.cannotEditReview || 'Cannot Edit Review',
+        translations?.cannotEditAfterReply || 'Reviews that have company replies cannot be edited to maintain conversation integrity.'
+      );
+      return;
+    }
+    
     setSelectedReview(review);
     setShowEditModal(true);
   };
 
   // Handle delete review
   const handleDeleteReview = (review: Review) => {
+    // Check if review has company reply
+    if (review.companyReply) {
+      showErrorToast(
+        translations?.cannotDeleteReview || 'Cannot Delete Review',
+        translations?.cannotDeleteAfterReply || 'Reviews that have company replies cannot be deleted to maintain conversation integrity.'
+      );
+      return;
+    }
+    
     showWarningModal(
       translations?.deleteReview || 'Delete Review',
       translations?.confirmDeleteReview || 'Are you sure you want to delete this review? This action cannot be undone.',
@@ -379,29 +397,35 @@ const MyReviews: React.FC<MyReviewsProps> = ({ onNavigate }) => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditModal(review);
-                        }}
-                        className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-colors duration-200"
-                        title={translations?.editReview || 'Edit Review'}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteReview(review);
-                        }}
-                        disabled={actionLoading}
-                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
-                        title={translations?.deleteReview || 'Delete Review'}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {!review.companyReply ? (
+                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(review);
+                          }}
+                          className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-colors duration-200"
+                          title={translations?.editReview || 'Edit Review'}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteReview(review);
+                          }}
+                          disabled={actionLoading}
+                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                          title={translations?.deleteReview || 'Delete Review'}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded-md">
+                        {translations?.repliedReview || 'Company replied'}
+                      </div>
+                    )}
                   </div>
                   
                   {/* Company Reply */}
