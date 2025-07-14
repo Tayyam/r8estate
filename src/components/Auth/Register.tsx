@@ -82,7 +82,9 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       // Create user-friendly error messages
       let errorMessage = '';
       
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.code === 'auth/email-already-in-use' || 
+         error.message?.includes('already in use') ||
+         error.message?.includes('already-exists')) {
         errorMessage = translations?.emailAlreadyInUse || 'This email address is already in use by another account';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = translations?.invalidEmailFormat || 'Please enter a valid email address';

@@ -98,7 +98,11 @@ export const createVerifiedUser = functions.https.onCall(async (data, context) =
     console.error('Error creating verified user:', error);
     
     // Check for existing email error
-    // Add type checking before accessing error.code
+   // Check for Auth error which could be 'email-already-exists' in Admin SDK
+   // or 'email-already-in-use' in client SDK
+   if (error && typeof error === 'object' && 
+      ((error.code && (error.code === 'auth/email-already-in-use' || error.code === 'auth/email-already-exists')) ||
+       (error.errorInfo && error.errorInfo.code === 'auth/email-already-exists'))) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/email-already-in-use') {
       throw new functions.https.HttpsError(
         'already-exists',
