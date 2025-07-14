@@ -35,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, o
     { id: 'home', label: translations?.home || 'Home', path: '/' },
     { id: 'categories', label: translations?.categories || 'Categories', path: '/categories' },
     { id: 'about', label: translations?.about || 'About', path: '/about' },
-    { id: 'pricing', label: translations?.pricing || 'Pricing', path: '/pricing' },
+    { id: 'pricing', label: translations?.pricing || 'Plans', path: '/pricing' },
   ];
 
   const currentLanguage = languages.find(lang => lang.code === language);
