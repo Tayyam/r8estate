@@ -147,13 +147,11 @@ const Verification: React.FC = () => {
       // Call the Cloud Function to create the user document
       addDebugInfo("☁️ Calling createVerifiedUser Cloud Function");
       try {
-        // No need to check action code again - we already have the email
-        // Just call the Cloud Function with the verified email
-        
-        // Use userDoc from lookup instead of relying on firebaseUser
+        // Lookup the user by email first
+        const userDoc = await admin.auth().getUserByEmail(userEmail);
         addDebugInfo(`📦 UserDoc from lookup: ${JSON.stringify(userDoc || 'Not found')}`);
-        
-        if (userDoc?.uid && userEmail) {
+
+        if (userDoc && userDoc.uid && userEmail) {
           addDebugInfo(`📦 Calling cloud function with: uid=${userDoc.uid}, email=${userEmail}, displayName=${userDoc.displayName || ''}`);
           // Call our Cloud Function to create the user document
           const createUserDoc = httpsCallable(functions, 'createVerifiedUser');
@@ -186,7 +184,7 @@ const Verification: React.FC = () => {
     
     // Determine if business or supervisor email
     if (!businessResults.empty) {
-      addDebugInfo("✅ Found business email in claim requests");
+      addDebugInfo(`✅ Found business email in claim requests: ${userEmail}`);
       claimRequestRef = businessResults.docs[0].ref;
       claimRequest = businessResults.docs[0].data();
       addDebugInfo(`📄 Claim request data: ${JSON.stringify(claimRequest)}`);
@@ -200,7 +198,7 @@ const Verification: React.FC = () => {
       addDebugInfo("✅ Business email verified status updated");
       
     } else if (!supervisorResults.empty) {
-      addDebugInfo("✅ Found supervisor email in claim requests");
+      addDebugInfo(`✅ Found supervisor email in claim requests: ${userEmail}`);
       claimRequestRef = supervisorResults.docs[0].ref;
       claimRequest = supervisorResults.docs[0].data();
       isSupervisor = true;
