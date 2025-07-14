@@ -6,12 +6,14 @@ import { Review } from '../../types/property';
 interface ReviewFiltersProps {
   ratingFilter: 'all' | 1 | 2 | 3 | 4 | 5;
   timeFilter: 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'year';
-  sortFilter: 'newest' | 'oldest' | 'highest-rating' | 'lowest-rating';
+  sortFilter: 'newest' | 'oldest' | 'highest-rating' | 'lowest-rating'; 
+  responseFilter: 'all' | 'with-response' | 'without-response';
   showFilters: boolean;
   setShowFilters: (show: boolean) => void;
   setRatingFilter: (rating: 'all' | 1 | 2 | 3 | 4 | 5) => void;
   setTimeFilter: (time: 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'year') => void;
   setSortFilter: (sort: 'newest' | 'oldest' | 'highest-rating' | 'lowest-rating') => void;
+  setResponseFilter: (response: 'all' | 'with-response' | 'without-response') => void;
   hasFilters: boolean;
   handleClearFilters: () => void;
   filteredReviews: Review[];
@@ -126,6 +128,22 @@ const ReviewFilters: React.FC<ReviewFiltersProps> = ({
           <div className="mt-2 text-sm text-gray-500 animate-fadeIn">
             {translations?.showingFilteredReviews?.replace('{count}', filteredReviews?.length?.toString() || '0').replace('{total}', reviews?.length?.toString() || '0') || 
             `Showing ${filteredReviews?.length || 0} of ${reviews?.length || 0} reviews`}
+          </div>
+
+          {/* Response Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {translations?.responseFilter || 'Company Responses'}
+            </label>
+            <select
+              value={responseFilter}
+              onChange={(e) => setResponseFilter(e.target.value as 'all' | 'with-response' | 'without-response')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">{translations?.allResponses || 'All Reviews'}</option>
+              <option value="with-response">{translations?.withResponses || 'With Company Replies'}</option>
+              <option value="without-response">{translations?.withoutResponses || 'Without Replies'}</option>
+            </select>
           </div>
         </div>
       )}

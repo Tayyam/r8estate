@@ -67,6 +67,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const [ratingFilter, setRatingFilter] = useState<'all' | 1 | 2 | 3 | 4 | 5>('all');
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'yesterday' | 'week' | 'month' | 'year'>('all');
   const [sortFilter, setSortFilter] = useState<'newest' | 'oldest'>('newest');
+  const [responseFilter, setResponseFilter] = useState<'all' | 'with-response' | 'without-response'>('all');
   const [showFilters, setShowFilters] = useState(false);
   
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
@@ -208,6 +209,13 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       filteredReviews = filteredReviews.filter(review => review.rating === ratingValue);
     }
     
+    // Apply the new response filter
+    if (filters.responseFilter === 'with-response') {
+      result = result.filter(review => Boolean(review.companyReply));
+    } else if (filters.responseFilter === 'without-response') {
+      result = result.filter(review => !review.companyReply);
+    }
+    
     // Apply time filter
     const dateFilter = getDateFilterRange();
     if (dateFilter) {
@@ -242,7 +250,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const filteredReviews = getFilteredReviews();
   
   // Check if any filters are applied
-  const hasFilters = ratingFilter !== 'all' || timeFilter !== 'all' || sortFilter !== 'newest';
+  const hasFilters = categoryFilter !== 'all' || locationFilter !== 'all' || ratingFilter !== 'all' || sortFilter !== 'highestRated' || responseFilter !== 'all';
 
   // Handle clearing filters
   const handleClearFilters = () => {
@@ -250,6 +258,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     setTimeFilter('all');
     setSortFilter('newest');
   };
+    setResponseFilter('all');
 
   const averageRating = calculateAverageRating();
 
