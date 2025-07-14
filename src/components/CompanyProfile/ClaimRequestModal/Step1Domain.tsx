@@ -23,7 +23,7 @@ const Step1Domain: React.FC<Step1DomainProps> = ({
         </h4>
         <p className="text-gray-600">
           {translations?.domainVerificationQuestion || 'Do you have an email address with the company domain?'} 
-          {companyDomain ? ` (@${companyDomain})` : ''}
+          {' (@companyname.com)'}
         </p>
       </div>
       
@@ -36,7 +36,7 @@ const Step1Domain: React.FC<Step1DomainProps> = ({
             >
               <Check className="h-5 w-5" />
               <span>
-                {translations?.yesHaveDomainEmail || 'Yes, I have an email with'} @{companyDomain}
+                {translations?.yesHaveDomainEmail || 'Yes, I have an email with'} @companyname.com
               </span>
             </button>
           </div>
