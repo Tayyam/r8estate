@@ -232,6 +232,13 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
       return;
     }
 
+    // Check for hyperlinks in title and content
+    const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(\.[a-zA-Z]{2,}\/[^\s]+)/gi;
+    if (urlRegex.test(formData.title) || urlRegex.test(formData.content)) {
+      onError(translations?.noHyperlinksAllowed || 'Hyperlinks are not allowed in reviews');
+      return;
+    }
+
     // Check if any of the category ratings are 0
     const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
     if (communication === 0 || valueForMoney === 0 || friendliness === 0 || responsiveness === 0) {

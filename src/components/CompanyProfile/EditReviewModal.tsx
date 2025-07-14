@@ -210,6 +210,13 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
       return;
     }
 
+    // Check for hyperlinks in title and content
+    const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(\.[a-zA-Z]{2,}\/[^\s]+)/gi;
+    if (urlRegex.test(formData.title) || urlRegex.test(formData.content)) {
+      onError(translations?.noHyperlinksAllowed || 'Hyperlinks are not allowed in reviews');
+      return;
+    }
+
     // Check permissions
     const canEdit = currentUser.uid === review.userId || currentUser.role === 'admin';
     if (!canEdit) {

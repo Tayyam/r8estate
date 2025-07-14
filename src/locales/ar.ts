@@ -58,6 +58,7 @@ export const ar = {
   cannotEditAfterReply: 'لا يمكن تعديل التقييمات التي تم الرد عليها من قبل الشركة للحفاظ على سلامة المحادثة',
   cannotDeleteAfterReply: 'لا يمكن حذف التقييمات التي تم الرد عليها من قبل الشركة للحفاظ على سلامة المحادثة',
   repliedReview: 'تم الرد من الشركة',
+  noHyperlinksAllowed: 'غير مسموح بالروابط في التقييمات',
   
   // Email Verification
   verifyingEmail: 'جاري التحقق من بريدك الإلكتروني',

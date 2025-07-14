@@ -299,6 +299,13 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
       return;
     }
 
+    // Check for hyperlinks in title and content
+    const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(\.[a-zA-Z]{2,}\/[^\s]+)/gi;
+    if (urlRegex.test(formData.title) || urlRegex.test(formData.content)) {
+      onError(translations?.noHyperlinksAllowed || 'Hyperlinks are not allowed in reviews');
+      return;
+    }
+
     // Check if any of the category ratings are 0
     const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
     if (communication === 0 || valueForMoney === 0 || friendliness === 0 || responsiveness === 0) {
@@ -394,6 +401,13 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
     
     if (!currentUser || !userReview) {
       onError(translations?.mustBeLoggedIn || 'You must be logged in to edit a review');
+      return;
+    }
+
+    // Check for hyperlinks in title and content
+    const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(\.[a-zA-Z]{2,}\/[^\s]+)/gi;
+    if (urlRegex.test(formData.title) || urlRegex.test(formData.content)) {
+      onError(translations?.noHyperlinksAllowed || 'Hyperlinks are not allowed in reviews');
       return;
     }
 
