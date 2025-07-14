@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Users, Building2, Tag, AlertCircle, FileText, Flag, MessageSquare } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Building2, Tag, AlertCircle, FileText, Flag, MessageSquare, BarChart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import UserManagement from './Settings/UserManagement';
@@ -8,6 +8,7 @@ import Categories from './Settings/Categories';
 import ClaimRequests from './Settings/ClaimRequests';
 import Reports from './Settings/Reports';
 import Reviews from './Settings/Reviews';
+import Dashboard from './Settings/Dashboard';
 
 interface SettingsProps {
   onNavigateToProfile?: (companyId: string, companyName: string) => void;
@@ -41,6 +42,12 @@ const Settings: React.FC<SettingsProps> = ({ onNavigateToProfile }) => {
   }
 
   const tabs = [
+    {
+      id: 'dashboard',
+      name: translations?.dashboard || 'Dashboard',
+      icon: BarChart,
+      component: Dashboard
+    },
     {
       id: 'users',
       name: translations?.userManagement || 'User Management',
