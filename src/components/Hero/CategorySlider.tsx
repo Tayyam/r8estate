@@ -188,7 +188,7 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
            
             
             {/* Custom pagination */}
-            <div className="swiper-pagination bottom-0 !relative"></div>
+            
           </div>
         ) : (
           <div className="text-center py-12">
@@ -205,19 +205,7 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
         .swiper-button-prev::after {
           display: none;
         }
-        
-        .swiper-pagination-bullet {
-          width: 10px;
-          height: 10px;
-          background-color: #194866;
-          opacity: 0.5;
-        }
-        
-        .swiper-pagination-bullet-active {
-          opacity: 1;
-          background-color: #194866;
-        }
-        
+                
         @media (max-width: 640px) {
           .categories-slider {
             padding-left: 0;
