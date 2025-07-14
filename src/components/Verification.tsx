@@ -85,19 +85,35 @@ const Verification: React.FC = () => {
   const handleEmailVerification = async (userEmail: string) => {
     addDebugInfo(`✅ Email verification successful for ${userEmail}`);
     
-    // For regular users, just update the isEmailVerified flag
-    if (firebaseUser) {
-      addDebugInfo(`📝 Updating verified status for user: ${firebaseUser.uid}`);
+    try {
+      // Find user by email
+      const usersQuery = query(
+        collection(db, 'users'),
+        where('email', '==', userEmail)
+      );
       
-      await updateDoc(doc(db, 'users', firebaseUser.uid), {
-        isEmailVerified: true,
-        updatedAt: new Date(),
-        status: 'active' // Update status to active after email verification
-      });
+      const userSnapshot = await getDocs(usersQuery);
       
-      addDebugInfo("✅ User verification status updated successfully");
-    } else {
-      addDebugInfo("❌ Firebase user not found, cannot update verification status");
+      if (!userSnapshot.empty) {
+        const userDoc = userSnapshot.docs[0];
+        const userId = userDoc.id;
+        
+        addDebugInfo(`📝 Found user with ID: ${userId}, updating verification status`);
+        
+        // Update user document with verified status and set to active
+        await updateDoc(doc(db, 'users', userId), {
+          isEmailVerified: true,
+          updatedAt: new Date(),
+          status: 'active' // Update status to active after email verification
+        });
+        
+        addDebugInfo("✅ User verification status updated successfully to 'active'");
+      } else {
+        addDebugInfo("❌ User not found with email: " + userEmail);
+      }
+    } catch (error) {
+      addDebugInfo(`❌ Error updating user status: ${JSON.stringify(error)}`);
+      console.error("Error updating user status:", error);
     }
 
     // Check if this email is associated with a claim request (this part remains the same)
