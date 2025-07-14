@@ -91,7 +91,8 @@ const Verification: React.FC = () => {
       
       await updateDoc(doc(db, 'users', firebaseUser.uid), {
         isEmailVerified: true,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        status: 'active' // Update status to active after email verification
       });
       
       addDebugInfo("✅ User verification status updated successfully");

@@ -64,6 +64,23 @@ export const ar = {
   genericVerificationError: 'تعذر التحقق من بريدك الإلكتروني. يرجى المحاولة مرة أخرى أو طلب رابط تحقق جديد.',
   invalidVerificationLink: 'رابط التحقق غير صالح',
   emailChangeWarning: 'ستحتاج إلى التحقق من عنوان بريدك الإلكتروني الجديد. سيتم إرسال رابط التحقق إلى بريدك الجديد.',
+  
+  // User status
+  active: 'نشط',
+  suspended: 'موقوف',
+  notActive: 'غير نشط',
+  userStatus: 'حالة المستخدم',
+  suspendUser: 'إيقاف المستخدم',
+  reactivateUser: 'تنشيط المستخدم',
+  
+  // User status
+  accountSuspended: 'حسابك موقوف',
+  accountSuspendedMessage: 'تم إيقاف حسابك. يرجى التواصل مع الدعم الفني للمساعدة.',
+  accountNotVerified: 'الحساب غير مفعل',
+  pleaseVerifyAccountMessage: 'يرجى التحقق من بريدك الإلكتروني لتفعيل حسابك.',
+  accountNotVerifiedExplanation: 'إذا لم تجد رسالة التحقق، تحقق من مجلد البريد العشوائي أو اطلب إعادة إرسالها.',
+  resendVerification: 'إعادة إرسال رابط التحقق',
+  
   ...arHero,
   ...arCategories,
   ...arReviews,
