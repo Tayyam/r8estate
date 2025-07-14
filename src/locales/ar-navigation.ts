@@ -4,7 +4,7 @@ export const arNavigation = {
   home: 'الرئيسية',
   categories: 'الفئات',
   about: 'من نحن',
-  pricing: 'الاسعار',
+  : 'الاسعار',
   services: 'خدماتنا',
   projects: 'مشاريعنا',
   contact: 'اتصل بنا',
