@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import EmailVerificationModal from './EmailVerificationModal';
 
 interface RegisterProps {
   onNavigate: (page: string) => void;
@@ -32,6 +33,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,24 +59,20 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     setLoading(true);
 
     try {
-      await register(formData.email, formData.password, formData.displayName, 'user');
+      // Register user but don't auto-sign in
+      const result = await register(formData.email, formData.password, formData.displayName, 'user');
       
-      // Show success toast and immediately navigate
-      showSuccessToast(
-        translations?.accountCreated || 'Account Created Successfully!',
-        translations?.welcomeToR8Estate || 'Welcome to R8 Estate! Your account has been created and you are now logged in.',
-      );
+      // Store the registered email and show verification modal
+      setRegisteredEmail(formData.email);
+      setShowVerificationModal(true);
       
-      // Navigate to return URL if provided
-      setTimeout(() => {
-        if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
-          navigate(returnTo);
-        } else if (onNavigate) {
-          onNavigate('home');
-        } else {
-          navigate('/');
-        }
-      }, 500);
+      // Reset form
+      setFormData({
+        displayName: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+      });
       
     } catch (error: any) {
       // Create user-friendly error messages
@@ -489,6 +488,21 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* Email Verification Modal */}
+      <EmailVerificationModal
+        email={registeredEmail}
+        isOpen={showVerificationModal}
+        onClose={() => {
+          setShowVerificationModal(false);
+          // Navigate to login page after closing modal
+          if (onNavigate) {
+            onNavigate('login');
+          } else {
+            navigate('/login');
+          }
+        }}
+      />
 
       {/* CSS Animations */}
       <style jsx>{`

@@ -81,6 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Register new user
   const register = async (email: string, password: string, displayName: string, role: UserRole = 'user') => {
     try {
+      // Create the user with email/password but don't auto-sign in
       // Create the user with email/password
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -109,16 +110,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await sendEmailVerification(user);
       }
       
-      // No need to manually sign in since createUserWithEmailAndPassword
-      // already signs the user in. Just update the current user state.
-      const newUserData: User = {
-        uid: user.uid,
-        ...userData
-      };
+      // Sign out immediately so they have to verify email before logging in
+      await signOut(auth);
       
-      setCurrentUser(newUserData);
-      setFirebaseUser(user);
-      
+      return { success: true };
     } catch (error: any) {
       console.error('Registration error:', error);
       throw new Error(error.message);
@@ -128,10 +123,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login with email and password
   const login = async (email: string, password: string) => {
     try {
+      // First attempt to sign in
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       // Check if email is verified
       if (!userCredential.user.emailVerified) {
+        // User exists but email is not verified - send verification email again
+        try {
+          const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
+          await sendVerificationEmailFunction({ email });
+        } catch (verificationError) {
+          console.error('Error sending verification email:', verificationError);
+          // Fall back to default Firebase verification email
+          await sendEmailVerification(userCredential.user);
+        }
+        
         // Send verification email if not verified
         try {
           const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
@@ -144,6 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Sign out the user
         await signOut(auth);
+        
         throw new Error('email-not-verified');
       }
     } catch (error: any) {
