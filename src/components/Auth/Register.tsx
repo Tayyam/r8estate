@@ -190,13 +190,13 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            {translations?.thankYou || 'شكراً لك!'}
+            {translations?.thankYou || 'Thank you!'}
           </h2>
           <p className="text-lg text-gray-700 mb-6">
-            {translations?.accountRegistered || 'لقد قمنا بتسجيل حسابك، يرجى التحقق منه'}
+            {translations?.accountRegistered || 'Your account has been registered, please verify it'}
           </p>
           <p className="text-sm text-gray-600 mb-8">
-            {translations?.verificationEmailSent || 'تم إرسال رسالة تأكيد إلى بريدك الإلكتروني. يرجى التحقق من بريدك الإلكتروني والنقر على رابط التأكيد.'}
+            {translations?.verificationEmailSent || 'A confirmation message has been sent to your email. Please check your email and click on the confirmation link.'}
           </p>
           <div className="space-y-4">
             <button
@@ -205,14 +205,14 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
               className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50"
             >
               {loading ? 
-                (translations?.sending || 'جاري الإرسال...') : 
-                (translations?.resendVerification || 'إعادة إرسال رابط التأكيد')}
+                (translations?.sending || 'Sending...') : 
+                (translations?.resendVerification || 'Resend verification link')}
             </button>
             <button
               onClick={() => navigate('/login')}
               className="w-full bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-medium hover:bg-gray-300 transition-colors duration-200"
             >
-              {translations?.goToLogin || 'الذهاب إلى تسجيل الدخول'}
+              {translations?.goToLogin || 'Go to Login'}
             </button>
           </div>
         </div>
@@ -238,7 +238,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             >
               <Globe className="w-4 h-4 text-gray-600" />
               <span className="text-sm font-medium text-gray-700">
-                {language === 'ar' ? 'EN' : 'العربية'}
+                {language === 'ar' ? 'العربية' : 'AR'}
               </span>
             </button>
           </div>
