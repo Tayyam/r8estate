@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { applyActionCode, checkActionCode } from 'firebase/auth';
 import { auth, db } from '../config/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
@@ -9,6 +10,7 @@ import { httpsCallable } from 'firebase/functions';
 
 const Verification: React.FC = () => {
   const { translations } = useLanguage();
+  const { firebaseUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -16,6 +18,34 @@ const Verification: React.FC = () => {
   const [success, setSuccess] = useState<boolean>(false);
   const [processingClaim, setProcessingClaim] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
+
+  // Reference to admin for user lookup
+  const admin = {
+    auth: () => ({
+      getUserByEmail: async (email: string) => {
+        // We can't directly use admin.auth() in the frontend, so we'll do a Firestore lookup instead
+        try {
+          const usersQuery = query(
+            collection(db, 'users'),
+            where('email', '==', email)
+          );
+          const userSnapshot = await getDocs(usersQuery);
+          if (!userSnapshot.empty) {
+            const userData = userSnapshot.docs[0].data();
+            return {
+              uid: userSnapshot.docs[0].id,
+              displayName: userData.displayName || '',
+              email: userData.email
+            };
+          }
+          return null;
+        } catch (error) {
+          console.error("Error looking up user by email:", error);
+          return null;
+        }
+      }
+    })
+  };
 
   // Helper function to add debug info
   const addDebugInfo = (info: string) => {
@@ -108,7 +138,7 @@ const Verification: React.FC = () => {
       try {
         // Create user document in Firestore now that email is verified
         if (firebaseUser) {
-          addDebugInfo(`📝 Creating user document for verified user: ${firebaseUser.uid}`);
+          addDebugInfo(`📝 Creating user document for verified user: ${firebaseUser.uid || 'unknown'}`);
           
           await setDoc(doc(db, 'users', firebaseUser.uid), {
             uid: firebaseUser.uid,
@@ -122,14 +152,38 @@ const Verification: React.FC = () => {
           
           addDebugInfo("✅ User document created successfully");
         } else {
-          addDebugInfo("❌ Firebase user not found, cannot create user document");
+          // If firebaseUser is null, we need to create a user document directly with the verified email
+          addDebugInfo("🔄 Firebase user not available, creating user document by email lookup");
+          
+          // Try to find a user with this email in Firebase Auth
+          try {
+            const userRecord = await admin.auth().getUserByEmail(userEmail);
+            if (userRecord) {
+              addDebugInfo(`📝 Found user record by email: ${userRecord.uid}`);
+              
+              // Create user document using the UID from the found user
+              await setDoc(doc(db, 'users', userRecord.uid), {
+                uid: userRecord.uid,
+                email: userEmail,
+                displayName: userRecord.displayName || '',
+                role: 'user',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                isEmailVerified: true
+              });
+              
+              addDebugInfo("✅ User document created successfully via email lookup");
+            }
+          } catch (userLookupError) {
+            addDebugInfo(`❌ Could not find user by email: ${JSON.stringify(userLookupError)}`);
+          }
         }
         
-        return;
       } catch (error) {
-        addDebugInfo(`❌ Error creating user document: ${JSON.stringify(error)}`);
-        return;
+        addDebugInfo(`❌ Error creating user document: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
+      
+      return;
     }
     
     let claimRequestRef;
