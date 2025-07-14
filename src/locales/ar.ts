@@ -32,6 +32,7 @@ import { arReviewVoting } from './ar-review-voting';
 import { arShareReview } from './ar-share-review';
 import { arSocialLogin } from './ar-social-login';
 import { arCompanyDashboard } from './ar-company-dashboard';
+import { arDashboard } from './ar-dashboard';
 
 export const ar = {
   ...arCommon,
@@ -120,5 +121,6 @@ export const ar = {
   ...arReviewVoting,
   ...arShareReview,
   ...arSocialLogin,
-  ...arCompanyDashboard
+  ...arCompanyDashboard,
+  ...arDashboard
 };
