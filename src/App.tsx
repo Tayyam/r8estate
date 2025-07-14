@@ -25,6 +25,7 @@ import SearchResults from './components/SearchResults';
 import Footer from './components/Footer';
 import NotificationContainer from './components/UI/NotificationContainer';
 import { getCompanySlug } from './utils/urlUtils';
+import UnverifiedUserView from './components/UnverifiedUserView';
 import { useAuth } from './contexts/AuthContext';
 import SuspendedUserView from './components/SuspendedUserView';
 
@@ -34,6 +35,12 @@ const CheckUserStatus: React.FC<{ children: React.ReactNode }> = ({ children }) 
   
   if (currentUser?.status === 'suspended') {
     return <SuspendedUserView />;
+  }
+  
+  // Redirect unverified users to verification page
+  if (currentUser?.status === 'not-active' || 
+     (currentUser && !currentUser.isEmailVerified && currentUser.status !== 'active')) {
+    return <UnverifiedUserView />;
   }
   
   return <>{children}</>;
@@ -145,8 +152,17 @@ function AppContent() {
   // Check if user is suspended
   if (currentUser?.status === 'suspended') {
     // Only allow login page for suspended users
-    if (!location.pathname.includes('/login')) {
+    if (!location.pathname.includes('/login') && !location.pathname.includes('/verification')) {
       return <SuspendedUserView />;
+    }
+  }
+  
+  // Check if user is not active (unverified)
+  if (currentUser?.status === 'not-active' || 
+     (currentUser && !currentUser.isEmailVerified && currentUser.status !== 'active')) {
+    // Only allow verification and login pages for unverified users
+    if (!location.pathname.includes('/login') && !location.pathname.includes('/verification')) {
+      return <UnverifiedUserView />;
     }
   }
 

@@ -33,7 +33,8 @@ export const createVerifiedUser = functions.https.onCall(async (data, context) =
       role: 'user',
       createdAt: new Date(),
       updatedAt: new Date(),
-      isEmailVerified: false
+      isEmailVerified: false,
+      status: 'not-active'
     });
     
     // Generate a verification link

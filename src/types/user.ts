@@ -10,7 +10,7 @@ export interface User {
   companyId?: string; // Only for company users
   isEmailVerified: boolean;
   photoURL?: string;
-  status?: 'active' | 'suspended'; // New status field to track suspended users
+  status?: 'active' | 'suspended' | 'not-active'; // New status field to track user status
 }
 
 export interface CompanyProfile {

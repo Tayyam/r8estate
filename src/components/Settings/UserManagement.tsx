@@ -687,10 +687,16 @@ const UserManagement = () => {
                         >
                           {user.status === 'suspended' ? (
                             <AlertTriangle className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
+                          ) : user.status === 'not-active' ? (
+                            <AlertCircle className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                           ) : (
                             <CheckCircle className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
                           )}
-                          {user.status === 'suspended' ? (translations?.suspended || 'Suspended') : (translations?.active || 'Active')}
+                          {user.status === 'suspended' 
+                            ? (translations?.suspended || 'Suspended') 
+                            : user.status === 'not-active'
+                              ? (translations?.notActive || 'Not Active')
+                              : (translations?.active || 'Active')}
                         </div>
                         
                         <div className="flex items-center text-xs text-gray-500 ml-auto">
