@@ -4,7 +4,7 @@ import { sendEmail } from './emailService';
 import { sendVerificationEmail } from './email-verification';
 import { changeEmail } from './change-email';
 import { claimProcess, verifySupervisor, checkBusinessEmailVerification } from './claim-process';
-import { createUnverifiedUser } from './create-unverified-user';
+import { createVerifiedUser } from './create-verified-user';
 
 admin.initializeApp();
 export const createUser = functions.https.onCall(async (data, context) => {
@@ -196,5 +196,5 @@ export { sendVerificationEmail };
 export { changeEmail };
 // Export the claim process functions
 export { claimProcess, verifySupervisor, checkBusinessEmailVerification };
-// Export the create unverified user function
-export { createUnverifiedUser };
+// Export the create verified user function
+export { createVerifiedUser };

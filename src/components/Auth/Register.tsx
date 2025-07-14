@@ -60,8 +60,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     setLoading(true);
 
     try {
-      // Call the Cloud Function to create an unverified user
-      const createUnverifiedUserFunction = httpsCallable(functions, 'createUnverifiedUser');
+      // Call the Cloud Function to create a verified user
+      const createVerifiedUserFunction = httpsCallable(functions, 'createVerifiedUser');
       const result = await createUnverifiedUserFunction({
         email: formData.email,
         password: formData.password,
@@ -487,74 +487,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                       to="/terms"
                       className="text-blue-600 hover:text-blue-800 hover:underline"
                       target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {translations?.termsOfService || 'Terms of Service'}
-                    </Link>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="animate-slideInUp" style={{ animationDelay: '0.75s' }}>
-              <button
-                type="submit"
-                disabled={loading || socialLoading !== null}
-                className="w-full text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
-                style={{ backgroundColor: '#194866' }}
-                onMouseEnter={(e) => {
-                  if (!loading && socialLoading === null) {
-                    e.target.style.backgroundColor = '#0f3147';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading && socialLoading === null) {
-                    e.target.style.backgroundColor = '#194866';
-                  }
-                }}
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <span>{translations?.createAccount || 'Create Account'}</span>
-                    <ArrowRight className="h-5 w-5" />
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-
-          {/* Login Link */}
-          <div className="mt-8 pt-6 border-t border-gray-200 text-center animate-slideInUp" style={{ animationDelay: '0.8s' }}>
-            <p className="text-gray-600">
-              {translations?.haveAccount || 'Already have an account?'}{' '}
-              <button
-                onClick={() => {
-                  if (onNavigate) {
-                    onNavigate('login');
-                  } else {
-                    navigate('/login' + (returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''));
-                  }
-                }}
-                className="font-semibold transition-all duration-200 hover:scale-105"
-                style={{ color: '#194866' }}
-                onMouseEnter={(e) => {
-                  e.target.style.color = '#EE183F';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.color = '#194866';
-                }}
-              >
-                {translations?.login || 'Sign In'}
-              </button>
-            </p>
-          </div>
-        </div>
-      </div>
-      )}
+      </div>)}
     </div>
   );
 };
