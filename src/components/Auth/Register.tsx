@@ -51,7 +51,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   // Handle account creation
   const handleCreateAccount = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Explicitly prevent form submission
-    console.log('⚠️ handleCreateAccount called - BEFORE validation');
     setRegisterError('');
     
     // Validation
@@ -73,10 +72,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     setLoading(true);
 
     try {
-      console.log('⚠️ Before register() call - using e.preventDefault');
       // Register user without auto sign-in
       await register(formData.email, formData.password, formData.displayName, 'user');
-      console.log('⚠️ After register() call - SUCCESS');
       
       // Move to step 2 (verification)
       setCurrentStep(2);
@@ -193,17 +190,12 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   
   // Render Create Account step
   const renderCreateAccountStep = () => {
-    console.log('⚠️ Rendering step 1: Create Account');
     return (
       <>
         {/* Social Signup Buttons */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-6 animate-slideInUp" style={{ animationDelay: '0.2s' }}>
           <button
             type="button"
-            onClick={(e) => {
-              console.log('⚠️ Google signup button clicked');
-              handleGoogleSignup();
-            }}
             onClick={handleGoogleSignup}
             disabled={loading || socialLoading !== null}
             className="w-full flex items-center justify-center space-x-2 rtl:space-x-reverse py-3 px-4 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
@@ -424,7 +416,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             <div>
               <button
                 type="submit"
-                onClick={() => console.log('⚠️ Create Account button clicked')}
                 disabled={loading || socialLoading !== null}
                 className="w-full text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-lg hover:shadow-xl disabled:opacity-50"
                 style={{ backgroundColor: '#194866' }}
@@ -478,7 +469,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   
   // Render Email Verification step
   const renderVerificationStep = () => {
-    console.log('⚠️ Rendering step 2: Verification');
     return (
       <div className="bg-white rounded-2xl shadow-lg p-8 animate-slideInUp">
         <div className="text-center">
@@ -646,8 +636,5 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     </div>
   );
 };
-
-// Log component rendering
-console.log('⚠️ Register component (re)rendered');
 
 export default Register;

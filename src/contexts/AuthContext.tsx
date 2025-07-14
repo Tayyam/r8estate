@@ -81,7 +81,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Register new user
   const register = async (email: string, password: string, displayName: string, role: UserRole = 'user') => {
     try {
-      console.log('⚠️ AuthContext.register() called');
       // Create the user with email/password but don't auto-sign in
       // Create the user with email/password
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
@@ -90,7 +89,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         await updateProfile(user, { displayName });
       } catch (profileError) {
-        console.log('⚠️ Error updating profile, continuing anyway:', profileError);
         // Continue even if profile update fails
       }
 
@@ -120,16 +118,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setTimeout(async () => {
         try {
           await signOut(auth);
-          console.log('⚠️ AuthContext.register() - signed out user after registration');
         } catch (signOutError) {
           console.error('Error signing out after registration:', signOutError);
         }
       }, 500); // Delay sign out to ensure we've updated the UI first
       
-      console.log('⚠️ AuthContext.register() - returning success before signout');
       return { success: true, user: user };
     } catch (error: any) {
-      console.log('⚠️ AuthContext.register() error:', error);
       console.error('Registration error:', error);
       throw new Error(error.message);
     }
