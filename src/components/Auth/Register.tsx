@@ -490,7 +490,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                       >
                         {translations?.termsOfUse || 'Terms of Use'}
                       </Link>
-                      </Link>
                     </label>
                   </div>
                 </div>
