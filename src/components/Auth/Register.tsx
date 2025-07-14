@@ -49,7 +49,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   };
 
   // Handle account creation
-  const handleCreateAccount = async () => {
+  const handleCreateAccount = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Explicitly prevent form submission
     console.log('⚠️ handleCreateAccount called - BEFORE validation');
     setRegisterError('');
     
@@ -72,7 +73,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     setLoading(true);
 
     try {
-      console.log('⚠️ Before register() call');
+      console.log('⚠️ Before register() call - using e.preventDefault');
       // Register user without auto sign-in
       await register(formData.email, formData.password, formData.displayName, 'user');
       console.log('⚠️ After register() call - SUCCESS');
@@ -80,6 +81,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       // Move to step 2 (verification)
       setCurrentStep(2);
       setCountdown(60);
+      setLoading(false); // Important: set loading to false here
     } catch (error: any) {
       // Create user-friendly error messages
       console.log('⚠️ Register error:', error);
@@ -241,7 +243,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         </div>
 
         {/* Registration Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 animate-slideInUp" style={{ animationDelay: '0.2s' }}>
+        <form onSubmit={handleCreateAccount} className="bg-white rounded-2xl shadow-lg p-8 animate-slideInUp" style={{ animationDelay: '0.2s' }}>
           {registerError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 rtl:space-x-reverse">
               <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
@@ -421,11 +423,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             {/* Submit Button */}
             <div>
               <button
-                type="button"
-                onClick={() => {
-                  console.log('⚠️ Create Account button clicked');
-                  handleCreateAccount();
-                }}
+                type="submit"
+                onClick={() => console.log('⚠️ Create Account button clicked')}
                 disabled={loading || socialLoading !== null}
                 className="w-full text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-lg hover:shadow-xl disabled:opacity-50"
                 style={{ backgroundColor: '#194866' }}
@@ -472,7 +471,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
               </button>
             </p>
           </div>
-        </div>
+        </form>
       </>
     );
   };
@@ -508,7 +507,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             <button
               onClick={handleResendVerification}
               disabled={resendLoading || countdown > 0}
-              className="w-full flex items-center justify-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors duration-200"
+              type="button"
+              className="w-full flex items-center justify-center space-x-2 rtl:space-x-reverse px-6 py-3 bg-blue-600 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors duration-200" 
             >
               {resendLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -526,6 +526,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             </button>
 
             <button
+              type="button"
               onClick={handleGoToLogin}
               className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors duration-200"
             >

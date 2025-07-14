@@ -87,7 +87,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       
       // Update Firebase profile
-      await updateProfile(user, { displayName });
+      try {
+        await updateProfile(user, { displayName });
+      } catch (profileError) {
+        console.log('⚠️ Error updating profile, continuing anyway:', profileError);
+        // Continue even if profile update fails
+      }
 
       // Create user document in Firestore
       const userData: Omit<User, 'uid'> = {
@@ -112,10 +117,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       // Sign out immediately so they have to verify email before logging in
-      await signOut(auth);
-      console.log('⚠️ AuthContext.register() - signed out user after registration');
+      setTimeout(async () => {
+        try {
+          await signOut(auth);
+          console.log('⚠️ AuthContext.register() - signed out user after registration');
+        } catch (signOutError) {
+          console.error('Error signing out after registration:', signOutError);
+        }
+      }, 500); // Delay sign out to ensure we've updated the UI first
       
-      return { success: true };
+      console.log('⚠️ AuthContext.register() - returning success before signout');
+      return { success: true, user: user };
     } catch (error: any) {
       console.log('⚠️ AuthContext.register() error:', error);
       console.error('Registration error:', error);
