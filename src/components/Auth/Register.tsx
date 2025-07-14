@@ -3,7 +3,7 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Globe, AlertCircl
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import EmailVerificationModal from './EmailVerificationModal';
 
 interface RegisterProps {
@@ -37,8 +37,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const [registeredEmail, setRegisteredEmail] = useState(''); 
 
   const handleRegister = async () => {
-    // Prevent default is no longer needed as we're using a regular button, not a form submission
-    
     setRegisterError('');
     
     // Validation
@@ -175,7 +173,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         <div className="text-center mb-8 animate-slideInUp">
           <div className="flex items-center justify-center mb-6">
             <img 
-              src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png"
+              src="https://i.ibb.co/hx0kCnf4/R8ESTATE.png" 
               alt="R8ESTATE Logo" 
               className="w-12 h-12 object-contain rounded-full mr-3"
             />
@@ -262,7 +260,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                   id="displayName"
                   name="displayName"
                   type="text"
-                  required
                   value={formData.displayName}
                   onChange={handleInputChange}
                   className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 transform focus:scale-105"
@@ -287,7 +284,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                   id="email"
                   name="email"
                   type="email"
-                  required
                   value={formData.email}
                   onChange={handleInputChange}
                   className="w-full pl-10 rtl:pr-10 rtl:pl-4 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 transform focus:scale-105"
@@ -311,7 +307,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  required
                   value={formData.password}
                   onChange={handleInputChange}
                   className="w-full pl-10 rtl:pr-10 pr-12 rtl:pl-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 transform focus:scale-105"
@@ -346,7 +341,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                   id="confirmPassword"
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
-                  required
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   className="w-full pl-10 rtl:pr-10 pr-12 rtl:pl-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-opacity-50 outline-none transition-all duration-200 transform focus:scale-105"
@@ -416,14 +410,13 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                 <div className="ml-3 text-sm">
                   <label htmlFor="terms" className="text-gray-600">
                     {translations?.agreeToTerms || 'I agree to the'}{' '}
-                    <Link
-                      to="/terms"
+                    <button
+                      type="button"
+                      onClick={() => navigate('/terms')}
                       className="text-blue-600 hover:text-blue-800 hover:underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
                     >
                       {translations?.termsOfService || 'Terms of Service'}
-                    </Link>
+                    </button>
                   </label>
                 </div>
               </div>
@@ -432,7 +425,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             {/* Submit Button */}
             <div className="animate-slideInUp" style={{ animationDelay: '0.75s' }}>
               <button
-                type="button" // Changed to button type
+                type="button"
                 onClick={handleRegister}
                 disabled={loading || socialLoading !== null}
                 className="w-full text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
