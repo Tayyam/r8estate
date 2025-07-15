@@ -25,7 +25,6 @@ const CompanyTabs: React.FC<CompanyTabsProps> = ({
   const tabs = [
     { id: 'overview', name: translations?.overview || 'Overview', icon: Building2 },
     { id: 'reviews', name: translations?.reviewsTab || 'Reviews', icon: MessageSquare },
-    { id: 'projects', name: translations?.projectsTab || 'Projects', icon: Eye }
   ];
 
   return (
@@ -48,11 +47,6 @@ const CompanyTabs: React.FC<CompanyTabsProps> = ({
               >
                 <IconComponent className="h-5 w-5" />
                 <span>{tab.name}</span>
-                {tab.id === 'projects' && properties.length > 0 && (
-                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
-                    {properties.length}
-                  </span>
-                )}
                 {tab.id === 'reviews' && reviews.length > 0 && (
                   <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
                     {reviews.length}
