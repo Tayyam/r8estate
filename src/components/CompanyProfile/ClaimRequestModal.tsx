@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Building2, X, AlertCircle } from 'lucide-react';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db, functions } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext'; 
 import { CompanyProfile } from '../../types/companyProfile';
 import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
+import { httpsCallable } from 'firebase/functions';
 
 interface ClaimRequestModalProps {
   company: CompanyProfile;
@@ -100,38 +101,40 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   const handleSubmitClaimRequest = async () => {
     try {
       setLoading(true);
-      // Generate tracking number
-      const trackingNumber = Math.floor(100000 + Math.random() * 900000).toString();
-
       setProcessingStep(translations?.processingRequest || 'Processing your request...');
+
+      // Call the cloud function for claim process
+      const claimProcessFunction = httpsCallable(functions, 'claimProcess');
       
-      // Create claim request document directly in Firestore
-      await addDoc(collection(db, 'claimRequests'), {
-        companyId: company.id,
-        companyName: company.name,
-        requesterId: currentUser?.uid || null,
-        requesterName: currentUser?.displayName || formData.displayName || company.name,
+      // Update processing step
+      setProcessingStep(translations?.sendingEmails || 'Sending verification emails...');
+      
+      const response = await claimProcessFunction({
         businessEmail: formData.businessEmail,
         supervisorEmail: supervisorEmail,
-        contactPhone: formData.contactPhone || '',
-        status: 'pending',
-        trackingNumber,
-        businessEmailVerified: false,
-        supervisorEmailVerified: false,
-        domainVerified: hasDomainEmail || false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        companyId: company.id,
+        companyName: company.name,
+        contactPhone: formData.contactPhone,
+        displayName: currentUser?.displayName || formData.displayName || company.name
       });
+
+      // Extract response data
+      const responseData = response.data as any;
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Failed to process claim request');
+      }
       
       setProcessingStep(translations?.finalizingRequest || 'Finalizing your request...');
 
-      // Store tracking number in local storage
-      localStorage.setItem('claimTrackingNumber', trackingNumber);
-      setSuccessTrackingNumber(trackingNumber);
+      // Store tracking number in local storage for future reference
+      if (responseData.trackingNumber) {
+        localStorage.setItem('claimTrackingNumber', responseData.trackingNumber);
+        setSuccessTrackingNumber(responseData.trackingNumber);
+      }
 
       // Show success message within the modal
-      setSuccessMessage(translations?.claimRequestSubmittedWithTracking?.replace('{tracking}', trackingNumber) || 
-                     `Claim request submitted successfully! Your tracking number is: ${trackingNumber}. Please keep this number for reference.`);
+      setSuccessMessage(translations?.claimRequestSubmittedWithTracking?.replace('{tracking}', responseData.trackingNumber) || 
+                     `Claim request submitted successfully! Your tracking number is: ${responseData.trackingNumber}. Please keep this number for reference.`);
       setShowSuccess(true);
 
     } catch (error) {
