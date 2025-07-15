@@ -428,6 +428,9 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
           onError={handleError}
         />
       )}
+          onError={handleError}
+        />
+      )}
     </div>
   );
 };
