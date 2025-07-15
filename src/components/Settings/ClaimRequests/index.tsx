@@ -27,6 +27,7 @@ const ClaimRequests: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetails, setShowDetails] = useState<string | null>(null);
   const [companyDetails, setCompanyDetails] = useState<Company | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -129,7 +130,7 @@ const ClaimRequests: React.FC = () => {
       } else {
         throw new Error(data.message || 'Failed to approve claim request');
       }
-
+    } catch (error) {
       console.error('Error approving claim request:', error);
       setError(error.message || (translations?.failedToProcessRequest || 'Failed to approve request'));
       setTimeout(() => setError(''), 5000);
@@ -309,6 +310,10 @@ const ClaimRequests: React.FC = () => {
             className="p-2 rounded-lg border border-gray-300 disabled:opacity-50"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
+          </button>
+        </div>
+      )}
+
       {/* Delete Request Modal */}
       {showDeleteModal && selectedRequest && (
         <DeleteRequestModal
