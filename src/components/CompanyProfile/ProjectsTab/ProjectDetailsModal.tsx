@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Clock, MapPin, Upload, Plus, FileText, Calculator, Edit, Check, Clock, Eye, Download , Building2  } from 'lucide-react';
+import { X, Calendar, MapPin, Upload, Plus, FileText, Calculator, Edit, Check, Calendar, Eye, Download , Building2  } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../config/firebase';
@@ -454,7 +454,7 @@ const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({
                         />
                         {project.deliveryDateUpdated && (
                           <p className="text-xs text-amber-600 mt-1">
-                            <Clock className="inline-block h-3 w-3 mr-1" />
+                            <Calendar className="inline-block h-3 w-3 mr-1" />
                             {translations?.previouslyUpdated || 'Previously updated'}: {formatDate(project.deliveryDateUpdated)}
                           </p>
                         )}
@@ -658,7 +658,7 @@ const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({
                             
                             {project.startDate && (
                               <div className="flex items-start">
-                                <Clock className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />
+                                <Calendar className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />
                                 <div>
                                   <p className="text-gray-700">{translations?.startDate || 'Start Date'}: {formatDate(project.startDate)}</p>
                                 </div>
@@ -667,7 +667,7 @@ const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({
                             
                             {project.deliveryDate && (
                               <div className="flex items-start">
-                                <Clock className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />
+                                <Calendar className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />
                                 <div>
                                   <p className="text-gray-700">
                                     {translations?.deliveryDate || 'Delivery Date'}: {formatDate(project.deliveryDate)}
