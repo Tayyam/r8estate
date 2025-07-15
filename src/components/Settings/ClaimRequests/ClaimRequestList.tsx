@@ -9,7 +9,7 @@ interface ClaimRequestListProps {
   translations: any;
   showDetails: string | null;
   toggleDetails: (requestId: string) => void;
-  setShowCreateAccountModal: (show: boolean) => void;
+  onApproveClaim: (request: ClaimRequest) => void;
   setSelectedRequest: (request: ClaimRequest | null) => void;
   setShowDeleteModal: (show: boolean) => void;
   companyDetails: Company | null;
@@ -20,8 +20,8 @@ const ClaimRequestList: React.FC<ClaimRequestListProps> = ({
   filteredRequests,
   translations,
   showDetails,
-  toggleDetails,
-  setShowCreateAccountModal,
+  toggleDetails, 
+  onApproveClaim,
   setSelectedRequest,
   setShowDeleteModal,
   companyDetails
@@ -199,8 +199,11 @@ const ClaimRequestList: React.FC<ClaimRequestListProps> = ({
                     {request.status === 'pending' && !request.domainVerified && (
                       <>
                         <button
-                          onClick={() => setSelectedRequest(request)}
-                          className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50"
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            onApproveClaim(request);
+                          }}
+                          className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50 disabled:opacity-50"
                         >
                           {translations?.approve || 'Approve'}
                         </button>
