@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, where, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { ClaimRequest, Company } from '../../../types/company';
@@ -8,7 +10,6 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../config/firebase';
 import { Tag, Search, Filter, AlertCircle, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import ClaimRequestList from './ClaimRequestList';
-import CreateAccountModal from './CreateAccountModal';
 import DeleteRequestModal from './DeleteRequestModal';
 
 // ClaimRequests component for admin settings
@@ -24,7 +25,6 @@ const ClaimRequests: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<ClaimRequest | null>(null);
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState<string | null>(null);
   const [companyDetails, setCompanyDetails] = useState<Company | null>(null);
   
@@ -32,8 +32,8 @@ const ClaimRequests: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Initialize the cloud function for creating users
-  const createUserFunction = httpsCallable(functions, 'createUser');
+  // Initialize the cloud functions
+  const claimProcessFunction = httpsCallable(functions, 'claimProcess');
 
   // Load claim requests from Firestore
   const loadClaimRequests = async () => {
@@ -92,63 +92,52 @@ const ClaimRequests: React.FC = () => {
     setCurrentPage(page);
   };
 
-  // Create account for approved request
-  const handleCreateAccount = async (formData: {
-    email: string;
-    password: string;
-    displayName: string;
-  }) => {
-    if (!selectedRequest) return;
-
+  // Handle approve claim request
+  const handleApproveClaim = async (request: ClaimRequest) => {
+    if (!request) return;
+    
     try {
-      setActionLoading(selectedRequest.id);
+      setActionLoading(request.id);
+      setError('');
       
-      // Create user account for the company
-      const result = await createUserFunction({
-        email: formData.email,
-        password: formData.password,
-        displayName: formData.displayName || selectedRequest.requesterName || selectedRequest.companyName,
-        role: 'company'
+      // Call the claimProcess cloud function
+      const result = await claimProcessFunction({
+        businessEmail: request.businessEmail,
+        supervisorEmail: request.supervisorEmail,
+        companyId: request.companyId,
+        companyName: request.companyName,
+        contactPhone: request.contactPhone || '',
+        displayName: request.requesterName || request.companyName
       });
-      
+
       const data = result.data as any;
       
       if (data.success) {
-        // Update claim request status
-        await updateDoc(doc(db, 'claimRequests', selectedRequest.id), {
+        // Update request status in Firestore
+        await updateDoc(doc(db, 'claimRequests', request.id), {
           status: 'approved',
           updatedAt: new Date()
         });
-        
-        // Update company document
-        await updateDoc(doc(db, 'companies', selectedRequest.companyId), {
-          claimed: true,
-          email: formData.email,
-          phone: selectedRequest.contactPhone || '',
-          updatedAt: new Date()
-        });
-        
-        setSuccess(translations?.requestApprovedSuccess || 'Claim request approved successfully');
+
+        setSuccess(translations?.requestApprovedSuccess || 'Claim request approved and verification emails sent successfully');
         setTimeout(() => setSuccess(''), 5000);
         
-        // Reload data
-        loadClaimRequests();
+        // Update local state
+        setClaimRequests(prev => prev.map(req => 
+          req.id === request.id ? { ...req, status: 'approved' } : req
+        ));
       } else {
-        throw new Error(data.error || 'Failed to create user account');
+        throw new Error(data.message || 'Failed to approve claim request');
       }
 
-      setShowCreateAccountModal(false);
-      setSelectedRequest(null);
-      
-    } catch (error: any) {
-      console.error('Error processing account:', error);
-      setError(error.message || (translations?.failedToProcessRequest || 'Failed to process request'));
+      console.error('Error approving claim request:', error);
+      setError(error.message || (translations?.failedToProcessRequest || 'Failed to approve request'));
       setTimeout(() => setError(''), 5000);
     } finally {
       setActionLoading(null);
     }
   };
-
+  
   // Handle delete request
   const handleDeleteRequest = async () => {
     if (!selectedRequest) return;
@@ -304,8 +293,8 @@ const ClaimRequests: React.FC = () => {
         filteredRequests={paginatedRequests}
         translations={translations}
         showDetails={showDetails}
-        toggleDetails={toggleDetails}
-        // Remove setShowCreateAccountModal
+        toggleDetails={toggleDetails} 
+        onApproveClaim={handleApproveClaim}
         setSelectedRequest={setSelectedRequest}
         setShowDeleteModal={setShowDeleteModal}
         companyDetails={companyDetails}
@@ -320,20 +309,6 @@ const ClaimRequests: React.FC = () => {
             className="p-2 rounded-lg border border-gray-300 disabled:opacity-50"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
-          </button>
-          <span className="text-sm text-gray-600">
-            {currentPage} / {totalPages}
-          </span>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="p-2 rounded-lg border border-gray-300 disabled:opacity-50"
-          >
-            <ArrowRight className="h-5 w-5 text-gray-600" />
-          </button>
-        </div>
-      )}
-
       {/* Delete Request Modal */}
       {showDeleteModal && selectedRequest && (
         <DeleteRequestModal
