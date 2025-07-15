@@ -145,11 +145,15 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       }
       
       // Apply rating filter
-      if (ratingFilter !== 'all') {
+      if (ratingFilter !== 'all' && company.totalRating) {
         const minRating = parseInt(ratingFilter);
         filteredCompanies = filteredCompanies.filter(company => 
-          (company.totalRating || company.rating || 0) >= minRating
+          (company.totalRating || company.rating || 0) >= minRating  
         );
+      } else if (ratingFilter !== 'all' && !company.totalRating) {
+        // Keep companies with no ratings when filter is applied
+        // This ensures companies without reviews still appear in search results
+        filteredCompanies = filteredCompanies;
       }
       
       // Update companies state
