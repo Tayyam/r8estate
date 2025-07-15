@@ -25,12 +25,12 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
     categoryId: '',
     location: '',
     description: '',
     phone: '',
-    website: ''
+    website: '',
+    establishmentDate: ''
   });
   
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -96,10 +96,13 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
       return;  
     }
     
-    // Validate password length if provided
-    if (formData.password && formData.password.length < 6) {
-      onError(translations?.passwordMinLength || 'Password must be at least 6 characters long');
-      return;
+    // Validate establishment date
+    if (formData.establishmentDate) {
+      const year = parseInt(formData.establishmentDate);
+      if (isNaN(year) || year < 1500 || year > 2025 || formData.establishmentDate.length !== 4) {
+        onError(translations?.invalidEstablishmentDate || 'Establishment year must be between 1500 and 2025');
+        return;
+      }
     }
     
     // Validate email format if provided
@@ -122,8 +125,8 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
     try {
       setLoading(true);
       
-      // Check if creating a user account (email and password provided)
-      const createAccount = formData.email && formData.password;
+      // Check if creating a user account (email provided)
+      const createAccount = formData.email;
       let companyId: string;
       let companyData: any;
       
@@ -153,6 +156,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
           description: formData.description || '',
           phone: formData.phone || '',
           website: formData.website || '',
+          establishmentDate: formData.establishmentDate || '',
           claimed: true, // Set to true when creating an account
           createdAt: new Date(),
           updatedAt: new Date()
@@ -170,6 +174,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
           description: formData.description || '',
           phone: formData.phone || '',
           website: formData.website || '',
+          establishmentDate: formData.establishmentDate || '',
           claimed: false, // Set to false when no account is created
           createdAt: new Date(),
           updatedAt: new Date()
@@ -252,7 +257,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
             </div>
 
             {/* Email */}
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {translations?.companyEmail || 'Company Email'}
               </label>
@@ -267,21 +272,6 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
                   placeholder={translations?.enterCompanyEmail || 'Enter company email'}
                 />
               </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.companyPassword || 'Password'}
-              </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder={translations?.enterCompanyPassword || 'Enter password (min. 6 characters)'}
-                minLength={6}
-              />
             </div>
 
             {/* Category */}
@@ -359,6 +349,25 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
                   placeholder={translations?.enterWebsite || 'Enter website URL'}
                 />
               </div>
+            </div>
+            
+            {/* Establishment Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {translations?.establishmentDate || 'Establishment Year'}
+              </label>
+              <input
+                type="text"
+                maxLength={4}
+                pattern="[0-9]{4}"
+                value={formData.establishmentDate}
+                onChange={(e) => handleInputChange('establishmentDate', e.target.value.replace(/\D/g, ''))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={translations?.enterEstablishmentYear || 'Enter year (1500-2025)'}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {translations?.yearRangeHelper || 'Year must be between 1500 and 2025'}
+              </p>
             </div>
 
             {/* Description */}

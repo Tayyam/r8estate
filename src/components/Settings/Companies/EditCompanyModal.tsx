@@ -31,6 +31,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     description: company.description || '',
     phone: company.phone || '',
     website: company.website || '',
+    establishmentDate: company.establishmentDate || '',
     claimed: company.claimed || false
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -125,6 +126,15 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
       onError(translations?.fillAllFields || 'Please fill in all required fields');
       return;
     }
+
+    // Validate establishment date
+    if (formData.establishmentDate) {
+      const year = parseInt(formData.establishmentDate);
+      if (isNaN(year) || year < 1500 || year > 2025 || formData.establishmentDate.length !== 4) {
+        onError(translations?.invalidEstablishmentDate || 'Establishment year must be between 1500 and 2025');
+        return;
+      }
+    }
     
     // Validate website URL if provided
     if (formData.website && !formData.website.startsWith('http://') && !formData.website.startsWith('https://')) {
@@ -148,6 +158,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
         description: formData.description,
         phone: formData.phone,
         website: formData.website,
+        establishmentDate: formData.establishmentDate,
         claimed: formData.claimed,
         updatedAt: new Date()
       };
@@ -441,6 +452,25 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Establishment Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {translations?.establishmentDate || 'Establishment Year'}
+            </label>
+            <input
+              type="text"
+              maxLength={4}
+              pattern="[0-9]{4}"
+              value={formData.establishmentDate}
+              onChange={(e) => handleInputChange('establishmentDate', e.target.value.replace(/\D/g, ''))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              placeholder={translations?.enterEstablishmentYear || 'Enter year (1500-2025)'}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {translations?.yearRangeHelper || 'Year must be between 1500 and 2025'}
+            </p>
           </div>
 
           <div className="mt-8 flex justify-end space-x-3 rtl:space-x-reverse">
