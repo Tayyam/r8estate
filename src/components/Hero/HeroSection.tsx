@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Building2, ArrowRight, Star, X, ChevronDown } from 'lucide-react';
+import { Search, Building2, ArrowRight, Star, X, ChevronDown, Tag, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCompanySlug } from '../../utils/urlUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -19,8 +19,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>(translations?.allCategories || 'All Categories');
   const [categories, setCategories] = useState<Category[]>([]);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -34,7 +35,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const categoriesQuery = query(collection(db, 'categories'), orderBy('name'));
+        const categoriesQuery = query(collection(db, 'categories'));
         const categoriesSnapshot = await getDocs(categoriesQuery);
         const categoriesData = categoriesSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -52,6 +53,18 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
     loadCategories();
   }, []);
   
+  // Update selected category name when language changes or categories load
+  useEffect(() => {
+    if (selectedCategory === 'all') {
+      setSelectedCategoryName(translations?.allCategories || 'All Categories');
+    } else {
+      const category = categories.find(c => c.id === selectedCategory);
+      if (category) {
+        setSelectedCategoryName(language === 'ar' ? (category.nameAr || category.name) : category.name);
+      }
+    }
+  }, [selectedCategory, categories, language, translations]);
+  
   // Handle search suggestions
   const fetchSearchSuggestions = async (searchQueryText: string) => {
     if (!searchQueryText.trim() || searchQueryText.length < 2) {
@@ -63,20 +76,23 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
     setShowSuggestions(true);
     
     try {
-      // Always use the filter query for 2 or more characters
+      const searchQueryLower = searchQueryText.toLowerCase();
+      
       const companiesQuery = query(
         collection(db, 'companies'),
         ...(selectedCategory !== 'all' ? [where('categoryId', '==', selectedCategory)] : []),
         where('name', '>=', searchQueryText),
-        where('name', '<=', searchQueryText + '\uf8ff'),
+        where('name', '<=', searchQueryText + '\uf8ff'), 
         limit(5)
       );
           
       const companiesSnapshot = await getDocs(companiesQuery);
-      const suggestionsData = companiesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const suggestionsData = companiesSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter(company => company.name.toLowerCase().includes(searchQueryLower));
       
       setSearchSuggestions(suggestionsData);
     } catch (error) {
@@ -141,6 +157,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   // Handle search form submission
   const handleSearch = () => {
     setShowSuggestions(false);
+    setShowCategoryModal(false);
     if (onSearch) {
       onSearch(searchQuery, selectedCategory);
     } else {
@@ -174,6 +191,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
     return "bg-red-500";                       // 1-1.4: Red
   };
 
+  const handleSelectCategory = (categoryId: string, categoryName: string) => {
+    setSelectedCategory(categoryId);
+    setSelectedCategoryName(categoryName);
+    setShowCategoryModal(false);
+  };
+
   return (
     <section className="relative bg-gradient-to-br from-blue-50 to-gray-50 py-20 lg:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -189,57 +212,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
         {/* Search Bar - Simplified without Categories */}
         <div className="max-w-3xl mx-auto relative">
           <div className="flex bg-white rounded-xl shadow-2xl border-2 border-gray-100 hover:border-gray-200 transition-colors duration-300 overflow-hidden">
-            {/* Category Dropdown */}
-            <div className="relative border-r border-gray-200 rtl:border-r-0 rtl:border-l">
-              <button
-                type="button"
-                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                className="h-full px-4 py-4 text-gray-700 font-medium flex items-center space-x-2 rtl:space-x-reverse hover:bg-gray-50 transition-colors duration-200 min-w-[140px] justify-center"
-              >
-                <span className="truncate max-w-[100px]">
-                  {selectedCategory === 'all' 
-                    ? (translations?.allCategories || 'All Categories')
-                    : categories.find(c => c.id === selectedCategory)?.name || 'Category'
-                  }
-                </span>
-                <ChevronDown className="h-4 w-4 flex-shrink-0" />
-              </button>
-              
-              {showCategoryDropdown && (
-                <div 
-                  ref={categoryDropdownRef}
-                  className="absolute top-full left-0 right-0 bg-white mt-1 shadow-lg border border-gray-200 rounded-lg z-50 max-h-60 overflow-y-auto"
-                >
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setSelectedCategory('all');
-                        setShowCategoryDropdown(false);
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                    >
-                      {translations?.allCategories || 'All Categories'}
-                    </button>
-                    
-                    {categories.map(category => (
-                      <button
-                        key={category.id}
-                        onClick={() => {
-                          setSelectedCategory(category.id);
-                          setShowCategoryDropdown(false);
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                      >
-                        {language === 'ar' ? (category.nameAr || category.name) : category.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            
             {/* Text Input Field */}
             <div className="flex-1 relative">
+              <Search className="absolute left-4 rtl:right-4 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
                 ref={searchInputRef}
@@ -247,7 +222,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder={translations?.searchPlaceholder || 'Search for a company...'}
-                className="w-full px-6 py-4 text-lg focus:outline-none"
+                className="w-full pl-12 rtl:pr-12 rtl:pl-3 pr-3 py-4 text-lg focus:outline-none"
                 dir={language === 'ar' ? 'rtl' : 'ltr'}
               />
               {/* Clear input button */}
@@ -260,12 +235,27 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                 </button>
               )}
             </div>
+            
+            {/* Category Button */}
+            <div className="border-l border-gray-200 rtl:border-l-0 rtl:border-r">
+              <button
+                type="button"
+                onClick={() => setShowCategoryModal(true)}
+                className="h-full px-4 py-4 text-gray-700 font-medium flex items-center space-x-2 rtl:space-x-reverse hover:bg-gray-50 transition-colors duration-200"
+              >
+                <Tag className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate max-w-[120px] hidden sm:inline">
+                  {selectedCategoryName}
+                </span>
+                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+              </button>
+            </div>
 
             {/* Search Button */}
             <button
               type="button"
               onClick={handleSearch}
-              className="px-6 lg:px-8 py-4 flex items-center justify-center space-x-2 rtl:space-x-reverse text-white transition-colors duration-300"
+              className="px-4 lg:px-6 py-4 flex items-center justify-center space-x-2 rtl:space-x-reverse text-white transition-colors duration-300"
               style={{ backgroundColor: '#194866' }}
             >
               <Search className="h-5 w-5" />
@@ -385,6 +375,67 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
           </div>
         </div>
       </div>
+        {/* Category Selection Modal */}
+        {showCategoryModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto" onClick={() => setShowCategoryModal(false)}>
+            <div className="flex items-center justify-center min-h-screen px-4">
+              <div className="fixed inset-0 bg-black opacity-40"></div>
+              <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full mx-auto p-6" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {translations?.selectCategory || 'Select Category'}
+                  </h3>
+                  <button 
+                    onClick={() => setShowCategoryModal(false)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  <button
+                    onClick={() => handleSelectCategory('all', translations?.allCategories || 'All Categories')}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-50 text-left transition-colors duration-200"
+                  >
+                    <span className="font-medium">
+                      {translations?.allCategories || 'All Categories'}
+                    </span>
+                    {selectedCategory === 'all' && (
+                      <Check className="h-5 w-5 text-blue-600" />
+                    )}
+                  </button>
+                  
+                  {categories.map(category => {
+                    const categoryName = language === 'ar' ? (category.nameAr || category.name) : category.name;
+                    return (
+                      <button
+                        key={category.id}
+                        onClick={() => handleSelectCategory(category.id, categoryName)}
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-50 text-left transition-colors duration-200"
+                      >
+                        <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                          {category.iconUrl ? (
+                            <img src={category.iconUrl} alt={category.name} className="w-6 h-6" />
+                          ) : (
+                            <Building2 className="h-5 w-5 text-gray-400" />
+                          )}
+                          <span className="font-medium">
+                            {categoryName}
+                          </span>
+                        </div>
+                        {selectedCategory === category.id && (
+                          <Check className="h-5 w-5 text-blue-600" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
     </section>
   );
 };
