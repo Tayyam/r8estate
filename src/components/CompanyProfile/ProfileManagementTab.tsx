@@ -20,6 +20,7 @@
 +              <div className="relative">
 +                <Building2 className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
 +                <input
+   )
 +                  type="text"
 +                  required
 +                  value={formData.name}
