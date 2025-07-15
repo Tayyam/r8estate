@@ -240,6 +240,17 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
           right: 0 !important;
         }
                 
+        /* RTL support */
+        html[dir="rtl"] .swiper-button-next {
+          right: auto !important;
+          left: 0 !important;
+        }
+        
+        html[dir="rtl"] .swiper-button-prev {
+          left: auto !important;
+          right: 0 !important;
+        }
+                
         @media (max-width: 640px) {
           .categories-slider {
             padding-left: 0;
