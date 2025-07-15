@@ -72,11 +72,11 @@ const ClaimRequests: React.FC = () => {
 
   // Filter claim requests based on search query and filter
   const filteredRequests = claimRequests.filter(request => {
+    const searchLower = searchQuery.toLowerCase();
     const matchesSearch = 
       request.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.companyName.toLowerCase().includes(searchLower) ||
       request.businessEmail.toLowerCase().includes(searchLower) ||
-      (request.requesterName && request.requesterName.toLowerCase().includes(searchLower)) ||
+      (request.requesterName && request.requesterName.toLowerCase().includes(searchLower));
     
     const matchesStatus = filter === 'all' || request.status === filter;
     
