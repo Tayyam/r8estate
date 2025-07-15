@@ -3,7 +3,7 @@ import { Edit, Trash2, Building2, MapPin, Globe, Phone, Mail, Calendar, Link2, E
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
+import { db } from '../../../config/firebase';
 
 interface ViewCompanyModalProps {
   company: Company;
