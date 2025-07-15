@@ -254,7 +254,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.companyEmail || 'Company Email'} *
+                {translations?.companyEmail || 'Company Email'}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -272,11 +272,10 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
             {/* Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.companyPassword || 'Password'} *
+                {translations?.companyPassword || 'Password'}
               </label>
               <input
                 type="password"
-                required
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -299,7 +298,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
                 <option value="">{translations?.selectCategory || 'Select category'}</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
-                    {category.nameAr || category.name}
+                    {category.name}
                   </option>
                 ))}
               </select>
