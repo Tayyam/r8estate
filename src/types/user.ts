@@ -8,7 +8,6 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   companyId?: string; // Only for company users
-  isSupervisor?: boolean; // Flag to identify supervisor company accounts
   isEmailVerified: boolean;
   photoURL?: string;
   status?: 'active' | 'suspended' | 'not-active'; // New status field to track user status

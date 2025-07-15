@@ -13,8 +13,4 @@ export const arUserStatus = {
   // Suspend confirmation
   confirmSuspendUser: 'هل أنت متأكد من رغبتك في إيقاف حساب {name}؟ لن يتمكن من الوصول إلى المنصة حتى يتم إعادة تنشيطه.',
   confirmReactivateUser: 'هل أنت متأكد من رغبتك في إعادة تنشيط حساب {name}؟',
-  
-  // Company account types
-  supervisor: 'مشرف',
-  businessAccount: 'حساب شركة',
 };
