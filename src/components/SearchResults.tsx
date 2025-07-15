@@ -197,14 +197,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       
       let companiesQuery = query(
         collection(db, 'companies'),
-        orderBy('rating', 'desc'),
+  orderBy('createdAt', 'desc'), // أو name إن أحببت
         limit(COMPANIES_PER_PAGE)
       );
 
       if (loadMore && lastDoc) {
         companiesQuery = query(
           collection(db, 'companies'),
-          orderBy('rating', 'desc'),
+  orderBy('createdAt', 'desc'), // أو name إن أحببت
           startAfter(lastDoc),
           limit(COMPANIES_PER_PAGE)
         );
