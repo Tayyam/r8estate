@@ -43,35 +43,9 @@ const AccountInfoSection: React.FC<AccountInfoSectionProps> = ({
           </div>
         </div>
         
-        <div className="flex items-start">
-          <div className="w-32 text-gray-500">Password:</div>
-          <div className="text-gray-900 flex items-center">
-            {password || 'N/A'}
-            {password && (
-              <button 
-                onClick={() => copyToClipboard(password)}
-                className="ml-2 text-blue-600 hover:text-blue-800"
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+       
         
-        <div className="flex items-start">
-          <div className="w-32 text-gray-500">User ID:</div>
-          <div className="text-gray-900 flex items-center">
-            <span className="truncate max-w-xs">{userId || 'N/A'}</span>
-            {userId && (
-              <button 
-                onClick={() => copyToClipboard(userId)}
-                className="ml-2 text-blue-600 hover:text-blue-800"
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+      
         
         <div className="flex items-start">
           <div className="w-32 text-gray-500">Verification:</div>
