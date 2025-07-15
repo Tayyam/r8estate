@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Calendar, MapPin, Upload, Plus, FileText, Calculator, Edit, Check, Clock, Eye, Download } from 'lucide-react';
+import { X, Calendar, MapPin, Upload, Plus, FileText, Calculator, Edit, Check, Clock, Eye, Download, MessageSquare } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../config/firebase';
@@ -10,6 +10,7 @@ import { CompanyProfile } from '../../../types/companyProfile';
 import { format, formatDistance } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import UnitDetailsModal from './UnitDetailsModal';
+import ProjectReviewsTab from './ProjectReviewsTab';
 import AddUnitModal from './AddUnitModal';
 import ImageViewer from '../ImageViewer';
 
@@ -18,7 +19,7 @@ interface ProjectDetailsModalProps {
   company: CompanyProfile;
   canEdit: boolean;
   onClose: () => void;
-  onSuccess: (project: Project) => void;
+  onSuccess: (project: Project) => void; 
   onError: (message: string) => void;
 }
 
@@ -31,7 +32,7 @@ const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({
   onError
 }) => {
   const { translations, language } = useLanguage();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'units'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'units' | 'reviews'>('overview');
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -366,6 +367,19 @@ const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({
                 }`}
               >
                 {translations?.units || 'Units'} ({project.units?.length || 0})
+              </button>
+              <button
+                onClick={() => setSelectedTab('reviews')}
+                className={`py-2 px-4 border-b-2 font-medium text-sm ${
+                  selectedTab === 'reviews' 
+                    ? 'border-blue-500 text-blue-600' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>{translations?.reviews || 'Reviews'}</span>
+                </div>
               </button>
             </div>
           </div>
@@ -871,6 +885,15 @@ const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({
                 )}
               </div>
             )}
+          ) : selectedTab === 'reviews' ? (
+            /* Reviews Tab */
+            <div className="p-6">
+              <ProjectReviewsTab
+                project={project}
+                onSuccess={onError}
+                onError={onError}
+              />
+            </div>
           </div>
 
           {/* Footer with Actions */}

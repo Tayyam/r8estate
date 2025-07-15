@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Building2, Calculator, MapPin, CreditCard, Check, Upload, Eye, Calendar, Edit } from 'lucide-react';
+import { X, Building2, Calculator, CreditCard, Check, Upload, Eye, Calendar, Edit, MessageSquare } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../config/firebase';
@@ -8,6 +8,7 @@ import { Project, Unit, UnitType, UnitStatus, UnitTypeLabels, UnitStatusLabels }
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import ImageViewer from '../ImageViewer';
+import UnitReviewsTab from './UnitReviewsTab';
 
 interface UnitDetailsModalProps {
   unit: Unit;
@@ -40,6 +41,7 @@ const UnitDetailsModal: React.FC<UnitDetailsModalProps> = ({
   const [newImagePreviewUrls, setNewImagePreviewUrls] = useState<string[]>([]);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedTab, setSelectedTab] = useState<'details' | 'reviews'>('details');
   
   const imageFilesRef = useRef<HTMLInputElement>(null);
   
@@ -249,8 +251,37 @@ const UnitDetailsModal: React.FC<UnitDetailsModalProps> = ({
             </button>
           </div>
 
+          {/* Tabs */}
+          <div className="border-b border-gray-200 overflow-x-auto">
+            <div className="flex">
+              <button
+                onClick={() => setSelectedTab('details')}
+                className={`flex items-center space-x-2 rtl:space-x-reverse px-6 py-4 text-sm font-medium ${
+                  selectedTab === 'details'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Building2 className="h-5 w-5" />
+                <span>{translations?.details || 'Details'}</span>
+              </button>
+              
+              <button
+                onClick={() => setSelectedTab('reviews')}
+                className={`flex items-center space-x-2 rtl:space-x-reverse px-6 py-4 text-sm font-medium ${
+                  selectedTab === 'reviews'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <MessageSquare className="h-5 w-5" />
+                <span>{translations?.reviews || 'Reviews'}</span>
+              </button>
+            </div>
+          </div>
+          
           <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 120px)' }}>
-            {editing ? (
+            {selectedTab === 'details' && editing ? (
               /* Edit Form */
               <div className="p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -413,7 +444,7 @@ const UnitDetailsModal: React.FC<UnitDetailsModalProps> = ({
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : selectedTab === 'details' && !editing ? (
               /* View Mode */
               <div className="p-6">
                 {/* Unit Images */}
@@ -486,6 +517,16 @@ const UnitDetailsModal: React.FC<UnitDetailsModalProps> = ({
                     </div>
                   </div>
                 </div>
+              </div>
+            ) : (
+              /* Reviews Tab */
+              <div className="p-6">
+                <UnitReviewsTab
+                  project={project}
+                  unit={unit}
+                  onSuccess={onSuccess}
+                  onError={onError}
+                />
               </div>
             )}
           </div>
