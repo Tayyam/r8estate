@@ -1130,7 +1130,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         .filter-group:hover {
           transform: translateY(-1px);
         }
-        
+        s
         .filter-group select:focus {
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
