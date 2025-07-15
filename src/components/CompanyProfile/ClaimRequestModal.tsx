@@ -98,54 +98,73 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   };
 
   // Submit claim request
-  const handleSubmitClaimRequest = async () => {
-    try {
-      setLoading(true);
-      setProcessingStep(translations?.processingRequest || 'Processing your request...');
+const handleSubmitClaimRequest = async () => {
+  try {
+    setLoading(true);
+    setProcessingStep(translations?.processingRequest || 'Processing your request...');
 
-      // Call the cloud function for claim process
+    const trackingNumber = generateTrackingNumber();
+
+    if (hasDomainEmail) {
+      // ⛅️ Domain method → استخدم Cloud Function لإرسال الإيميل والتحقق
       const claimProcessFunction = httpsCallable(functions, 'claimProcess');
-      
-      // Update processing step
       setProcessingStep(translations?.sendingEmails || 'Sending verification emails...');
-      
+
       const response = await claimProcessFunction({
         businessEmail: formData.businessEmail,
         supervisorEmail: supervisorEmail,
         companyId: company.id,
         companyName: company.name,
         contactPhone: formData.contactPhone,
-        displayName: currentUser?.displayName || formData.displayName || company.name
+        displayName: currentUser?.displayName || formData.displayName || company.name,
+        trackingNumber,
       });
 
-      // Extract response data
       const responseData = response.data as any;
       if (!responseData.success) {
         throw new Error(responseData.message || 'Failed to process claim request');
       }
-      
-      setProcessingStep(translations?.finalizingRequest || 'Finalizing your request...');
 
-      // Store tracking number in local storage for future reference
-      if (responseData.trackingNumber) {
-        localStorage.setItem('claimTrackingNumber', responseData.trackingNumber);
-        setSuccessTrackingNumber(responseData.trackingNumber);
-      }
-
-      // Show success message within the modal
-      setSuccessMessage(translations?.claimRequestSubmittedWithTracking?.replace('{tracking}', responseData.trackingNumber) || 
-                     `Claim request submitted successfully! Your tracking number is: ${responseData.trackingNumber}. Please keep this number for reference.`);
-      setShowSuccess(true);
-
-    } catch (error) {
-      console.error("Error submitting claim request:", error);
-      onError(translations?.claimRequestFailed || 'Failed to submit claim request');
-      setProcessingStep('');
-    } finally {
-      setLoading(false);
+    } else {
+      // 📝 Non-domain method → سجّل مباشرة في Firestore
+      await addDoc(collection(db, 'claimRequests'), {
+        companyId: company.id,
+        companyName: company.name,
+        requesterId: currentUser?.uid || null,
+        requesterName: currentUser?.displayName || formData.displayName || company.name,
+        businessEmail: formData.businessEmail,
+        supervisorEmail: supervisorEmail,
+        contactPhone: formData.contactPhone || '',
+        status: 'pending',
+        trackingNumber,
+        businessEmailVerified: false,
+        supervisorEmailVerified: false,
+        domainVerified: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
     }
-  };
 
+    setProcessingStep(translations?.finalizingRequest || 'Finalizing your request...');
+    localStorage.setItem('claimTrackingNumber', trackingNumber);
+    setSuccessTrackingNumber(trackingNumber);
+    setSuccessMessage(
+      translations?.claimRequestSubmittedWithTracking?.replace('{tracking}', trackingNumber) ||
+      `Claim request submitted successfully! Your tracking number is: ${trackingNumber}. Please keep this number for reference.`
+    );
+    setShowSuccess(true);
+
+  } catch (error) {
+    console.error("Error submitting claim request:", error);
+    onError(translations?.claimRequestFailed || 'Failed to submit claim request');
+    setProcessingStep('');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  
   // Handle domain choice
   const handleDomainChoice = (hasDomain: boolean) => {
     setHasDomainEmail(hasDomain);
