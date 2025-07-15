@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Building2, ArrowRight, Star, X } from 'lucide-react';
+import { Search, Building2, ArrowRight, Star, X, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCompanySlug } from '../../utils/urlUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, DocumentData } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { Category } from '../../types/company';
 
 interface HeroSectionProps {
   onNavigate?: (page: string) => void;
@@ -17,6 +18,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -24,6 +28,29 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
   // Refs for click outside handling
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Load categories for dropdown
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesQuery = query(collection(db, 'categories'), orderBy('name'));
+        const categoriesSnapshot = await getDocs(categoriesQuery);
+        const categoriesData = categoriesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date()
+        })) as Category[];
+        
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+    
+    loadCategories();
+  }, []);
   
   // Handle search suggestions
   const fetchSearchSuggestions = async (searchQueryText: string) => {
@@ -39,6 +66,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
       // Always use the filter query for 2 or more characters
       const companiesQuery = query(
         collection(db, 'companies'),
+        ...(selectedCategory !== 'all' ? [where('categoryId', '==', selectedCategory)] : []),
         where('name', '>=', searchQueryText),
         where('name', '<=', searchQueryText + '\uf8ff'),
         limit(5)
@@ -71,7 +99,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
       setShowSuggestions(false);
       setSearchSuggestions([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, selectedCategory]);
   
   // Handle clicks outside search suggestions
   useEffect(() => {
@@ -93,13 +121,30 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
     };
   }, []);
   
+  // Handle clicks outside category dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        categoryDropdownRef.current && 
+        !categoryDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowCategoryDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
   // Handle search form submission
   const handleSearch = () => {
     setShowSuggestions(false);
     if (onSearch) {
-      onSearch(searchQuery, 'all');
+      onSearch(searchQuery, selectedCategory);
     } else {
-      navigate(`/search?q=${encodeURIComponent(searchQuery || '')}&category=all`);
+      navigate(`/search?q=${encodeURIComponent(searchQuery || '')}&category=${selectedCategory}`);
     }
   };
   
@@ -144,6 +189,55 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
         {/* Search Bar - Simplified without Categories */}
         <div className="max-w-3xl mx-auto relative">
           <div className="flex bg-white rounded-xl shadow-2xl border-2 border-gray-100 hover:border-gray-200 transition-colors duration-300 overflow-hidden">
+            {/* Category Dropdown */}
+            <div className="relative border-r border-gray-200 rtl:border-r-0 rtl:border-l">
+              <button
+                type="button"
+                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                className="h-full px-4 py-4 text-gray-700 font-medium flex items-center space-x-2 rtl:space-x-reverse hover:bg-gray-50 transition-colors duration-200 min-w-[140px] justify-center"
+              >
+                <span className="truncate max-w-[100px]">
+                  {selectedCategory === 'all' 
+                    ? (translations?.allCategories || 'All Categories')
+                    : categories.find(c => c.id === selectedCategory)?.name || 'Category'
+                  }
+                </span>
+                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+              </button>
+              
+              {showCategoryDropdown && (
+                <div 
+                  ref={categoryDropdownRef}
+                  className="absolute top-full left-0 right-0 bg-white mt-1 shadow-lg border border-gray-200 rounded-lg z-50 max-h-60 overflow-y-auto"
+                >
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setSelectedCategory('all');
+                        setShowCategoryDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                    >
+                      {translations?.allCategories || 'All Categories'}
+                    </button>
+                    
+                    {categories.map(category => (
+                      <button
+                        key={category.id}
+                        onClick={() => {
+                          setSelectedCategory(category.id);
+                          setShowCategoryDropdown(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                      >
+                        {language === 'ar' ? (category.nameAr || category.name) : category.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
             {/* Text Input Field */}
             <div className="flex-1 relative">
               <input
@@ -171,7 +265,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
             <button
               type="button"
               onClick={handleSearch}
-              className="px-6 lg:px-8 py-4 flex items-center justify-center space-x-2 rtl:space-x-reverse bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
+              className="px-6 lg:px-8 py-4 flex items-center justify-center space-x-2 rtl:space-x-reverse text-white transition-colors duration-300"
               style={{ backgroundColor: '#194866' }}
             >
               <Search className="h-5 w-5" />
