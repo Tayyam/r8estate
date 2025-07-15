@@ -187,10 +187,16 @@ const CategorySlider: React.FC<CategorySliderProps> = ({ onCategorySelect }) => 
             </Swiper>
             {/* Custom Navigation Arrows */}
             <div className="swiper-button-prev absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors duration-200">
-              <ArrowLeft className="h-5 w-5 text-gray-700" />
+              {language === 'ar' ? 
+                <ArrowRight className="h-5 w-5 text-gray-700" /> : 
+                <ArrowLeft className="h-5 w-5 text-gray-700" />
+              }
             </div>
             <div className="swiper-button-next absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors duration-200">
-              <ArrowRight className="h-5 w-5 text-gray-700" />
+              {language === 'ar' ? 
+                <ArrowLeft className="h-5 w-5 text-gray-700" /> : 
+                <ArrowRight className="h-5 w-5 text-gray-700" />
+              }
             </div>
           </div>
         ) : (
