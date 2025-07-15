@@ -11,7 +11,7 @@ import ClaimRequestList from './ClaimRequestList';
 import DeleteRequestModal from './DeleteRequestModal';
 
 // ClaimRequests component for admin settings
-const claimProcessNonDomainFunction = httpsCallable(functions, 'claimProcessNonDomain');
+const ClaimRequests = () => {
   const { translations } = useLanguage();
   const { showSuccessToast, showErrorToast } = useNotification();
   const [claimRequests, setClaimRequests] = useState<ClaimRequest[]>([]);
