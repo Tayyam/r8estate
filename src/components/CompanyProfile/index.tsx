@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { ArrowLeft, User, Star, Building2, MessageSquare, Eye, LayoutGrid, Calendar } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
