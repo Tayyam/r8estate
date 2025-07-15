@@ -14,6 +14,7 @@ import DeleteCompanyModal from './DeleteCompanyModal';
 import BulkUploadModal from './BulkUploadModal';
 import ClaimCompanyModal from './ClaimCompanyModal';
 import UnclaimCompanyModal from './UnclaimCompanyModal';
+import ManageUsersModal from './ManageUsersModal';
 
 interface CompaniesProps {
   onNavigateToProfile?: (companyId: string, companyName: string) => void;
@@ -36,6 +37,7 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showUnclaimModal, setShowUnclaimModal] = useState(false);
+  const [showManageUsersModal, setShowManageUsersModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -134,6 +136,12 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
   const handleUnclaimCompany = (company: Company) => {
     setSelectedCompany(company);
     setShowUnclaimModal(true);
+  };
+
+  // Handle manage company users
+  const handleManageUsers = (company: Company) => {
+    setSelectedCompany(company);
+    setShowManageUsersModal(true);
   };
   
   // Success/Error message handlers
@@ -320,6 +328,7 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
         onDeleteCompany={handleDeleteCompany}
         onClaimCompany={handleClaimCompany}
         onUnclaimCompany={handleUnclaimCompany}
+        onManageUsers={handleManageUsers}
         onNavigateToProfile={onNavigateToProfile}
       />
 
@@ -428,6 +437,18 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
           onError={handleError}
         />
       )}
+      
+      {showManageUsersModal && selectedCompany && (
+        <ManageUsersModal
+          company={selectedCompany}
+          onClose={() => {
+            setShowManageUsersModal(false);
+            setSelectedCompany(null);
+          }}
+          onSuccess={(message) => {
+            handleSuccess(message);
+            loadCompanies();
+          }}
           onError={handleError}
         />
       )}

@@ -65,11 +65,6 @@ export const ar = {
   withoutResponses: 'بدون ردود',
   allResponses: 'كل التقييمات',
   
-  // Company Representatives
-  companyRepresentatives: 'ممثلو الشركة',
-  supervisor: 'مشرف',
-  representative: 'ممثل',
-  
   // Email Verification
   verifyingEmail: 'جاري التحقق من بريدك الإلكتروني',
   pleaseWait: 'يرجى الانتظار بينما نتحقق من بريدك الإلكتروني...',
