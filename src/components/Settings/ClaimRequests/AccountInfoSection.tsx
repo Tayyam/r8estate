@@ -88,3 +88,4 @@ const AccountInfoSection: React.FC<AccountInfoSectionProps> = ({
     </div>
   );
 };
+export default AccountInfoSection;
