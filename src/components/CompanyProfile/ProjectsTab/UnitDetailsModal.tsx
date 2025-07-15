@@ -485,7 +485,9 @@ const UnitDetailsModal: React.FC<UnitDetailsModalProps> = ({
                       </div>
                     </div>
                     
-                  
+                    <div>
+                     
+                     
                     </div>
                   </div>
                 </div>
