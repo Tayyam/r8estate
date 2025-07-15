@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, Building2, MapPin, Globe, Phone, Mail, Calendar, Link2, ExternalLink, User, CheckCircle, XCircle } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
 
 interface ViewCompanyModalProps {
   company: Company;
@@ -223,15 +225,14 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
                   <p className="text-sm text-gray-600">{translations?.claimStatus || 'Claim Status'}</p>
                   <div className="flex items-center space-x-1 rtl:space-x-reverse mt-1">
                     {company.claimed ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-green-600 font-medium">{translations?.claimed || 'Claimed'}</span>
-                      </>
+                      <div>
+                        <UsersList companyId={company.id} />
+                      </div>
                     ) : (
-                      <>
+                      <span className="text-gray-400 flex items-center">
                         <XCircle className="h-4 w-4 text-gray-500" />
                         <span className="text-gray-500 font-medium">{translations?.notClaimed || 'Not Claimed'}</span>
-                      </>
+                      </span>
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
@@ -253,6 +254,77 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
             {translations?.close || 'Close'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Component to fetch and display users who have this companyId
+const UsersList: React.FC<{ companyId: string }> = ({ companyId }) => {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { translations } = useLanguage();
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('companyId', '==', companyId)
+        );
+        
+        const usersSnapshot = await getDocs(usersQuery);
+        const usersData = usersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setUsers(usersData);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, [companyId]);
+  
+  if (loading) {
+    return <div className="text-sm text-gray-500">Loading users...</div>;
+  }
+  
+  return (
+    <div>
+      <div className="flex items-center">
+        <User className="h-4 w-4 text-green-500 mr-2" />
+        <span className="font-medium text-green-700">
+          <span className="px-2 py-0.5 mr-2 text-xs bg-green-100 text-green-800 rounded-full">
+            {translations?.claimed || 'Claimed'}
+          </span>
+        </span>
+      </div>
+      
+      <div className="mt-2 space-y-2">
+        {users.map(user => (
+          <div key={user.id} className="flex items-center space-x-2 text-sm">
+            <div className="w-6 h-6 bg-gray-200 rounded-full flex-shrink-0 overflow-hidden">
+              {user.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt={user.displayName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="h-3 w-3 text-gray-500 m-auto" />
+              )}
+            </div>
+            <div>
+              <div className="text-gray-700">{user.displayName}</div>
+              <div className="text-gray-500 text-xs">{user.email}</div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
