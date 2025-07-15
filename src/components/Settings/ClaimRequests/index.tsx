@@ -305,7 +305,7 @@ const ClaimRequests: React.FC = () => {
         translations={translations}
         showDetails={showDetails}
         toggleDetails={toggleDetails}
-        setShowCreateAccountModal={setShowCreateAccountModal}
+        // Remove setShowCreateAccountModal
         setSelectedRequest={setSelectedRequest}
         setShowDeleteModal={setShowDeleteModal}
         companyDetails={companyDetails}
@@ -332,20 +332,6 @@ const ClaimRequests: React.FC = () => {
             <ArrowRight className="h-5 w-5 text-gray-600" />
           </button>
         </div>
-      )}
-
-      {/* Create Account Modal */}
-      {showCreateAccountModal && selectedRequest && (
-        <CreateAccountModal
-          request={selectedRequest}
-          onClose={() => {
-            setShowCreateAccountModal(false);
-            setSelectedRequest(null);
-          }}
-          onCreateAccount={handleCreateAccount}
-          actionLoading={actionLoading === selectedRequest.id}
-          translations={translations}
-        />
       )}
 
       {/* Delete Request Modal */}

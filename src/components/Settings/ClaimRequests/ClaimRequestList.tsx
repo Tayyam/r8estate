@@ -196,16 +196,13 @@ const ClaimRequestList: React.FC<ClaimRequestListProps> = ({
                 {/* Actions */}
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex justify-end space-x-2">
-                    {request.status === 'pending' && (
+                    {request.status === 'pending' && !request.domainVerified && (
                       <>
                         <button
-                          onClick={() => {
-                            setSelectedRequest(request);
-                            setShowCreateAccountModal(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50"
+                          onClick={() => setSelectedRequest(request)}
+                          className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50"
                         >
-                          {translations?.createAccount || 'Create Account'}
+                          {translations?.approve || 'Approve'}
                         </button>
                         <button
                           onClick={() => {

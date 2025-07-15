@@ -1,6 +1,5 @@
 import React from 'react';
 import { ClaimRequest, Company } from '../../../types/company';
-import { Copy } from 'lucide-react';
 import AccountInfoSection from './AccountInfoSection';
 
 interface ClaimRequestDetailsProps {
@@ -28,8 +27,6 @@ const ClaimRequestDetails: React.FC<ClaimRequestDetailsProps> = ({
         <AccountInfoSection
           title={translations?.businessAccountDetails || 'Business Account Details'}
           email={request.businessEmail}
-          userId={request.userId}
-          password={request.password}
           isVerified={request.businessEmailVerified}
           translations={translations}
           copyToClipboard={copyToClipboard}
@@ -39,8 +36,6 @@ const ClaimRequestDetails: React.FC<ClaimRequestDetailsProps> = ({
         <AccountInfoSection
           title={translations?.supervisorAccountDetails || 'Supervisor Account Details'}
           email={request.supervisorEmail}
-          userId={request.supervisorId}
-          password={request.supervisorPassword}
           isVerified={request.supervisorEmailVerified}
           isSupervisor={true}
           translations={translations}
@@ -49,7 +44,7 @@ const ClaimRequestDetails: React.FC<ClaimRequestDetailsProps> = ({
         
         {/* Additional Info */}
         <div className="md:col-span-2">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-2">
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-2 space-y-3">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Additional Information</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
@@ -57,15 +52,31 @@ const ClaimRequestDetails: React.FC<ClaimRequestDetailsProps> = ({
                 <span className="ml-2 font-medium">{request.trackingNumber}</span>
               </div>
               <div>
-                <span className="text-gray-600">Domain Verified:</span>
+                <span className="text-gray-600">Status:</span>
+                <span className={`ml-2 font-medium px-2 py-0.5 rounded-full text-xs ${
+                  request.status === 'approved'
+                    ? 'bg-green-100 text-green-800' 
+                    : request.status === 'rejected'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {request.status === 'approved' 
+                    ? 'Approved' 
+                    : request.status === 'rejected'
+                    ? 'Rejected'
+                    : 'Pending'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Domain:</span>
                 <span className={`ml-2 font-medium ${
                   request.domainVerified 
                     ? 'text-green-600' 
                     : 'text-red-600'
                 }`}>
                   {request.domainVerified 
-                    ? 'Yes' 
-                    : 'No'
+                    ? 'Verified' 
+                    : 'Not Verified'
                   }
                 </span>
               </div>

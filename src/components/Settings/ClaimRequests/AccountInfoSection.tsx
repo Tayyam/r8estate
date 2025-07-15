@@ -1,11 +1,10 @@
 import React from 'react';
-import { User, Copy, CheckCircle, XCircle } from 'lucide-react';
+import { User, CheckCircle, XCircle } from 'lucide-react';
 
 interface AccountInfoSectionProps {
   title: string;
   email: string;
-  userId?: string;
-  password?: string;
+  // Removed userId and password
   isVerified: boolean;
   isSupervisor?: boolean;
   translations: any;
@@ -15,8 +14,7 @@ interface AccountInfoSectionProps {
 const AccountInfoSection: React.FC<AccountInfoSectionProps> = ({
   title,
   email,
-  userId,
-  password,
+  // Removed userId and password
   isVerified,
   isSupervisor,
   translations,
@@ -88,7 +86,3 @@ const AccountInfoSection: React.FC<AccountInfoSectionProps> = ({
         </div>
       </div>
     </div>
-  );
-};
-
-export default AccountInfoSection;
