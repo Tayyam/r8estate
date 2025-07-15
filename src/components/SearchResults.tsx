@@ -197,14 +197,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       
       let companiesQuery = query(
         collection(db, 'companies'),
-  orderBy('createdAt', 'desc'), // أو name إن أحببت
+        orderBy('rating', 'desc'),
         limit(COMPANIES_PER_PAGE)
       );
 
       if (loadMore && lastDoc) {
         companiesQuery = query(
           collection(db, 'companies'),
-  orderBy('createdAt', 'desc'), // أو name إن أحببت
+          orderBy('rating', 'desc'),
           startAfter(lastDoc),
           limit(COMPANIES_PER_PAGE)
         );
@@ -272,15 +272,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         companiesQuery = query(
           baseQuery,
           ...conditions,
-            orderBy('createdAt', 'desc'), // أو name إن أحببت
-
+          orderBy('rating', 'desc'),
           limit(COMPANIES_PER_PAGE)
         );
       } else {
         companiesQuery = query(
           baseQuery,
-            orderBy('createdAt', 'desc'), // أو name إن أحببت
-
+          orderBy('rating', 'desc'),
           limit(COMPANIES_PER_PAGE)
         );
       }
@@ -290,8 +288,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         companiesQuery = query(
           baseQuery,
           ...conditions,
-            orderBy('createdAt', 'desc'), // أو name إن أحببت
-
+          orderBy('rating', 'desc'),
           startAfter(lastDoc),
           limit(COMPANIES_PER_PAGE)
         );
@@ -931,7 +928,16 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     )}
                   </p>
                 </div>
-              
+                {/* Reset Filters Button - Desktop */}
+                <button
+                  onClick={handleResetFilters}
+                  className="hidden lg:flex items-center space-x-2 rtl:space-x-reverse text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                >
+                  <X className="h-4 w-4" />
+                  <span>{translations?.clearFilters || 'Clear Filters'}</span>
+                </button>
+              </div>
+            </div>
 
             {/* Results Grid */}
             {loading && companies.length === 0 ? (
@@ -1130,7 +1136,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         .filter-group:hover {
           transform: translateY(-1px);
         }
-        s
+        
         .filter-group select:focus {
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
