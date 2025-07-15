@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, Building2, MapPin, Globe, Phone, Mail, Calendar, Link2, ExternalLink, User, CheckCircle, XCircle } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../../config/firebase';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
+import { User as UserType } from '../../../types/user';
 
 interface ViewCompanyModalProps {
   company: Company;
@@ -21,6 +24,34 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
   onNavigateToProfile
 }) => {
   const { translations, language } = useLanguage();
+  const [companyUsers, setCompanyUsers] = useState<UserType[]>([]);
+  
+  // Fetch users associated with this company
+  useEffect(() => {
+    const fetchCompanyUsers = async () => {
+      if (!company.claimed) return;
+      
+      try {
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('companyId', '==', company.id)
+        );
+        const snapshot = await getDocs(usersQuery);
+        const users = snapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date()
+        })) as UserType[];
+        
+        setCompanyUsers(users);
+      } catch (error) {
+        console.error('Error fetching company users:', error);
+      }
+    };
+    
+    fetchCompanyUsers();
+  }, [company.id, company.claimed]);
   
   // Get category name by ID with language support
   const getCategoryName = (categoryId: string): string => {
@@ -217,7 +248,11 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="flex items-start space-x-3 rtl:space-x-reverse">
                 <div className="mt-0.5">
-                  <User className="h-5 w-5 text-gray-500" />
+                  {company.claimed && companyUsers.length > 0 && companyUsers[0].photoURL ? (
+                    <img src={companyUsers[0].photoURL} alt={companyUsers[0].displayName} className="w-5 h-5 rounded-full object-cover" />
+                  ) : (
+                    <User className="h-5 w-5 text-gray-500" />
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">{translations?.claimStatus || 'Claim Status'}</p>
@@ -225,7 +260,20 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
                     {company.claimed ? (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-green-600 font-medium">{translations?.claimed || 'Claimed'}</span>
+                        <span className="text-green-600 font-medium">
+                          {companyUsers.length > 0
+                            ? companyUsers.map((user, index) => (
+                                <div key={user.uid} className={index > 0 ? "mt-1" : ""}>
+                                  <span className="font-medium">{user.displayName}</span>
+                                  <span className="text-xs ml-2 text-gray-500">
+                                    {user.isSupervisor ? 
+                                      (translations?.supervisor || 'Supervisor') : 
+                                      (translations?.representative || 'Representative')}
+                                  </span>
+                                </div>
+                              ))
+                            : translations?.claimed || 'Claimed'}
+                        </span>
                       </>
                     ) : (
                       <>
