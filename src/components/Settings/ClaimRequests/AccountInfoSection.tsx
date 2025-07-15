@@ -1,10 +1,11 @@
 import React from 'react';
-import { User, CheckCircle, XCircle } from 'lucide-react';
+import { User, CheckCircle, XCircle, Copy } from 'lucide-react';
 
 interface AccountInfoSectionProps {
   title: string;
   email: string;
-  // Removed userId and password
+  password?: string;
+  userId?: string;
   isVerified: boolean;
   isSupervisor?: boolean;
   translations: any;
@@ -14,7 +15,8 @@ interface AccountInfoSectionProps {
 const AccountInfoSection: React.FC<AccountInfoSectionProps> = ({
   title,
   email,
-  // Removed userId and password
+  password,
+  userId,
   isVerified,
   isSupervisor,
   translations,

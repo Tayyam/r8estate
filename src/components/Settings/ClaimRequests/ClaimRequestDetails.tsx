@@ -27,6 +27,8 @@ const ClaimRequestDetails: React.FC<ClaimRequestDetailsProps> = ({
         <AccountInfoSection
           title={translations?.businessAccountDetails || 'Business Account Details'}
           email={request.businessEmail}
+          password={request.password}
+          userId={request.userId}
           isVerified={request.businessEmailVerified}
           translations={translations}
           copyToClipboard={copyToClipboard}
@@ -36,6 +38,8 @@ const ClaimRequestDetails: React.FC<ClaimRequestDetailsProps> = ({
         <AccountInfoSection
           title={translations?.supervisorAccountDetails || 'Supervisor Account Details'}
           email={request.supervisorEmail}
+          password={request.supervisorPassword}
+          userId={request.supervisorId}
           isVerified={request.supervisorEmailVerified}
           isSupervisor={true}
           translations={translations}

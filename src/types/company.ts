@@ -33,7 +33,11 @@ export interface ClaimRequest {
   requesterName?: string; // User name if logged in
   contactPhone: string;
   businessEmail: string;
+  password?: string;
+  userId?: string;
   supervisorEmail: string;
+  supervisorPassword?: string;
+  supervisorId?: string;
   status: 'pending' | 'approved' | 'rejected';
   domainVerified?: boolean;
   notes?: string; // Admin notes about the request
