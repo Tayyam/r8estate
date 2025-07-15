@@ -485,23 +485,7 @@ const UnitDetailsModal: React.FC<UnitDetailsModalProps> = ({
                       </div>
                     </div>
                     
-                    <div>
-                      <div className="flex items-center mb-4">
-                        <Calendar className="h-5 w-5 text-gray-500 mr-2" />
-                        <h3 className="font-bold text-gray-900">{translations?.dates || 'Dates'}</h3>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">{translations?.created || 'Created'}:</span>
-                          <span className="font-medium text-gray-900">{formatDate(unit.createdAt)}</span>
-                        </div>
-                        
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">{translations?.updated || 'Updated'}:</span>
-                          <span className="font-medium text-gray-900">{formatDate(unit.updatedAt)}</span>
-                        </div>
-                      </div>
+                  
                     </div>
                   </div>
                 </div>
