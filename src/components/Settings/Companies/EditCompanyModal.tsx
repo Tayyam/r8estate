@@ -128,7 +128,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (formData.email && !emailRegex.test(formData.email)) {
       onError(translations?.invalidEmailFormat || 'Please enter a valid email address');
       return;
     }
@@ -241,12 +241,11 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {translations?.companyEmail || 'Company Email'}
+                {translations?.companyEmail || 'Company Email'} 
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
-                  type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
