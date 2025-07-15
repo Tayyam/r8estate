@@ -263,7 +263,7 @@ const Verification: React.FC = () => {
               </div>
             </div> */}
 
-            dd
+            
             <button
               onClick={handleGoToLogin}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200"
