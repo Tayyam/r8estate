@@ -37,6 +37,7 @@ export const claimProcessNonDomain = functions.https.onCall(async (data, context
     if (!claimRequestDoc.exists) {
       throw new functions.https.HttpsError(
         'not-found',
+        'Claim request not found'
       );
     }
     
@@ -46,6 +47,7 @@ export const claimProcessNonDomain = functions.https.onCall(async (data, context
       supervisorEmail: string;
       companyId: string;
       companyName: string;
+      contactPhone?: string;
       requesterName?: string;
       password?: string;
       supervisorPassword?: string;
