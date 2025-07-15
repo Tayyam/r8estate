@@ -141,7 +141,6 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
       
       const updateData: any = {
         name: formData.name,
-        email: formData.email || company.email,
         categoryId: formData.categoryId,
         location: formData.location,
         description: formData.description,
@@ -239,12 +238,15 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
-                  value={formData.email || company.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                  placeholder={translations?.enterCompanyEmail || 'Enter company email'}
+                  value={company.email}
+                  readOnly
+                  disabled
+                  className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                {translations?.emailCannotBeChanged || 'Email address cannot be changed'}
+              </p>
             </div>
 
             {/* Category */}
