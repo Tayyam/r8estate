@@ -289,6 +289,9 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                     <option key={governorate.id} value={governorate.id}>
                       {governorate.nameAr || governorate.name}
                     </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Phone */}
