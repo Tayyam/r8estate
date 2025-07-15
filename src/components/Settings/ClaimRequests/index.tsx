@@ -37,7 +37,7 @@ const ClaimRequests: React.FC = () => {
   const itemsPerPage = 10;
 
   // Initialize the cloud functions
-  const claimProcessFunction = httpsCallable(functions, 'claimProcess');
+  const claimProcessNonDomainFunction = httpsCallable(functions, 'claimProcessNonDomain');
 
   // Load claim requests from Firestore
   const loadClaimRequests = async () => {
@@ -113,14 +113,9 @@ const ClaimRequests: React.FC = () => {
       setLoadingStep(translations?.sendingVerificationEmails || 'Sending verification emails...');
       setLoadingProgress(30);
       
-      // Call the claimProcess cloud function
-      const result = await claimProcessFunction({
-        businessEmail: request.businessEmail,
-        supervisorEmail: request.supervisorEmail,
-        companyId: request.companyId,
-        companyName: request.companyName,
-        contactPhone: request.contactPhone || '',
-        displayName: request.requesterName || request.companyName
+      // Call the claimProcessNonDomain cloud function - pass only the request ID
+      const result = await claimProcessNonDomainFunction({
+        claimRequestId: request.id
       });
 
       // Update loading state

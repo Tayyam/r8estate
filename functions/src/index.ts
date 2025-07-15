@@ -7,6 +7,10 @@ import { claimProcess, verifySupervisor, checkBusinessEmailVerification } from '
 import { createVerifiedUser } from './create-verified-user';
 
 admin.initializeApp();
+
+// Import the new claimProcessNonDomain function
+import { claimProcessNonDomain } from './claim-process-non-domain';
+
 export const createUser = functions.https.onCall(async (data, context) => {
   try {
     // Check if the caller is authenticated
@@ -196,5 +200,7 @@ export { sendVerificationEmail };
 export { changeEmail };
 // Export the claim process functions
 export { claimProcess, verifySupervisor, checkBusinessEmailVerification };
+// Export the claim process non-domain function
+export { claimProcessNonDomain };
 // Export the create verified user function
 export { createVerifiedUser };
