@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect } from 'react';
 import { Edit, Trash2, Building2, MapPin, Star, Calendar, User, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, UserPlus, UserMinus, Users, Shield, UserCheck } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
