@@ -290,7 +290,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         companiesQuery = query(
           baseQuery,
           ...conditions,
-          orderBy('rating', 'desc'),
+            orderBy('createdAt', 'desc'), // أو name إن أحببت
+
           startAfter(lastDoc),
           limit(COMPANIES_PER_PAGE)
         );
