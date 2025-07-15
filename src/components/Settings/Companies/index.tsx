@@ -320,6 +320,7 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
         onDeleteCompany={handleDeleteCompany}
         onClaimCompany={handleClaimCompany}
         onUnclaimCompany={handleUnclaimCompany}
+        onManageUsers={handleManageUsers}
         onNavigateToProfile={onNavigateToProfile}
       />
 
