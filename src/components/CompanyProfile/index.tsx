@@ -16,7 +16,6 @@ import CompanyHeader from './CompanyHeader';
 import ImageUploadModal from './ImageUploadModal';
 import NotificationMessages from './NotificationMessages';
 import { getCompanySlug } from '../../utils/urlUtils';
-import {  getDocs, query, orderBy, where, doc, updateDoc } from 'firebase/firestore';
 
 interface CompanyProfileProps {
   companyId?: string | null;
