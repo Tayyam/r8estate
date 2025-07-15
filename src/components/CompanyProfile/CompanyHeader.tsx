@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ArrowLeft, Building2, MapPin, Globe, Phone, Mail, Star, Camera } from 'lucide-react';
+import { ArrowLeft, Building2, MapPin, Globe, Phone, Mail, Star, Calendar } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
@@ -328,6 +328,12 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
                         <MapPin className="h-4 w-4" />
                         <span>{getGovernorateName(company.location)}</span>
                       </div>
+                      {company.establishmentDate && (
+                        <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                          <Calendar className="h-4 w-4" />
+                          <span>{translations?.established || 'Est.'} {company.establishmentDate}</span>
+                        </div>
+                      )}
                       {company.website && (
                         <div className="flex items-center space-x-1 rtl:space-x-reverse">
                           <Globe className="h-4 w-4" />
