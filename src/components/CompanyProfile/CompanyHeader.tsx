@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ArrowLeft, Building2, MapPin, Globe, Phone, Mail, Star, Calendar } from 'lucide-react';
+import { ArrowLeft, Building2, MapPin, Globe, Phone, Mail, Star, Calendar , Camera } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
