@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, MapPin, ArrowSquareOut, Calendar } from 'lucide-react';
+import { Building2, MapPin, ArrowUpSquare as ArrowSquareOut, Calendar } from 'lucide-react';
 import { Project } from './types';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { format } from 'date-fns';
