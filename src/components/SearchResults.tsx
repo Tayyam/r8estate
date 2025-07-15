@@ -279,7 +279,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       } else {
         companiesQuery = query(
           baseQuery,
-          orderBy('rating', 'desc'),
+            orderBy('createdAt', 'desc'), // أو name إن أحببت
+
           limit(COMPANIES_PER_PAGE)
         );
       }
