@@ -69,9 +69,6 @@ export const ar = {
   companyRepresentatives: 'ممثلو الشركة',
   supervisor: 'مشرف',
   representative: 'ممثل',
-  representatives: 'الممثلون',
-  noRepresentatives: 'لا يوجد ممثلون',
-  supervisorRole: 'مشرف',
   
   // Email Verification
   verifyingEmail: 'جاري التحقق من بريدك الإلكتروني',
