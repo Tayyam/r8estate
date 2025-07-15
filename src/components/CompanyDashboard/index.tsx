@@ -12,7 +12,6 @@ import { getCompanySlug } from '../../utils/urlUtils';
 import OverviewTab from './OverviewTab';
 import ReviewsTab from './ReviewsTab';
 import GalleryTab from './GalleryTab';
-import ProjectsTab from './ProjectsTab';
 import ProfileManagementTab from './ProfileManagementTab';
 import PlanTab from './PlanTab';
 
@@ -25,7 +24,6 @@ const CompanyDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [company, setCompany] = useState<Company | null>(null);
-  const [isDeveloper, setIsDeveloper] = useState(false);
 
   // Check access and load company data
   useEffect(() => {
@@ -109,19 +107,6 @@ const CompanyDashboard = () => {
         
         console.log("Company found successfully:", companyData.name, "ID:", companyData.id);
         setCompany(companyData);
-
-        // Check if company is a developer
-        const categoriesQuery = query(
-          collection(db, 'categories'),
-          where('id', '==', companyData.categoryId)
-        );
-        
-        const categoriesSnapshot = await getDocs(categoriesQuery);
-        if (!categoriesSnapshot.empty) {
-          const categoryData = categoriesSnapshot.docs[0].data();
-          setIsDeveloper(categoryData.name.toLowerCase().includes('developer'));
-        }
-
         setLoading(false);
       } catch (error) {
         console.error('Error loading company dashboard:', error);
@@ -272,20 +257,6 @@ const CompanyDashboard = () => {
                 <span>{translations?.gallery || 'Gallery'}</span>
               </button>
               
-              {isDeveloper && (
-                <button
-                  onClick={() => handleTabChange('projects')}
-                  className={`flex items-center space-x-2 rtl:space-x-reverse px-6 py-4 text-sm font-medium ${
-                    activeTab === 'projects'
-                      ? 'border-b-2 border-blue-500 text-blue-600'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Briefcase className="h-5 w-5" />
-                  <span>{translations?.projects || 'Projects'}</span>
-                </button>
-              )}
-              
               <button
                 onClick={() => handleTabChange('profile')}
                 className={`flex items-center space-x-2 rtl:space-x-reverse px-6 py-4 text-sm font-medium ${
@@ -319,7 +290,6 @@ const CompanyDashboard = () => {
                 {activeTab === 'overview' && <OverviewTab company={company} />}
                 {activeTab === 'reviews' && <ReviewsTab company={company} />}
                 {activeTab === 'gallery' && <GalleryTab company={company} />}
-                {activeTab === 'projects' && isDeveloper && <ProjectsTab company={company} />}
                 {activeTab === 'profile' && <ProfileManagementTab company={company} setCompany={setCompany} />}
                 {activeTab === 'plan' && <PlanTab company={company} />}
               </>

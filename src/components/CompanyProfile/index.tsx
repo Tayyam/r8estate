@@ -8,12 +8,9 @@ import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile
 import { Property } from '../../types/property';
 import { Review } from '../../types/property';
 import { Category } from '../../types/company';
-import CompanyHeader from './CompanyHeader';
 import CompanyTabs from './CompanyTabs';
 import OverviewTab from './OverviewTab';
-import PropertiesTab from './PropertiesTab';
 import ReviewsTab from './ReviewsTab';
-import AddPropertyModal from './AddPropertyModal';
 import ImageUploadModal from './ImageUploadModal';
 import NotificationMessages from './NotificationMessages';
 import { getCompanySlug } from '../../utils/urlUtils';
@@ -74,7 +71,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
 
     try {
       setLoading(true);
-      
       // Load company profile by ID
       const companyDoc = await getDoc(doc(db, 'companies', actualCompanyId));
       if (companyDoc.exists()) {
@@ -100,23 +96,8 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         }
       }
 
-      // Load properties
-      const propertiesQuery = query(
-        collection(db, 'properties'),
-        where('companyId', '==', actualCompanyId),
-        orderBy('createdAt', 'desc')
-      );
-      const propertiesSnapshot = await getDocs(propertiesQuery);
-      const propertiesData = propertiesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date()
-      })) as Property[];
-      setProperties(propertiesData);
-
-      // Load reviews
-      await loadReviews(actualCompanyId);
+        // Load reviews
+        await loadReviews(actualCompanyId);
 
       // Load categories
       const categoriesSnapshot = await getDocs(collection(db, 'categories'));
@@ -310,14 +291,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
             categories={categories}
           />
         );
-      case 'projects':
-        return (
-          <PropertiesTab
-            properties={properties}
-            canEdit={canEdit}
-            setShowAddProperty={setShowAddProperty}
-          />
-        );
       case 'reviews':
         return (
           <ReviewsTab 
@@ -379,17 +352,6 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
         />
       )}
 
-      {showAddProperty && (
-        <AddPropertyModal
-          company={company}
-          setShowAddProperty={setShowAddProperty}
-          uploadLoading={uploadLoading}
-          setUploadLoading={setUploadLoading}
-          setSuccess={handleSuccess}
-          setError={handleError}
-          loadCompanyData={loadCompanyData}
-        />
-      )}
 
       {userCanReview && !hasUserReviewed && (
         <div className="fixed bottom-4 right-4 z-40">
