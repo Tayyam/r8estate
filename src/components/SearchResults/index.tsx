@@ -38,7 +38,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [categoryFilter, setCategoryFilter] = useState(initialCategoryFilter || urlCategoryFilter);
   const [locationFilter, setLocationFilter] = useState('all');
   const [ratingFilter, setRatingFilter] = useState('all');
-  const [sortOrder, setSortOrder] = useState('highestRated');
+const [sortOrder, setSortOrder] = useState('newest'); // ✅ بدلاً من highestRated
   
   const [companies, setCompanies] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
