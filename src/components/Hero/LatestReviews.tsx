@@ -15,6 +15,7 @@ const LatestReviews: React.FC = () => {
     const fetchRecentReviews = async () => {
       setLoading(true);
       try {
+        // Create a query to get reviews with rating >= 3, ordered by date
         const reviewsQuery = query(
           collection(db, 'reviews'),
           orderBy('rating', 'desc'),
