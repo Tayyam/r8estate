@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Plus, Building2, MapPin, CalendarDays, Calculator, Upload, File, FileText, FileWarning ,AlertCircle  } from 'lucide-react';
+import { X, Plus, Building2, MapPin, CalendarDays, Calculator, Upload, File, FileText, FileWarning } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../config/firebase';

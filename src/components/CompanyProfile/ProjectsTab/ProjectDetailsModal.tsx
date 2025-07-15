@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Calendar, MapPin, Upload, Plus, FileText, Calculator, Edit, Check, Calendar, Eye, Download , Building2  } from 'lucide-react';
+import { X, Calendar, MapPin, Upload, Plus, FileText, Calculator, Edit, Check, Clock, Eye, Download } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../../config/firebase';
@@ -454,7 +454,7 @@ const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({
                         />
                         {project.deliveryDateUpdated && (
                           <p className="text-xs text-amber-600 mt-1">
-                            <Calendar className="inline-block h-3 w-3 mr-1" />
+                            <Clock className="inline-block h-3 w-3 mr-1" />
                             {translations?.previouslyUpdated || 'Previously updated'}: {formatDate(project.deliveryDateUpdated)}
                           </p>
                         )}
