@@ -11,7 +11,7 @@ import ClaimRequestList from './ClaimRequestList';
 import DeleteRequestModal from './DeleteRequestModal';
 
 // ClaimRequests component for admin settings
-const ClaimRequests: React.FC = () => {
+const claimProcessNonDomainFunction = httpsCallable(functions, 'claimProcessNonDomain');
   const { translations } = useLanguage();
   const { showSuccessToast, showErrorToast } = useNotification();
   const [claimRequests, setClaimRequests] = useState<ClaimRequest[]>([]);
@@ -117,11 +117,6 @@ const ClaimRequests: React.FC = () => {
       const result = await claimProcessNonDomainFunction({
         claimRequestId: request.id
       });
-
-      // Update loading state
-      setLoadingStep(translations?.processingResponse || 'Processing response...');
-      setLoadingProgress(70);
-      
       const data = result.data as any;
       
       if (data.success) {
