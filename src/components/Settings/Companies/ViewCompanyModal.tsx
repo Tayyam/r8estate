@@ -192,6 +192,18 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
                 </div>
               </div>
               
+              {company.establishmentDate && (
+                <div className="flex items-start space-x-3 rtl:space-x-reverse">
+                  <div className="mt-0.5">
+                    <Calendar className="h-5 w-5 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">{translations?.establishmentDate || 'Establishment Year'}</p>
+                    <p className="text-gray-900">{company.establishmentDate}</p>
+                  </div>
+                </div>
+              )}
+              
               {company.website && (
                 <div className="flex items-start space-x-3 rtl:space-x-reverse">
                   <div className="mt-0.5">

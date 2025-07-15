@@ -224,9 +224,10 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
             <ul className="list-disc list-inside text-sm text-blue-700 space-y-1 mr-6 rtl:ml-6 rtl:mr-0">
               <li>{translations?.downloadTemplateFirst || 'Download the template and fill in company details'}</li>
               <li>{translations?.companyNameLocationRequired || 'Company Name, Category, and Location are required'}</li>
-              <li>{translations?.emailPasswordOptional || 'Email and Password are optional'}</li>
-              <li>{translations?.emailPasswordExplained || 'If Email and Password are provided, a user account will be created (claimed company)'}</li>
-              <li>{translations?.withoutEmailPassword || 'Companies without email and password will be marked as "unclaimed"'}</li>
+              <li>{translations?.emailOptional || 'Email is optional'}</li>
+              <li>{translations?.establishmentDateValidation || 'Establishment year must be between 1500 and 2025'}</li>
+              <li>{translations?.emailExplained || 'If Email is provided, a user account will be created (claimed company)'}</li>
+              <li>{translations?.withoutEmail || 'Companies without email will be marked as "unclaimed"'}</li>
             </ul>
           </div>
 

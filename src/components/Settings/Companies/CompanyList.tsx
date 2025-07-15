@@ -133,8 +133,18 @@ const CompanyList: React.FC<CompanyListProps> = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-500">
-                        <MapPin className="h-4 w-4 mr-1 rtl:ml-1 rtl:mr-0" />
-                        <span>{getLocationName(company.location)}</span>
+                        <div className="flex flex-col space-y-1">
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1 rtl:ml-1 rtl:mr-0" />
+                            <span>{getLocationName(company.location)}</span>
+                          </div>
+                          {company.establishmentDate && (
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1 rtl:ml-1 rtl:mr-0" />
+                              <span>{translations?.established || 'Est.'} {company.establishmentDate}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
