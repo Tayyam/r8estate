@@ -97,8 +97,8 @@ const Companies: React.FC<CompaniesProps> = ({ onNavigateToProfile }) => {
     // Status filter - Now based on claimed status
     const matchesStatus = statusFilter === 'all' || 
                          (statusFilter === 'claimed' && company.claimed) ||
-                         (statusFilter === 'unclaimed' && !company.claimed);
-    
+    return company.name.toLowerCase().includes(searchLower) ||
+      company.email.toLowerCase().includes(searchLower) ||
     return matchesSearch && matchesCategory && matchesLocation && matchesStatus;
   });
 
