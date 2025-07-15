@@ -131,7 +131,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
   // Filter categories based on search query and URL parameter
   const filteredCategories = categories.filter(category => {
     // First check if it matches the search query
-    const matchesSearch = 
+    const matchesSearch =
       category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (category.nameAr && category.nameAr.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
