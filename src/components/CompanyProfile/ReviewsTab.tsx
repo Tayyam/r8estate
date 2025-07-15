@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Plus, Edit, Trash2, AlertCircle, Reply } from 'lucide-react';
-import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, increment, DocumentData } from 'firebase/firestore';
-import { db, storage } from '../../config/firebase';
+import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, increment, DocumentData, onSnapshot } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { Review } from '../../types/property';
@@ -75,6 +75,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
   // UI state
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  const [reviewsListener, setReviewsListener] = useState<() => void | null>(null);
 
   // Check if user can edit company (company owner or admin)
   const canEditCompany = currentUser && (
@@ -160,8 +161,52 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
 
   // Load reviews on component mount
   useEffect(() => {
-    loadReviews();
-  }, [company.id]);
+    if (currentUser) {
+      // Set up real-time listener for reviews
+      setupReviewsListener();
+    }
+
+    // Cleanup listener on component unmount
+    return () => {
+      if (reviewsListener) {
+        reviewsListener();
+      }
+    }
+  }, [company.id, currentUser]);
+  
+  // Setup real-time listener for reviews
+  const setupReviewsListener = () => {
+    const reviewsQuery = query(
+      collection(db, 'reviews'),
+      where('companyId', '==', company.id),
+      orderBy('createdAt', 'desc')
+    );
+    
+    // Create listener and store unsubscribe function
+    const unsubscribe = onSnapshot(reviewsQuery, (snapshot) => {
+      const reviewsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        companyReply: doc.data().companyReply ? {
+          ...doc.data().companyReply,
+          repliedAt: doc.data().companyReply.repliedAt?.toDate() || new Date()
+        } : undefined
+      })) as Review[];
+      
+      setReviews(sortReviewsWithUserFirst(reviewsData));
+      setTotalReviewsCount(reviewsData.length);
+      setReviewsLoaded(true);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error getting reviews:', error);
+      onError(translations?.failedToLoadReviews || 'Failed to load reviews');
+      setLoading(false);
+    });
+    
+    setReviewsListener(() => unsubscribe);
+  };
 
   // Initialize reviews with sorted initial reviews
   useEffect(() => {
@@ -289,8 +334,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       setShowDeleteConfirm(false);
       setSelectedReview(null);
       
-      // Reload reviews
-      await loadReviews();
+      // No need to reload reviews - the listener will update automatically
       onReviewAdded();
     } catch (error: any) {
       console.error('Error deleting review:', error);
@@ -336,7 +380,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     onSuccess(translations?.reviewUpdatedSuccess || 'Review updated successfully!');
     setShowEditReview(false);
     setSelectedReview(null);
-    await loadReviews(); // Reload reviews
+    // No need to reload reviews - the listener will update automatically
     onReviewAdded();
   };
 
@@ -345,7 +389,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     await updateCompanyRating();
     setShowAddReview(false);
     onSuccess(translations?.reviewAddedSuccess || 'Review added successfully!');
-    await loadReviews(); // Reload reviews
+    // No need to reload reviews - the listener will update automatically
     onReviewAdded();
   };
 
@@ -353,8 +397,8 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
   const handleReplySuccess = async () => {
     setShowReplyModal(false);
     setSelectedReview(null);
+    // No need to reload reviews - the listener will update automatically
     onSuccess(translations?.replyAddedSuccess || 'Reply added successfully!');
-    await loadReviews(); // Reload reviews
   };
 
   // Handle edit review error
@@ -418,10 +462,48 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     setExpandedReplies(newExpanded);
   };
 
+  // Load more reviews when "Load More" is clicked
+  const loadMoreReviews = async () => {
+    if (!lastDoc) return;
+    
+    try {
+      setLoading(true);
+      
+      const reviewsQuery = query(
+        collection(db, 'reviews'),
+        where('companyId', '==', company.id),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastDoc),
+        limit(REVIEWS_PER_PAGE)
+      );
+
+      const reviewsSnapshot = await getDocs(reviewsQuery);
+      const newReviews = reviewsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        companyReply: doc.data().companyReply ? {
+          ...doc.data().companyReply,
+          repliedAt: doc.data().companyReply.repliedAt?.toDate() || new Date()
+        } : undefined
+      })) as Review[];
+
+      setReviews(prev => sortReviewsWithUserFirst([...prev, ...newReviews]));
+      setLastDoc(reviewsSnapshot.docs[reviewsSnapshot.docs.length - 1] || null);
+      setHasMore(reviewsSnapshot.docs.length === REVIEWS_PER_PAGE);
+    } catch (error) {
+      console.error('Error loading more reviews:', error);
+      onError(translations?.failedToLoadReviews || 'Failed to load reviews');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load more reviews
   const handleLoadMore = () => {
-    if (!loading && hasMore) {
-      loadReviews(true);
+    if (hasMore && !loading) {
+      loadMoreReviews();
     }
   };
 
@@ -431,6 +513,15 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
     const returnUrl = location.pathname;
     navigate(`/login?returnTo=${encodeURIComponent(returnUrl)}`);
   };
+
+  useEffect(() => {
+    // Cleanup on unmount
+    return () => {
+      if (reviewsListener) {
+        reviewsListener();
+      }
+    }
+  }, []);
 
   return (
     <div>
