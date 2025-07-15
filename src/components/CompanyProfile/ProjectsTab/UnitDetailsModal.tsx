@@ -45,6 +45,9 @@ const UnitDetailsModal: React.FC<UnitDetailsModalProps> = ({
   
   // Format date based on language
   const formatDate = (date: Date) => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return '-';
+    }
     return format(date, 'PP', { locale: language === 'ar' ? ar : undefined });
   };
   
