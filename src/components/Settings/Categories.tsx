@@ -58,7 +58,7 @@ const Categories = () => {
   // Filter categories based on search query
   const filteredCategories = categories.filter(category => 
     category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (category.nameAr && category.nameAr.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (category.nameAr && category.nameAr.includes(searchQuery)) ||
     (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (category.descriptionAr && category.descriptionAr.includes(searchQuery))
   );

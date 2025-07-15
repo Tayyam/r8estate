@@ -143,7 +143,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           (company.description && company.description.toLowerCase().includes(searchQuery.toLowerCase()))
         );
       }
-
+      
       // Apply rating filter
       if (ratingFilter !== 'all' && company.totalRating) {
         const minRating = parseInt(ratingFilter);
