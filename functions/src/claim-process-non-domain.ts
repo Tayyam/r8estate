@@ -41,7 +41,18 @@ export const claimProcessNonDomain = functions.https.onCall(async (data, context
       );
     }
     
-    const claimRequest = claimRequestDoc.data();
+    // Type assertion to safely access properties
+    const claimRequest = claimRequestDoc.data() as {
+      businessEmail: string;
+      supervisorEmail: string;
+      companyId: string;
+      companyName: string;
+      contactPhone?: string;
+      requesterName?: string;
+      password?: string;
+      supervisorPassword?: string;
+      trackingNumber: string;
+    };
     
     // Extract data from the existing claim request
     const { 
