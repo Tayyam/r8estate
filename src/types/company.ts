@@ -19,6 +19,7 @@ export interface Company {
   description?: string;
   phone?: string;
   website?: string;
+  establishmentDate?: string; // Year as a 4-digit string
   claimed: boolean; // Track if company is claimed by a user
   createdAt: Date;
   updatedAt: Date;
