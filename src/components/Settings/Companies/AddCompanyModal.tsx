@@ -270,7 +270,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
             </div>
 
             {/* Password */}
-              {translations?.companyEmail || 'Company Email'}
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {translations?.companyPassword || 'Password'} *
               </label>
@@ -425,15 +425,13 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
                     <div className="text-gray-600 text-sm">
                       {translations?.dragDropLogo || 'Drag and drop your logo here, or click to browse'}
                     </div>
+                    <p className="text-xs text-gray-500 mt-2">
                       {translations?.allowedFormats || 'Allowed formats: PNG, JPG, GIF'} ({translations?.maxFileSize || 'Max 5MB'})
                     </p>
                   </div>
                 )}
               </div>
             </div>
-            <p className="mt-1 text-xs text-gray-500">
-              {translations?.optionalForUnclaimed || 'Optional if you don\'t want to create an account'}
-            </p>
           </div>
 
           <div className="mt-8 flex justify-end space-x-3 rtl:space-x-reverse">
@@ -442,19 +440,17 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
               onClick={onClose}
               disabled={loading}
               className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              {translations?.companyPassword || 'Password'}
+            >
               {translations?.cancel || 'Cancel'}
             </button>
             <button
+              type="submit"
               disabled={loading}
               className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse"
             >
               {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               <span>{loading ? (translations?.creatingCompany || 'Creating...') : (translations?.createCompany || 'Create Company')}</span>
             </button>
-            <p className="mt-1 text-xs text-gray-500">
-              {translations?.requiredWithEmail || 'Required if email is provided'}
-            </p>
           </div>
         </form>
       </div>
