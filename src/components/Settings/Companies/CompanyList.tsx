@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, Building2, MapPin, Star, Calendar, User, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, UserPlus, UserMinus, Users, Shield } from 'lucide-react';
+import { Edit, Trash2, Building2, MapPin, Star, Calendar, User, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, UserPlus, UserMinus, Users, Shield, UserCheck } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../../config/firebase';
 import { Company, Category, egyptianGovernorates } from '../../../types/company';
+import { User as UserType } from '../../../types/user';
 
 interface CompanyListProps {
   companies: Company[];
@@ -30,10 +33,46 @@ const CompanyList: React.FC<CompanyListProps> = ({
 }) => {
   const { translations, direction, language } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
+  const [companyUsers, setCompanyUsers] = useState<Record<string, UserType[]>>({});
   const totalPages = Math.ceil(companies.length / COMPANIES_PER_PAGE);
   const indexOfLastCompany = currentPage * COMPANIES_PER_PAGE;
   const indexOfFirstCompany = indexOfLastCompany - COMPANIES_PER_PAGE;
   const currentCompanies = companies.slice(indexOfFirstCompany, indexOfLastCompany);
+  
+  // Fetch users for each company
+  useEffect(() => {
+    const fetchCompanyUsers = async () => {
+      const usersData: Record<string, UserType[]> = {};
+      
+      for (const company of currentCompanies) {
+        if (company.claimed) {
+          try {
+            const usersQuery = query(
+              collection(db, 'users'),
+              where('companyId', '==', company.id)
+            );
+            
+            const snapshot = await getDocs(usersQuery);
+            usersData[company.id] = snapshot.docs.map(doc => ({
+              uid: doc.id,
+              ...doc.data(),
+              createdAt: doc.data().createdAt?.toDate() || new Date(),
+              updatedAt: doc.data().updatedAt?.toDate() || new Date()
+            })) as UserType[];
+          } catch (error) {
+            console.error(`Error fetching users for company ${company.id}:`, error);
+            usersData[company.id] = [];
+          }
+        }
+      }
+      
+      setCompanyUsers(usersData);
+    };
+    
+    if (currentCompanies.length > 0) {
+      fetchCompanyUsers();
+    }
+  }, [currentCompanies]);
   
   // Get category name by ID with language support
   const getCategoryName = (categoryId: string): string => {
@@ -137,14 +176,64 @@ const CompanyList: React.FC<CompanyListProps> = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {company.claimed ? (
-                        <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                          <User className="h-4 w-4 text-green-500" />
-                          <span className="font-medium text-green-700">
-                            {company.claimedByName || translations?.notAvailable || 'N/A'}
-                            <span className="px-2 py-0.5 ml-2 text-xs bg-green-100 text-green-800 rounded-full">
-                              {translations?.claimed || 'Claimed'}
+                        <div>
+                          <div className="flex items-center mb-1">
+                            <UserCheck className="h-4 w-4 text-green-500 mr-1.5 rtl:ml-1.5 rtl:mr-0" />
+                            <span className="text-green-700 font-medium">
+                              <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
+                                {translations?.claimed || 'Claimed'}
+                              </span>
                             </span>
-                          </span>
+                          </div>
+                          {companyUsers[company.id]?.length > 0 ? (
+                            <div className="flex items-center mt-1.5">
+                              <div className="flex -space-x-2 rtl:space-x-reverse mr-1.5">
+                                {companyUsers[company.id].map((user, index) => (
+                                  <div 
+                                    key={user.uid} 
+                                    className="w-6 h-6 rounded-full border border-white overflow-hidden bg-gray-200 flex items-center justify-center"
+                                    title={user.displayName}
+                                  >
+                                    {user.photoURL ? (
+                                      <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="text-xs font-bold text-gray-600">
+                                        {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+                                      </span>
+                                    )}
+                                  </div>
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <UserCheck className="h-3.5 w-3.5 text-green-600 mr-1" />
+                                <span className="text-green-600 font-medium">
+                                  {translations?.claimed || 'Claimed'}
+                                </span>
+                              </div>
+                              {companyUsers[company.id]?.length > 0 ? (
+                                <div className="flex items-center mt-1">
+                                  <div className="flex -space-x-1.5 rtl:space-x-reverse mr-1">
+                                    {companyUsers[company.id].map((user, index) => (
+                                      <div 
+                                        key={user.uid} 
+                                        className="w-5 h-5 rounded-full border border-white overflow-hidden bg-gray-200 flex items-center justify-center"
+                                        title={user.displayName}
+                                      >
+                                        {user.photoURL ? (
+                                          <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <span className="text-xs font-bold text-gray-600">
+                                            {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-500 italic">{translations?.loadingUsers || 'Loading users...'}</div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-gray-400 flex items-center">
