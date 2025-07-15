@@ -1136,6 +1136,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         }
       `}</style>
     </div>
+    </div>
   );
 };
 
