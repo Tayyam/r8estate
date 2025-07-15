@@ -11,6 +11,7 @@ import { Category } from '../../types/company';
 import CompanyTabs from './CompanyTabs';
 import OverviewTab from './OverviewTab';
 import ReviewsTab from './ReviewsTab';
+import ProjectsTab from './ProjectsTab';
 import CompanyHeader from './CompanyHeader';
 import ImageUploadModal from './ImageUploadModal';
 import NotificationMessages from './NotificationMessages';
@@ -305,6 +306,15 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
             currentUser={currentUser}
           />
         );
+      case 'projects':
+        return (
+          <ProjectsTab
+            company={company}
+            canEdit={canEdit}
+            onSuccess={handleSuccess}
+            onError={handleError}
+          />
+        );
       default:
         return null;
     }
@@ -331,6 +341,8 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
       <CompanyTabs
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        company={company}
+        categories={categories}
         properties={properties}
         reviews={reviews}
         userCanReview={userCanReview && !hasUserReviewed}

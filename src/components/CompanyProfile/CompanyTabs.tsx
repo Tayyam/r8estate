@@ -1,14 +1,19 @@
 import React from 'react';
-import { Building2, Eye, MessageSquare } from 'lucide-react';
+import { Building2, Eye, MessageSquare, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Property } from '../../types/property';
 import { Review } from '../../types/property';
+import { Category } from '../../types/company';
 
 interface CompanyTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   properties: Property[];
   reviews: Review[];
+  company: {
+    categoryId: string;
+  };
+  categories: Category[];
   userCanReview: boolean;
 }
 
@@ -17,15 +22,31 @@ const CompanyTabs: React.FC<CompanyTabsProps> = ({
   setActiveTab,
   properties,
   reviews,
+  company,
+  categories,
   userCanReview
 }) => {
   const { translations } = useLanguage();
+
+  // Check if company is a Real Estate Developing Company
+  const isRealEstateDeveloper = categories.some(
+    category => category.id === company.categoryId && category.name === "Real Estate Developing Companies"
+  );
 
   // Create tabs array
   const tabs = [
     { id: 'overview', name: translations?.overview || 'Overview', icon: Building2 },
     { id: 'reviews', name: translations?.reviewsTab || 'Reviews', icon: MessageSquare },
   ];
+
+  // Add projects tab if company is a real estate developer
+  if (isRealEstateDeveloper) {
+    tabs.splice(1, 0, {
+      id: 'projects',
+      name: translations?.projectsTab || 'Projects',
+      icon: LayoutGrid
+    });
+  }
 
   return (
     <div className="bg-white border-b border-gray-200">
