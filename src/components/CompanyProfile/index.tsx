@@ -11,6 +11,7 @@ import { Category } from '../../types/company';
 import CompanyTabs from './CompanyTabs';
 import OverviewTab from './OverviewTab';
 import ReviewsTab from './ReviewsTab';
+import CompanyHeader from './CompanyHeader';
 import ImageUploadModal from './ImageUploadModal';
 import NotificationMessages from './NotificationMessages';
 import { getCompanySlug } from '../../utils/urlUtils';
