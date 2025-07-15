@@ -38,11 +38,6 @@ export const ar = {
   ...arCommon,
   ...arNavigation,
   ...arAuth,
-  
-  // User Management related translations
-  business: 'حساب الأعمال',
-  supervisor: 'حساب المشرف',
-  
   // Password Reset Page Translations
   resetPassword: 'إعادة تعيين كلمة المرور',
   createNewPassword: 'إنشاء كلمة مرور جديدة لحسابك',

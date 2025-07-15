@@ -11,8 +11,6 @@ export interface User {
   isEmailVerified: boolean;
   photoURL?: string;
   status?: 'active' | 'suspended' | 'not-active'; // New status field to track user status
-  companyName?: string; // Added for UI display
-  isSupervisor?: boolean; // Flag to determine if this is a supervisor account
 }
 
 export interface CompanyProfile {
