@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Building2, ArrowRight, Star, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getCompanySlug } from '../../utils/urlUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../config/firebase';
@@ -223,10 +224,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
                         onClick={() => {
                           setSearchQuery(company.name);
                           setShowSuggestions(false);
+                          // Navigate to company profile
+                          const companySlug = getCompanySlug(company.name);
                           if (onNavigate) {
-                            onNavigate('company', company.id);
+                            // Dispatch event to navigate to company profile
+                            const event = new CustomEvent('navigateToCompanyProfile', {
+                              detail: { companyId: company.id, companyName: company.name }
+                            });
+                            window.dispatchEvent(event);
                           } else {
-                            navigate(`/company/${company.id}`);
+                            navigate(`/company/${companySlug}/${company.id}/overview`);
                           }
                         }}
                       >
