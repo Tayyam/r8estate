@@ -6,7 +6,7 @@ import { functions } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { ClaimRequest, Company } from '../../../types/company';
-import { Tag, Search, Filter, AlertCircle, Check, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Tag, Search, Filter, AlertCircle, Check, ArrowLeft, ArrowRight, Loader, Mail, Send, Building2 } from 'lucide-react';
 import ClaimRequestList from './ClaimRequestList';
 import DeleteRequestModal from './DeleteRequestModal';
 
@@ -26,6 +26,11 @@ const ClaimRequests: React.FC = () => {
   const [showDetails, setShowDetails] = useState<string | null>(null);
   const [companyDetails, setCompanyDetails] = useState<Company | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // Loading modal state
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
+  const [loadingStep, setLoadingStep] = useState('');
+  const [loadingProgress, setLoadingProgress] = useState(0);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,9 +100,18 @@ const ClaimRequests: React.FC = () => {
   const handleApproveClaim = async (request: ClaimRequest) => {
     if (!request) return;
     
+    // Show loading modal
+    setShowLoadingModal(true);
+    setLoadingStep(translations?.initializingApproval || 'Initializing approval process...');
+    setLoadingProgress(10);
+    
     try {
       setActionLoading(request.id);
       setError('');
+      
+      // Update loading state
+      setLoadingStep(translations?.sendingVerificationEmails || 'Sending verification emails...');
+      setLoadingProgress(30);
       
       // Call the claimProcess cloud function
       const result = await claimProcessFunction({
@@ -109,15 +123,27 @@ const ClaimRequests: React.FC = () => {
         displayName: request.requesterName || request.companyName
       });
 
+      // Update loading state
+      setLoadingStep(translations?.processingResponse || 'Processing response...');
+      setLoadingProgress(70);
+      
       const data = result.data as any;
       
       if (data.success) {
+        // Update loading state
+        setLoadingStep(translations?.updatingClaimStatus || 'Updating claim status...');
+        setLoadingProgress(85);
+        
         // Update request status in Firestore
         await updateDoc(doc(db, 'claimRequests', request.id), {
           status: 'approved',
           updatedAt: new Date()
         });
-
+        
+        // Complete loading
+        setLoadingStep(translations?.approvalCompleted || 'Approval completed successfully!');
+        setLoadingProgress(100);
+        
         setSuccess(translations?.requestApprovedSuccess || 'Claim request approved and verification emails sent successfully');
         setTimeout(() => setSuccess(''), 5000);
         
@@ -131,9 +157,16 @@ const ClaimRequests: React.FC = () => {
     } catch (error) {
       console.error('Error approving claim request:', error);
       setError(error.message || (translations?.failedToProcessRequest || 'Failed to approve request'));
+      setLoadingStep(translations?.approvalFailed || 'Approval process failed');
       setTimeout(() => setError(''), 5000);
     } finally {
       setActionLoading(null);
+      // Close loading modal after a short delay to show final state
+      setTimeout(() => {
+        setShowLoadingModal(false);
+        setLoadingProgress(0);
+        setLoadingStep('');
+      }, 1500);
     }
   };
   
@@ -309,6 +342,74 @@ const ClaimRequests: React.FC = () => {
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
+        </div>
+      )}
+
+      {/* Loading Modal */}
+      {showLoadingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex flex-col items-center justify-center space-y-6">
+              {/* Logo and title */}
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Building2 className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {translations?.processingClaimRequest || 'Processing Claim Request'}
+                </h3>
+              </div>
+              
+              {/* Current step */}
+              <div className="text-center">
+                <p className="text-gray-700 font-medium">{loadingStep}</p>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                  style={{ width: `${loadingProgress}%` }}
+                ></div>
+              </div>
+              <div className="text-xs text-gray-500 text-center w-full">
+                {loadingProgress}%
+              </div>
+              
+              {/* Step indicators */}
+              <div className="w-full grid grid-cols-3 gap-2 mt-4">
+                <div className="flex flex-col items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-all duration-200 
+                    ${loadingProgress >= 10 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+                    <Send className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs text-gray-500">{translations?.initiate || 'Initiate'}</span>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-all duration-200 
+                    ${loadingProgress >= 40 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs text-gray-500">{translations?.verify || 'Verify'}</span>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-all duration-200 
+                    ${loadingProgress >= 80 ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                    <Check className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs text-gray-500">{translations?.complete || 'Complete'}</span>
+                </div>
+              </div>
+              
+              {/* Animated loading indicator at the bottom */}
+              <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 mt-4">
+                <Loader className="w-4 h-4 animate-spin" />
+                <span>{translations?.pleaseWaitProcessing || 'Please wait while we process the request...'}</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
