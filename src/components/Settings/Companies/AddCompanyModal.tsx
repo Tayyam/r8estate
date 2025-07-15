@@ -91,29 +91,24 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form data
     if (!formData.name || !formData.categoryId || !formData.location) {
       onError(translations?.fillAllRequiredFields || 'Please fill in all required fields');
       return;  
     }
     
-    // Validate email and password
-    if (!formData.email || !formData.password) {
-      onError(translations?.emailPasswordRequired || 'Email and password are required');
-      return;
-    }
-    
-    // Validate password length
-    if (formData.password.length < 6) {
+    // Validate password length if provided
+    if (formData.password && formData.password.length < 6) {
       onError(translations?.passwordMinLength || 'Password must be at least 6 characters long');
       return;
     }
     
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      onError(translations?.invalidEmailFormat || 'Please enter a valid email address');
-      return;
+    // Validate email format if provided
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        onError(translations?.invalidEmailFormat || 'Please enter a valid email address');
+        return;
+      }
     }
     
     // Validate website URL if provided
@@ -127,41 +122,68 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
     try {
       setLoading(true);
       
+      // Check if creating a user account (email and password provided)
+      const createAccount = formData.email && formData.password;
       let companyId: string;
       let companyData: any;
       
-      // Create the user account with Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      companyId = userCredential.user.uid;
+      if (createAccount) {
+        // Create the user account with Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+        companyId = userCredential.user.uid;
+        
+        // Create user document in users collection
+        await setDoc(doc(db, 'users', companyId), {
+          uid: companyId,
+          email: formData.email,
+          displayName: formData.name,
+          role: 'company',
+          companyId: companyId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isEmailVerified: false
+        });
+        
+        companyData = {
+          id: companyId,
+          name: formData.name,
+          email: formData.email,
+          categoryId: formData.categoryId,
+          location: formData.location,
+          description: formData.description || '',
+          phone: formData.phone || '',
+          website: formData.website || '',
+          claimed: true, // Set to true when creating an account
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        // Create company document with matching UID
+        await setDoc(doc(db, 'companies', companyId), companyData);
+      } else {
+        // No account - just create a company document
+        companyData = {
+          name: formData.name,
+          email: formData.email || '',
+          categoryId: formData.categoryId,
+          location: formData.location,
+          description: formData.description || '',
+          phone: formData.phone || '',
+          website: formData.website || '',
+          claimed: false, // Set to false when no account is created
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
       
-      companyData = {
-        id: companyId,
-        name: formData.name,
-        email: formData.email,
-        categoryId: formData.categoryId,
-        location: formData.location,
-        description: formData.description || '',
-        phone: formData.phone || '',
-        website: formData.website || '',
-        claimed: false, // Always set to false
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      // Create user document in users collection
-      await setDoc(doc(db, 'users', companyId), {
-        uid: companyId,
-        email: formData.email,
-        displayName: formData.name,
-        role: 'company',
-        companyId: companyId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isEmailVerified: false
-      });
-      
-      // Create company document with matching UID
-      await setDoc(doc(db, 'companies', companyId), companyData);
+        // Add to Firestore with auto-generated ID
+        const docRef = await addDoc(collection(db, 'companies'), companyData);
+        companyId = docRef.id;
+        
+        // Update with ID
+        await updateDoc(doc(db, 'companies', companyId), {
+          id: companyId
+        });
+      }
       
       // Upload logo if selected
       if (logoFile) {
@@ -248,7 +270,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
             </div>
 
             {/* Password */}
-            <div>
+              {translations?.companyEmail || 'Company Email'}
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {translations?.companyPassword || 'Password'} *
               </label>
@@ -403,13 +425,15 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
                     <div className="text-gray-600 text-sm">
                       {translations?.dragDropLogo || 'Drag and drop your logo here, or click to browse'}
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
                       {translations?.allowedFormats || 'Allowed formats: PNG, JPG, GIF'} ({translations?.maxFileSize || 'Max 5MB'})
                     </p>
                   </div>
                 )}
               </div>
             </div>
+            <p className="mt-1 text-xs text-gray-500">
+              {translations?.optionalForUnclaimed || 'Optional if you don\'t want to create an account'}
+            </p>
           </div>
 
           <div className="mt-8 flex justify-end space-x-3 rtl:space-x-reverse">
@@ -418,17 +442,19 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
               onClick={onClose}
               disabled={loading}
               className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
+              {translations?.companyPassword || 'Password'}
               {translations?.cancel || 'Cancel'}
             </button>
             <button
-              type="submit"
               disabled={loading}
               className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2 rtl:space-x-reverse"
             >
               {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               <span>{loading ? (translations?.creatingCompany || 'Creating...') : (translations?.createCompany || 'Create Company')}</span>
             </button>
+            <p className="mt-1 text-xs text-gray-500">
+              {translations?.requiredWithEmail || 'Required if email is provided'}
+            </p>
           </div>
         </form>
       </div>
