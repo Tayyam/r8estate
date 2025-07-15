@@ -57,7 +57,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ companyId, onNavigateBa
   // Check if user can edit (admin or company owner)
   const canEdit = currentUser && (
     currentUser.role === 'admin' || 
-    (currentUser.role === 'company' && company?.email === currentUser.email)
+    (currentUser.role === 'company' && company?.id === currentUser.companyId)
   );
   
   // Check if user can leave a review (logged in, not company owner, not admin)
