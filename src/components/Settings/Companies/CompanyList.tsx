@@ -12,7 +12,6 @@ interface CompanyListProps {
   onDeleteCompany: (company: Company) => void;
   onClaimCompany: (company: Company) => void;
   onUnclaimCompany: (company: Company) => void;
-  onManageUsers: (company: Company) => void;
   onNavigateToProfile?: (companyId: string, companyName: string) => void;
 }
 
@@ -27,7 +26,6 @@ const CompanyList: React.FC<CompanyListProps> = ({
   onDeleteCompany,
   onClaimCompany,
   onUnclaimCompany,
-  onManageUsers,
   onNavigateToProfile
 }) => {
   const { translations, direction, language } = useLanguage();
@@ -168,17 +166,6 @@ const CompanyList: React.FC<CompanyListProps> = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-end">
                       <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
-                        {/* Manage Users Button (only for claimed companies) */}
-                        {company.claimed && (
-                          <button
-                            onClick={() => onManageUsers(company)}
-                            className="text-purple-600 hover:text-purple-900 p-1"
-                            title={translations?.manageUsers || 'Manage Users'}
-                          >
-                            <Users className="h-5 w-5" />
-                          </button>
-                        )}
-
                         {company.claimed ? (
                           <button
                             onClick={() => onUnclaimCompany(company)}
@@ -301,16 +288,6 @@ const CompanyList: React.FC<CompanyListProps> = ({
                     </div>
 
                     <div className="flex justify-between border-t border-gray-100 pt-3">
-                      {/* Manage Users Button (only for claimed companies) */}
-                      {company.claimed && (
-                        <button
-                          onClick={() => onManageUsers(company)}
-                          className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-purple-600 hover:bg-purple-50"
-                        >
-                          <Users className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                          <span>{translations?.users || 'Users'}</span>
-                        </button>
-                      )}
                       {company.claimed ? (
                         <button
                           onClick={() => onUnclaimCompany(company)}
@@ -329,31 +306,6 @@ const CompanyList: React.FC<CompanyListProps> = ({
                         </button>
                       )}
                       
-                      {/* Users Button (only for claimed companies) */}
-                      {company.claimed && (
-                        <button
-                          onClick={() => onManageUsers(company)}
-                          className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-purple-600 hover:bg-purple-50"
-                        >
-                          <Users className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                          <span>{translations?.users || 'Users'}</span>
-                        </button>
-                      )}
-                      
-                          {/* Users Button (only for claimed companies) */}
-                          {company.claimed && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onManageUsers(company);
-                              }}
-                              className="text-purple-600 hover:text-purple-900 p-1"
-                              title={translations?.manageUsers || 'Manage Users'}
-                            >
-                              <Users className="h-5 w-5" />
-                            </button>
-                          )}
-
                       <button
                         onClick={() => onEditCompany(company)}
                         className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-orange-600 hover:bg-orange-50"
@@ -369,17 +321,6 @@ const CompanyList: React.FC<CompanyListProps> = ({
                         <span>{translations?.delete || 'Delete'}</span>
                       </button>
                     </div>
-                    
-                    {/* Manage Users Button (only for claimed companies) */}
-                    {company.claimed && (
-                      <button
-                        onClick={() => onManageUsers(company)}
-                        className="text-xs flex items-center justify-center px-2 py-1 rounded-lg text-purple-600 hover:bg-purple-50"
-                      >
-                        <Users className="h-3.5 w-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
-                        <span>{translations?.users || 'Users'}</span>
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}
