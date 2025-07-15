@@ -6,8 +6,6 @@ import { functions } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { ClaimRequest, Company } from '../../../types/company';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../../../config/firebase';
 import { Tag, Search, Filter, AlertCircle, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import ClaimRequestList from './ClaimRequestList';
 import DeleteRequestModal from './DeleteRequestModal';
