@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Star } from 'lucide-react';
+import { Building2, Star, Calendar } from 'lucide-react';
 import { collection, getDocs, query, orderBy, where, limit, doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../config/firebase';
@@ -170,7 +170,8 @@ const TopCompanies: React.FC<TopCompaniesProps> = ({ onNavigateToProfile }) => {
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{company.name}</h3>
                   <p className="text-gray-600">
-                    {company.totalReviews || 0} {translations?.reviews || 'reviews'}
+                    {company.totalReviews || 0} {translations?.reviews || 'reviews'} 
+                    {company.establishmentDate && <span className="ml-2">• <Calendar className="inline h-4 w-4 text-gray-500 mr-1" />{company.establishmentDate}</span>}
                   </p>
                 </div>
               </div>
