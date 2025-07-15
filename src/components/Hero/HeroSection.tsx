@@ -36,18 +36,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
     setShowSuggestions(true);
     
     try {
-      const companiesQuery = searchQueryText.length >= 3 
-        ? query(
-            collection(db, 'companies'),
-            where('name', '>=', searchQueryText),
-            where('name', '<=', searchQueryText + '\uf8ff'),
-            limit(5)
-          )
-        : query(
-            collection(db, 'companies'),
-            orderBy('name'),
-            limit(5)
-          );
+      // Always use the filter query for 2 or more characters
+      const companiesQuery = query(
+        collection(db, 'companies'),
+        where('name', '>=', searchQueryText),
+        where('name', '<=', searchQueryText + '\uf8ff'),
+        limit(5)
+      );
           
       const companiesSnapshot = await getDocs(companiesQuery);
       const suggestionsData = companiesSnapshot.docs.map(doc => ({
