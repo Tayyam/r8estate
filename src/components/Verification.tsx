@@ -250,7 +250,7 @@ const Verification: React.FC = () => {
             </p>
             
             {/* Debug Information Section */}
-            <div className="mt-6 border-t border-gray-200 pt-4">
+            {/* <div className="mt-6 border-t border-gray-200 pt-4">
               <div className="bg-gray-50 p-4 rounded-lg text-left overflow-auto max-h-96">
                 <h3 className="font-bold text-red-600 mb-2">Debug Information (will be removed later)</h3>
                 <pre className="text-xs overflow-auto whitespace-pre-wrap">
@@ -261,8 +261,9 @@ const Verification: React.FC = () => {
                   ))}
                 </pre>
               </div>
-            </div>
-            
+            </div> */}
+
+            dd
             <button
               onClick={handleGoToLogin}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200"
