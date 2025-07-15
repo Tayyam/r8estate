@@ -25,7 +25,6 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: company.name,
-    email: company.email || '',
     categoryId: company.categoryId,
     location: company.location,
     description: company.description || '',
@@ -121,15 +120,8 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     e.preventDefault();
     
     // Validate form data
-    if (!formData.name || !formData.email || !formData.categoryId || !formData.location) {
+    if (!formData.name || !formData.categoryId || !formData.location) {
       onError(translations?.fillAllFields || 'Please fill in all required fields');
-      return;
-    }
-    
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      onError(translations?.invalidEmailFormat || 'Please enter a valid email address');
       return;
     }
     
@@ -148,7 +140,6 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
       const companyRef = doc(db, 'companies', company.id);
       
       const updateData: any = {
-        email: formData.email,
         name: formData.name,
         categoryId: formData.categoryId,
         location: formData.location,
@@ -238,7 +229,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               </div>
             </div>
 
-            {/* Email */}
+            {/* Email (Read Only) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {translations?.companyEmail || 'Company Email'}
@@ -247,12 +238,15 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  value={company.email}
+                  readOnly
+                  disabled
                   className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
-                  placeholder={translations?.enterCompanyEmail || 'Enter company email'}
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                {translations?.emailCannotBeChanged || 'Email address cannot be changed'}
+              </p>
             </div>
 
             {/* Category */}

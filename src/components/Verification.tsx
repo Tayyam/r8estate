@@ -198,6 +198,7 @@ const Verification: React.FC = () => {
         await updateDoc(doc(db, 'companies', updatedData.companyId), {
           claimed: true,
           claimedByName: updatedData.requesterName || 'Unknown',
+          email: updatedData.businessEmail,
           updatedAt: new Date()
         });
         addDebugInfo("✅ Company marked as claimed");
