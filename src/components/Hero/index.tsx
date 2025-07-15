@@ -15,6 +15,7 @@ interface HeroProps {
 
 const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) => {
   const { currentUser } = useAuth();
+  const { language } = useLanguage();
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -29,6 +30,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate, onCategorySelect, onSearch }) =
 
       {/* Browse by Category Section */}
       <CategorySlider 
+        key={`category-slider-${language}`}
         onCategorySelect={onCategorySelect}
       />
 
