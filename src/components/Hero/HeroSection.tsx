@@ -79,12 +79,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
       const searchQueryLower = searchQueryText.toLowerCase();
       
       const companiesQuery = query(
-        collection(db, 'companies'),
-        ...(selectedCategory !== 'all' ? [where('categoryId', '==', selectedCategory)] : []),
-        where('name', '>=', searchQueryText),
-        where('name', '<=', searchQueryText + '\uf8ff'), 
-        limit(5)
-      );
+  collection(db, 'companies'),
+  ...(selectedCategory !== 'all' ? [where('categoryId', '==', selectedCategory)] : []),
+  where('name_lower', '>=', searchQueryLower),
+  where('name_lower', '<=', searchQueryLower + '\uf8ff'),
+  limit(5)
+);
+
           
       const companiesSnapshot = await getDocs(companiesQuery);
       const suggestionsData = companiesSnapshot.docs
