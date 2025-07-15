@@ -1,7 +1,7 @@
 export interface Property {
   id: string;
   companyId: string;
-  name: string;
+  name: string; 
   description: string;
   descriptionAr?: string;
   area: number; // in square meters

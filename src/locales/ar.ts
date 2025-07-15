@@ -64,6 +64,14 @@ export const ar = {
   withResponses: 'بردود الشركة',
   withoutResponses: 'بدون ردود',
   allResponses: 'كل التقييمات',
+  endOfReviews: 'لقد وصلت إلى النهاية', 
+  projectReviews: 'تقييمات المشروع',
+  unitReviews: 'تقييمات الوحدة',
+  noReviewsYet: 'لا توجد تقييمات بعد',
+  beTheFirstToReview: 'كن أول من يقيم ويشارك تجربته مع الآخرين',
+  
+  // Project & Unit Review Messages
+  onlyUsersCanReview: 'فقط المستخدمين العاديين يمكنهم كتابة تقييمات',
   
   // Email Verification
   verifyingEmail: 'جاري التحقق من بريدك الإلكتروني',
