@@ -107,8 +107,7 @@ src/components/Terms.tsx
 # 🚫 عرض للمستخدمين غير الموثقين
 src/components/UnverifiedUserView.tsx
 
-# 🔌 إعدادات Firebase
-src/config/firebase.ts
+
 
 # 🧠 السياقات العامة (Context)
 src/contexts/AuthContext.tsx
