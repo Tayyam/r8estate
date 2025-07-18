@@ -108,11 +108,6 @@ src/components/Terms.tsx
 src/components/UnverifiedUserView.tsx
 
 
-# 🧠 السياقات العامة (Context)
-src/contexts/AuthContext.tsx
-src/contexts/LanguageContext.tsx
-src/contexts/NotificationContext.tsx
-
 # 🌍 ملفات الترجمة (Arabic locales)
 src/locales/ar-about.ts
 src/locales/ar-admin-settings.ts
