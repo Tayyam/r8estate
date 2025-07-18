@@ -1,9 +1,6 @@
 # Ignore all files inside the functions folder (compiled, source, maps, etc.)
 functions/*
 
-# Files inside src/App
-src/App.tsx
-
 # Files inside src/components/About
 src/components/About.tsx
 
