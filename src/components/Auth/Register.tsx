@@ -235,15 +235,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             </button>
 
             {/* Language Toggle */}
-            <button
-              onClick={handleLanguageToggle}
-              className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 transform hover:scale-105"
-            >
-              <Globe className="w-4 h-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">
-                {language === 'ar' ? 'العربية' : 'AR'}
-              </span>
-            </button>
+           
           </div>
 
           {/* Logo and Title */}
