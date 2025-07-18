@@ -161,14 +161,6 @@ src/locales/ar-user-management.ts
 src/locales/ar-user-status.ts
 
 
-# Files inside src/types
-src/types/company.ts
-src/types/companyProfile.ts
-src/types/notification.ts
-src/types/property.ts
-src/types/report.ts
-src/types/user.ts
-
 # Files inside src/utils
 src/utils/excelUtils.ts
 src/utils/notificationUtils.ts
