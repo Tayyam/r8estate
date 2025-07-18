@@ -1,14 +1,11 @@
 
-# Files inside src/components/About
 src/components/About.tsx
 
-# Files inside src/components/Auth
 src/components/Auth/ForgotPasswordModal.tsx
 src/components/Auth/Login.tsx
 src/components/Auth/Register.tsx
 src/components/Auth/ResetPassword.tsx
 
-# Files inside src/components/CompanyDashboard
 src/components/CompanyDashboard/GalleryTab.tsx
 src/components/CompanyDashboard/OverviewTab.tsx
 src/components/CompanyDashboard/PlanTab.tsx
@@ -16,7 +13,6 @@ src/components/CompanyDashboard/ProfileManagementTab.tsx
 src/components/CompanyDashboard/ReviewsTab.tsx
 src/components/CompanyDashboard/index.tsx
 
-# Files inside src/components/CompanyProfile
 src/components/CompanyProfile/AddReviewModal.tsx
 src/components/CompanyProfile/ClaimRequestModal.tsx
 src/components/CompanyProfile/ClaimRequestModal/Step1Domain.tsx
@@ -48,38 +44,30 @@ src/components/CompanyProfile/ReviewsTab.tsx
 src/components/CompanyProfile/WriteReviewTab.tsx
 src/components/CompanyProfile/index.tsx
 
-# Files inside src/components/Footer
 src/components/Footer.tsx
 
-# Files inside src/components/Hero
 src/components/Hero/CategorySlider.tsx
 src/components/Hero/HeroSection.tsx
 src/components/Hero/LatestReviews.tsx
 src/components/Hero/TopCompanies.tsx
 src/components/Hero/index.tsx
 
-# Files inside src/components/Header
 src/components/Header.tsx
 src/components/Header/NotificationBell.tsx
 src/components/Header/NotificationDropdown.tsx
 src/components/Header/NotificationItem.tsx
 
-# Files inside src/components/MyReviews
 src/components/MyReviews.tsx
 
-# Files inside src/components/Notifications
 src/components/Notifications/NotificationsPage.tsx
 
-# Files inside src/components/PersonalProfile
 src/components/PersonalProfile.tsx
 src/components/PersonalProfile/BasicInfo.tsx
 src/components/PersonalProfile/PasswordSecurity.tsx
 src/components/PersonalProfile/ProfilePhoto.tsx
 
-# Files inside src/components/SearchResults
 src/components/SearchResults.tsx
 
-# Files inside src/components/Settings
 src/components/Settings.tsx
 src/components/Settings/Categories.tsx
 src/components/Settings/Companies/AddCompanyModal.tsx
@@ -101,29 +89,22 @@ src/components/Settings/Reports.tsx
 src/components/Settings/Reviews.tsx
 src/components/Settings/UserManagement.tsx
 
-# Files inside src/components/SuspendedUserView
 src/components/SuspendedUserView.tsx
 
-# Files inside src/components/Terms
 src/components/Terms.tsx
 
-# Files inside src/components/UI
 src/components/UI/Modal.tsx
 src/components/UI/NotificationContainer.tsx
 src/components/UI/Toast.tsx
 
-# Files inside src/components/UnverifiedUserView
 src/components/UnverifiedUserView.tsx
 
-# Files inside src/config
 src/config/firebase.ts
 
-# Files inside src/contexts
 src/contexts/AuthContext.tsx
 src/contexts/LanguageContext.tsx
 src/contexts/NotificationContext.tsx
 
-# Files inside src/locales
 src/locales/ar-about.ts
 src/locales/ar-admin-settings.ts
 src/locales/ar-admin.ts
@@ -158,13 +139,11 @@ src/locales/ar-user-management.ts
 src/locales/ar-user-status.ts
 
 
-# Files inside src/utils
 src/utils/excelUtils.ts
 src/utils/notificationUtils.ts
 src/utils/storageUtils.ts
 src/utils/urlUtils.ts
 
-# Files inside root
 README.md
 postcss.config.js
 tsconfig.json
