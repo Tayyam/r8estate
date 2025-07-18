@@ -168,7 +168,6 @@ src/utils/storageUtils.ts
 src/utils/urlUtils.ts
 
 # Files inside root
-.gitignore
 README.md
 postcss.config.js
 tsconfig.json
