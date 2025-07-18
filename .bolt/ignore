@@ -7,45 +7,7 @@ src/components/Auth/Login.tsx
 src/components/Auth/Register.tsx
 src/components/Auth/ResetPassword.tsx
 
-# 🧑‍💼 داشبورد الشركة
-src/components/CompanyDashboard/GalleryTab.tsx
-src/components/CompanyDashboard/OverviewTab.tsx
-src/components/CompanyDashboard/PlanTab.tsx
-src/components/CompanyDashboard/ProfileManagementTab.tsx
-src/components/CompanyDashboard/ReviewsTab.tsx
-src/components/CompanyDashboard/index.tsx
 
-# 🏢 بروفايل الشركات والمراجعات
-src/components/CompanyProfile/AddReviewModal.tsx
-src/components/CompanyProfile/ClaimRequestModal.tsx
-src/components/CompanyProfile/ClaimRequestModal/Step1Domain.tsx
-src/components/CompanyProfile/ClaimRequestModal/Step2Credentials.tsx
-src/components/CompanyProfile/CompanyHeader.tsx
-src/components/CompanyProfile/CompanyTabs.tsx
-src/components/CompanyProfile/ContactInfo.tsx
-src/components/CompanyProfile/EditReviewModal.tsx
-src/components/CompanyProfile/GalleryTab.tsx
-src/components/CompanyProfile/ImageUploadModal.tsx
-src/components/CompanyProfile/ImageViewer.tsx
-src/components/CompanyProfile/NotificationMessages.tsx
-src/components/CompanyProfile/OverviewTab.tsx
-src/components/CompanyProfile/PhotoGallery.tsx
-src/components/CompanyProfile/ProjectCard.tsx
-src/components/CompanyProfile/ProjectsTab.tsx
-src/components/CompanyProfile/ProjectsTab/AddProjectModal.tsx
-src/components/CompanyProfile/ProjectsTab/ProjectDetailsModal.tsx
-src/components/CompanyProfile/ProjectsTab/UnitDetailsModal.tsx
-src/components/CompanyProfile/ProjectsTab/types.ts
-src/components/CompanyProfile/ReplyModal.tsx
-src/components/CompanyProfile/ReportModal.tsx
-src/components/CompanyProfile/ReviewAttachmentViewer.tsx
-src/components/CompanyProfile/ReviewFilters.tsx
-src/components/CompanyProfile/ReviewItem.tsx
-src/components/CompanyProfile/ReviewStats.tsx
-src/components/CompanyProfile/ReviewVotingButtons.tsx
-src/components/CompanyProfile/ReviewsTab.tsx
-src/components/CompanyProfile/WriteReviewTab.tsx
-src/components/CompanyProfile/index.tsx
 
 # 🦶 الفوتر
 src/components/Footer.tsx
