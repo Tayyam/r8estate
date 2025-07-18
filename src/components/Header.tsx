@@ -16,7 +16,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, onNavigateToProfile }) => {
   const { language, translations, setLanguage, direction } = useLanguage();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLanguageOpen, setIsLanguageOpen] = React.useState(false);
@@ -333,7 +333,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, o
             </div>
 
             {/* User Profile (when logged in) */}
-            {currentUser ? (
+            {currentUser && !loading ? (
               <div className="flex items-center space-x-3 rtl:space-x-reverse" id="user-menu-container">
                 <div className="relative">
                   <NotificationBell onNavigate={setCurrentPage} />
@@ -490,7 +490,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, o
                 )}
                 </div>
               </div>
-            ) : (
+            ) : !loading ? (
               <>
                 {/* Create Account Button */}
                 <button
@@ -523,6 +523,10 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, o
                   {translations?.login || 'Login'}
                 </button>
               </>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              </div>
             )}
           </div>
 

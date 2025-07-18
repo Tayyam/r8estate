@@ -159,6 +159,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         
         await setDoc(doc(db, 'users', user.uid), userData);
+        
+        // Immediately update the local state with the new user data
+        const newUser: User = {
+          uid: user.uid,
+          ...userData
+        };
+        setCurrentUser(newUser);
+        setFirebaseUser(user);
+      } else {
+        // User exists, load the data and update state immediately
+        const userData = await loadUserData(user);
+        setCurrentUser(userData);
+        setFirebaseUser(user);
       }
     } catch (error: any) {
       console.error('Google login error:', error);

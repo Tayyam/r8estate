@@ -113,6 +113,9 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
       
       await loginWithGoogle();
       
+      // Add a small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Navigate to return URL if provided, otherwise to home
       setTimeout(() => {
         if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
@@ -122,7 +125,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         } else {
           navigate('/');
         }
-      }, 500);
+      }, 200);
       
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
