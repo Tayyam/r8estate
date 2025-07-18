@@ -1,8 +1,6 @@
-# 🧩 الصفحة التعريفية
 src/components/About.tsx
 
 
-# 🧑‍💼 داشبورد الشركة
 src/components/CompanyDashboard/GalleryTab.tsx
 src/components/CompanyDashboard/OverviewTab.tsx
 src/components/CompanyDashboard/PlanTab.tsx
@@ -10,7 +8,6 @@ src/components/CompanyDashboard/ProfileManagementTab.tsx
 src/components/CompanyDashboard/ReviewsTab.tsx
 src/components/CompanyDashboard/index.tsx
 
-# 🏢 بروفايل الشركات والمراجعات
 src/components/CompanyProfile/AddReviewModal.tsx
 src/components/CompanyProfile/ClaimRequestModal.tsx
 src/components/CompanyProfile/ClaimRequestModal/Step1Domain.tsx
@@ -42,35 +39,28 @@ src/components/CompanyProfile/ReviewsTab.tsx
 src/components/CompanyProfile/WriteReviewTab.tsx
 src/components/CompanyProfile/index.tsx
 
-# 🦶 الفوتر
 src/components/Footer.tsx
 
-# 🦸‍♂️ الصفحة الرئيسية (Hero Section)
 src/components/Hero/CategorySlider.tsx
 src/components/Hero/HeroSection.tsx
 src/components/Hero/LatestReviews.tsx
 src/components/Hero/TopCompanies.tsx
 src/components/Hero/index.tsx
 
-# 🔔 الهيدر والإشعارات
 src/components/Header/NotificationBell.tsx
 src/components/Header/NotificationDropdown.tsx
 src/components/Header/NotificationItem.tsx
 
-# ⭐ مراجعات المستخدم
 src/components/MyReviews.tsx
 src/components/Notifications/NotificationsPage.tsx
 
-# 👤 الصفحة الشخصية للمستخدم
 src/components/PersonalProfile.tsx
 src/components/PersonalProfile/BasicInfo.tsx
 src/components/PersonalProfile/PasswordSecurity.tsx
 src/components/PersonalProfile/ProfilePhoto.tsx
 
-# 🔍 نتائج البحث
 src/components/SearchResults.tsx
 
-# ⚙️ لوحة تحكم المسؤول / الإعدادات
 src/components/Settings.tsx
 src/components/Settings/Categories.tsx
 src/components/Settings/Companies/AddCompanyModal.tsx
@@ -92,16 +82,12 @@ src/components/Settings/Reports.tsx
 src/components/Settings/Reviews.tsx
 src/components/Settings/UserManagement.tsx
 
-# 🚫 شاشة المستخدم الموقوف
 
-# 📄 شروط الاستخدام
 src/components/Terms.tsx
 
-# 🚫 عرض للمستخدمين غير الموثقين
 src/components/UnverifiedUserView.tsx
 
 
-# 🌍 ملفات الترجمة (Arabic locales)
 src/locales/ar-about.ts
 src/locales/ar-admin-settings.ts
 src/locales/ar-admin.ts
@@ -132,13 +118,11 @@ src/locales/ar-terms.ts
 src/locales/ar-user-management.ts
 src/locales/ar-user-status.ts
 
-# 🛠 أدوات/مساعدات داخلية (Utils)
 src/utils/excelUtils.ts
 src/utils/notificationUtils.ts
 src/utils/storageUtils.ts
 src/utils/urlUtils.ts
 
-# 📄 ملفات الإعداد
 README.md
 postcss.config.js
 tsconfig.json
@@ -147,7 +131,6 @@ tsconfig.node.json
 package.json
 package-lock.json
 
-# ⛔ ملفات الـ functions اللي لازم تتجاهل
 functions/lib
 functions/package-lock.json
 functions/package.json
