@@ -108,7 +108,6 @@ src/locales/ar-admin.ts
 src/locales/ar-categories-management.ts
 src/locales/ar-categories.ts
 src/locales/ar-claim-requests.ts
-src/locales/ar-common.ts
 src/locales/ar-company-dashboard.ts
 src/locales/ar-company-profile.ts
 src/locales/ar-contact.ts
@@ -127,9 +126,7 @@ src/locales/ar-review-voting.ts
 src/locales/ar-reviews.ts
 src/locales/ar-search.ts
 src/locales/ar-share-review.ts
-src/locales/ar-social-login.ts
 src/locales/ar-stats.ts
-src/locales/ar-suspended-account.ts
 src/locales/ar-table.ts
 src/locales/ar-terms.ts
 src/locales/ar-user-management.ts
