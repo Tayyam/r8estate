@@ -7,8 +7,6 @@ src/components/Auth/Login.tsx
 src/components/Auth/Register.tsx
 src/components/Auth/ResetPassword.tsx
 
-
-
 # 🦶 الفوتر
 src/components/Footer.tsx
 
