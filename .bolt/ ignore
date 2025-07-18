@@ -159,7 +159,7 @@ src/locales/ar-table.ts
 src/locales/ar-terms.ts
 src/locales/ar-user-management.ts
 src/locales/ar-user-status.ts
-src/locales/ar.ts
+
 
 # Files inside src/types
 src/types/company.ts
