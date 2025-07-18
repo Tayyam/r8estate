@@ -142,6 +142,13 @@ const Header: React.FC<HeaderProps> = ({ currentPage = 'home', setCurrentPage, o
       navigate(item.path);
     }
     setIsMobileMenuOpen(false);
+    
+    // Scroll to top when navigating
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
   };
 
   // Handle company profile navigation

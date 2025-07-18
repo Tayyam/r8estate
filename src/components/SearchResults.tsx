@@ -381,6 +381,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
   // Handle company click
   const handleCompanyClick = (companyId: string, companyName: string) => {
+    // Scroll to top when navigating
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
+    
     if (onNavigateToProfile) {
       onNavigateToProfile(companyId, companyName);
     } else {

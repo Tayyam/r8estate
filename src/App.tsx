@@ -28,6 +28,7 @@ import { getCompanySlug } from './utils/urlUtils';
 import UnverifiedUserView from './components/UnverifiedUserView';
 import { useAuth } from './contexts/AuthContext';
 import SuspendedUserView from './components/SuspendedUserView';
+import ScrollToTop from './components/ScrollToTop';
 
 // CheckUserStatus component that redirects suspended users
 const CheckUserStatus: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -168,6 +169,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ScrollToTop />
       <Header 
         currentPage={location.pathname.split('/')[1] || 'home'} 
         setCurrentPage={handleNavigate} 

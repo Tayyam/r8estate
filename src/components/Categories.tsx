@@ -163,6 +163,14 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
   // Handle category selection
   const handleCategoryClick = (categoryId: string) => {
     navigate(`/categories/${categoryId}`);
+    
+    // Scroll to top when navigating
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
+    
     if (onNavigateToProfile) {
       // Dispatch event to navigate with the selected category filter
       const event = new CustomEvent('navigateToCompaniesWithCategory', {
@@ -174,6 +182,13 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
 
   // Handle company click
   const handleCompanyClick = (companyId: string, companyName: string) => {
+    // Scroll to top when navigating
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
+    
     if (onNavigateToProfile) {
       onNavigateToProfile(companyId, companyName);
     } else {
