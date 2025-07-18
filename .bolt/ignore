@@ -20,7 +20,6 @@ src/components/Hero/TopCompanies.tsx
 src/components/Hero/index.tsx
 
 # 🔔 الهيدر والإشعارات
-src/components/Header.tsx
 src/components/Header/NotificationBell.tsx
 src/components/Header/NotificationDropdown.tsx
 src/components/Header/NotificationItem.tsx
@@ -41,24 +40,10 @@ src/components/SearchResults.tsx
 # ⚙️ لوحة تحكم المسؤول / الإعدادات
 src/components/Settings.tsx
 src/components/Settings/Categories.tsx
-src/components/Settings/Companies/AddCompanyModal.tsx
-src/components/Settings/Companies/BulkUploadModal.tsx
-src/components/Settings/Companies/ClaimCompanyModal.tsx
-src/components/Settings/Companies/DeleteCompanyModal.tsx
-src/components/Settings/Companies/EditCompanyModal.tsx
-src/components/Settings/Companies/ManageUsersModal.tsx
-src/components/Settings/Companies/UnclaimCompanyModal.tsx
-src/components/Settings/Companies/ViewCompanyModal.tsx
-src/components/Settings/Companies/index.tsx
-src/components/Settings/ClaimRequests/AccountInfoSection.tsx
-src/components/Settings/ClaimRequests/ClaimRequestDetails.tsx
-src/components/Settings/ClaimRequests/ClaimRequestList.tsx
-src/components/Settings/ClaimRequests/DeleteRequestModal.tsx
-src/components/Settings/ClaimRequests/index.tsx
+
 src/components/Settings/Dashboard.tsx
 src/components/Settings/Reports.tsx
 src/components/Settings/Reviews.tsx
-src/components/Settings/UserManagement.tsx
 
 # 🚫 شاشة المستخدم الموقوف
 src/components/SuspendedUserView.tsx
