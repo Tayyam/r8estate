@@ -1,6 +1,4 @@
-functions/*
-!functions/src/
-!functions/src/**
+
 
 # Files inside src/components/About
 src/components/About.tsx
@@ -177,3 +175,7 @@ vite.config.ts
 vite-env.d.ts
 package.json
 package-lock.json
+
+functions/*
+!functions/src/
+!functions/src/**
