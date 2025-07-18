@@ -1,11 +1,6 @@
 # 🧩 الصفحة التعريفية
 src/components/About.tsx
 
-# 🔐 تسجيل الدخول والتوثيق
-src/components/Auth/ForgotPasswordModal.tsx
-src/components/Auth/Login.tsx
-src/components/Auth/Register.tsx
-src/components/Auth/ResetPassword.tsx
 
 # 🧑‍💼 داشبورد الشركة
 src/components/CompanyDashboard/GalleryTab.tsx
@@ -58,7 +53,6 @@ src/components/Hero/TopCompanies.tsx
 src/components/Hero/index.tsx
 
 # 🔔 الهيدر والإشعارات
-src/components/Header.tsx
 src/components/Header/NotificationBell.tsx
 src/components/Header/NotificationDropdown.tsx
 src/components/Header/NotificationItem.tsx
@@ -99,7 +93,6 @@ src/components/Settings/Reviews.tsx
 src/components/Settings/UserManagement.tsx
 
 # 🚫 شاشة المستخدم الموقوف
-src/components/SuspendedUserView.tsx
 
 # 📄 شروط الاستخدام
 src/components/Terms.tsx
