@@ -104,11 +104,6 @@ src/components/SuspendedUserView.tsx
 # 📄 شروط الاستخدام
 src/components/Terms.tsx
 
-# 🧱 مكونات الواجهة العامة
-src/components/UI/Modal.tsx
-src/components/UI/NotificationContainer.tsx
-src/components/UI/Toast.tsx
-
 # 🚫 عرض للمستخدمين غير الموثقين
 src/components/UnverifiedUserView.tsx
 
