@@ -180,6 +180,5 @@ tsconfig.app.json
 tsconfig.node.json
 vite.config.ts
 vite-env.d.ts
-test.py
 package.json
 package-lock.json
