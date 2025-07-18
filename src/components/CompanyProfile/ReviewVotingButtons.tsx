@@ -42,9 +42,11 @@ const ReviewVotingButtons: React.FC<ReviewVotingButtonsProps> = ({
                  currentUser.uid !== reviewUserId;
                 
   // Check if user can report (any logged in user except admin and not own content)
+  // Companies can report reviews about other companies
   const canReport = currentUser && 
-                  currentUser.uid !== reviewUserId &&
-                  currentUser.role !== 'admin';
+                    currentUser.uid !== reviewUserId &&
+                    currentUser.role !== 'admin' &&
+                    (currentUser.role === 'user' || currentUser.role === 'company');
 
   // Load votes for this review
   useEffect(() => {
