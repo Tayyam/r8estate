@@ -149,8 +149,6 @@ postcss.config.js
 tsconfig.json
 tsconfig.app.json
 tsconfig.node.json
-vite.config.ts
-vite-env.d.ts
 package.json
 package-lock.json
 
