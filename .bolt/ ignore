@@ -170,10 +170,6 @@ src/utils/urlUtils.ts
 # Files inside root
 .gitignore
 README.md
-index.html
-main.tsx
-index.css
-tailwind.config.js
 postcss.config.js
 tsconfig.json
 tsconfig.app.json
