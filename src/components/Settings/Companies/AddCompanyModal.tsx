@@ -1,9 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Building2, Mail, Phone, Globe, MapPin, Upload, X } from 'lucide-react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { collection, doc, setDoc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, db, storage } from '../../../config/firebase';
+import { db, storage } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Category, egyptianGovernorates } from '../../../types/company';
 
@@ -35,7 +34,6 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
   
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [createAccount, setCreateAccount] = useState(true); // Always create account (claimed)
 
   // Handle form input changes
   const handleInputChange = (field: string, value: string) => {
@@ -125,70 +123,29 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
     try {
       setLoading(true);
       
-      // Check if creating a user account (email provided)
-      const createAccount = formData.email;
-      let companyId: string;
-      let companyData: any;
+      // Create company document (always unclaimed)
+      const companyData = {
+        name: formData.name,
+        email: formData.email || '',
+        categoryId: formData.categoryId,
+        location: formData.location,
+        description: formData.description || '',
+        phone: formData.phone || '',
+        website: formData.website || '',
+        establishmentDate: formData.establishmentDate || '',
+        claimed: false, // Always unclaimed when added through admin
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    
+      // Add to Firestore with auto-generated ID
+      const docRef = await addDoc(collection(db, 'companies'), companyData);
+      const companyId = docRef.id;
       
-      if (createAccount) {
-        // Create the user account with Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        companyId = userCredential.user.uid;
-        
-        // Create user document in users collection
-        await setDoc(doc(db, 'users', companyId), {
-          uid: companyId,
-          email: formData.email,
-          displayName: formData.name,
-          role: 'company',
-          companyId: companyId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isEmailVerified: false
-        });
-        
-        companyData = {
-          id: companyId,
-          name: formData.name,
-          email: formData.email,
-          categoryId: formData.categoryId,
-          location: formData.location,
-          description: formData.description || '',
-          phone: formData.phone || '',
-          website: formData.website || '',
-          establishmentDate: formData.establishmentDate || '',
-          claimed: true, // Set to true when creating an account
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        
-        // Create company document with matching UID
-        await setDoc(doc(db, 'companies', companyId), companyData);
-      } else {
-        // No account - just create a company document
-        companyData = {
-          name: formData.name,
-          email: formData.email || '',
-          categoryId: formData.categoryId,
-          location: formData.location,
-          description: formData.description || '',
-          phone: formData.phone || '',
-          website: formData.website || '',
-          establishmentDate: formData.establishmentDate || '',
-          claimed: false, // Set to false when no account is created
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-      
-        // Add to Firestore with auto-generated ID
-        const docRef = await addDoc(collection(db, 'companies'), companyData);
-        companyId = docRef.id;
-        
-        // Update with ID
-        await updateDoc(doc(db, 'companies', companyId), {
-          id: companyId
-        });
-      }
+      // Update with ID
+      await updateDoc(doc(db, 'companies', companyId), {
+        id: companyId
+      });
       
       // Upload logo if selected
       if (logoFile) {
@@ -202,12 +159,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error('Error adding company:', error);
-      
-      if (error.code === 'auth/email-already-in-use') {
-        onError(translations?.emailAlreadyExists || 'Email address is already in use by another account');
-      } else {
-        onError(translations?.failedToCreateCompany || 'Failed to create company');
-      }
+      onError(translations?.failedToCreateCompany || 'Failed to create company');
     } finally {
       setLoading(false);
     }
@@ -234,9 +186,6 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
-          {/* Account Creation Toggle */}
-          <div className="mb-6 border-b border-gray-200 pb-6"></div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Company Name */}
             <div>
@@ -265,7 +214,6 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
                 <Mail className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
-                  required
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   className="w-full pl-10 rtl:pr-10 rtl:pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
