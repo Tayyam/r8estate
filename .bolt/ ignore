@@ -1,10 +1,6 @@
 # Ignore all files inside the functions folder (compiled, source, maps, etc.)
 functions/*
 
-# Files inside .bolt
-.bolt/config.json
-.bolt/prompt
-
 # Files inside public
 public/_redirects
 
