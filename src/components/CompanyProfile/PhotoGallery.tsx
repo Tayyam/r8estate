@@ -273,9 +273,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                 <p className="text-gray-500 text-xl mb-2 font-medium">
                   {translations?.noPhotosInGallery || 'No photos in gallery yet'}
                 </p>
-                <p className="text-gray-400 text-sm mb-6">
-                  {translations?.addPhotosToShowcase || 'Add photos to showcase your company'}
-                </p>
+               
                 {canEdit && (
                   <button
                     onClick={() => setShowImageUpload(true)}
