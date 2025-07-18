@@ -1,9 +1,6 @@
 # Ignore all files inside the functions folder (compiled, source, maps, etc.)
 functions/*
 
-# Files inside public
-public/_redirects
-
 # Files inside src/App
 src/App.tsx
 
