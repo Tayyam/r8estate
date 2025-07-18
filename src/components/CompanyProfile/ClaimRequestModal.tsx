@@ -5,7 +5,6 @@ import { db, functions } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext'; 
 import { CompanyProfile } from '../../types/companyProfile';
-import Step1Domain from './ClaimRequestModal/Step1Domain';
 import Step2Credentials from './ClaimRequestModal/Step2Credentials';
 import { httpsCallable } from 'firebase/functions';
 
@@ -34,7 +33,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
   
   // Domain-related state
   const [companyDomain, setCompanyDomain] = useState('');
-  const [hasDomainEmail, setHasDomainEmail] = useState<boolean | null>(null);
+  const [hasDomainEmail, setHasDomainEmail] = useState<boolean>(false);
   // New UI states
   const [processingStep, setProcessingStep] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -49,7 +48,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
     password: ''
   });
   
-  // Step selection (1: Domain choice, 2: Basic info)
+  // Only one step now - credentials
   const [currentStep, setCurrentStep] = useState(1);
 
   // Extract domain from website
@@ -59,9 +58,13 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
         const url = new URL(company.website);
         const domain = url.hostname.replace('www.', '');
         setCompanyDomain(domain);
+        setHasDomainEmail(true); // Automatically use domain method if website exists
       } catch (error) {
         console.error("Error extracting domain:", error);
+        setHasDomainEmail(false); // Fallback to non-domain method if URL is invalid
       }
+    } else {
+      setHasDomainEmail(false); // Use non-domain method if no website
     }
   }, [company.website]);
 
@@ -79,7 +82,7 @@ const ClaimRequestModal: React.FC<ClaimRequestModalProps> = ({
 
   // Handle next step progression
   const handleNextStep = async () => {
-    if (currentStep === 2) {
+    if (currentStep === 1) {
       // Validate Step 2 fields
       // Only require contactPhone when not using domain email
       if (!formData.businessEmail || !supervisorEmail || (!hasDomainEmail && !formData.contactPhone)) {
@@ -218,23 +221,23 @@ const handleSubmitClaimRequest = async () => {
           </button>
         </div>
 
-        {/* Explanation Section - Only show in first step */}
-        {currentStep === 1 && (
-          <div className="bg-blue-50 p-4 m-6 mb-0 rounded-xl">
-            <div className="flex items-start space-x-3 rtl:space-x-reverse">
-              <AlertCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-blue-800 mb-1">
-                  {translations?.claimRequestInfo || 'Request Verification'}
-                </h4>
-                <p className="text-sm text-blue-700">
-                  {translations?.claimRequestExplanation || 
-                   'To verify your ownership of this company, we need some additional information. Our team will review your request and may contact you for further verification.'}
-                </p>
-              </div>
+        {/* Explanation Section */}
+        <div className="bg-blue-50 p-4 m-6 mb-0 rounded-xl">
+          <div className="flex items-start space-x-3 rtl:space-x-reverse">
+            <AlertCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-blue-800 mb-1">
+                {translations?.claimRequestInfo || 'Request Verification'}
+              </h4>
+              <p className="text-sm text-blue-700">
+                {hasDomainEmail 
+                  ? (translations?.domainVerificationExplanation || 'We will verify your ownership using your company domain email address.')
+                  : (translations?.nonDomainVerificationExplanation || 'We will verify your ownership through email verification and manual review.')
+                }
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Loading State */}
         {loading && !showSuccess && (
@@ -300,14 +303,6 @@ const handleSubmitClaimRequest = async () => {
 
         {/* Step Content */}
         {currentStep === 1 && !loading && !showSuccess && (
-          <Step1Domain 
-            companyDomain={companyDomain}
-            handleDomainChoice={handleDomainChoice}
-            translations={translations}
-          />
-        )}
-        
-        {currentStep === 2 && !loading && !showSuccess && (
           <Step2Credentials
             company={company}
             formData={formData}
@@ -321,7 +316,7 @@ const handleSubmitClaimRequest = async () => {
             onClose={onClose}
             translations={translations}
           />
-        )}        
+        )}
       </div>
     </div>
   );
