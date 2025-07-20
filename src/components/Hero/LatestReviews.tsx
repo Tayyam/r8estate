@@ -4,6 +4,7 @@ import { collection, query, orderBy, limit, getDocs, doc, getDoc } from 'firebas
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../types/property';
+import TrustpilotStars from '../UI/TrustpilotStars';
 
 const LatestReviews: React.FC = () => {
   const { translations, language } = useLanguage();
