@@ -15,18 +15,11 @@ src/components/Header/NotificationBell.tsx
 src/components/Header/NotificationDropdown.tsx
 src/components/Header/NotificationItem.tsx
 
-# ⭐ مراجعات المستخدم
-src/components/MyReviews.tsx
-src/components/Notifications/NotificationsPage.tsx
-
 # 👤 الصفحة الشخصية للمستخدم
 src/components/PersonalProfile.tsx
 src/components/PersonalProfile/BasicInfo.tsx
 src/components/PersonalProfile/PasswordSecurity.tsx
 src/components/PersonalProfile/ProfilePhoto.tsx
-
-# 🔍 نتائج البحث
-src/components/SearchResults.tsx
 
 # ⚙️ لوحة تحكم المسؤول / الإعدادات
 src/components/Settings.tsx
