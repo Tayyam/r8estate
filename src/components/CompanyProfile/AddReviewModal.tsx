@@ -34,31 +34,11 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
     title: '',
     content: '',
     isAnonymous: false,
-    ratingDetails: {
-      communication: 0,
-      valueForMoney: 0,
-      friendliness: 0,
-      responsiveness: 0
-    },
     attachments: [] as { url: string; type: 'image' | 'pdf'; name: string; }[]
   });
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<{ url: string; type: 'image' | 'pdf'; name: string; }[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const ratingCategories: RatingCategory[] = [
-    { key: 'communication', label: translations?.communication || 'Communication' },
-    { key: 'valueForMoney', label: translations?.valueForMoney || 'Value for Money' },
-    { key: 'friendliness', label: translations?.friendliness || 'Friendliness' },
-    { key: 'responsiveness', label: translations?.responsiveness || 'Responsiveness' }
-  ];
-
-  // Calculate average rating from all categories
-  const calculateAverageRating = () => {
-    const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
-    const sum = communication + valueForMoney + friendliness + responsiveness;
-    return sum > 0 ? Math.round(sum / 4) : 0;
-  };
 
   // Star rating component
   const StarRating = ({ 
@@ -239,10 +219,8 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
       return;
     }
 
-    // Check if any of the category ratings are 0
-    const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
-    if (communication === 0 || valueForMoney === 0 || friendliness === 0 || responsiveness === 0) {
-      onError(translations?.pleaseRateAllCategories || 'Please rate all categories');
+    if (formData.rating === 0) {
+      onError(translations?.pleaseSelectRating || 'Please select a rating');
       return;
     }
 
@@ -254,9 +232,6 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
     try {
       setLoading(true);
 
-      // Calculate average rating
-      const overallRating = calculateAverageRating();
-      
       // Upload attachments if any
       let attachments: { url: string; type: 'image' | 'pdf'; name: string; }[] = [];
       if (files.length > 0) {
@@ -275,8 +250,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
         userId: currentUser.uid,
         userName: formData.isAnonymous ? (translations?.anonymousUser || 'Anonymous User') : (currentUser.displayName || currentUser.email),
         userEmail: currentUser.email,
-        rating: overallRating,
-        ratingDetails: formData.ratingDetails,
+        rating: formData.rating,
         title: formData.title.trim(),
         content: formData.content.trim(),
         isAnonymous: formData.isAnonymous,
@@ -309,17 +283,6 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
   // Handle input changes
   const handleInputChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Handle rating changes for a specific category
-  const handleCategoryRatingChange = (category: string, value: number) => {
-    setFormData(prev => ({
-      ...prev,
-      ratingDetails: {
-        ...prev.ratingDetails,
-        [category]: value
-      }
-    }));
   };
 
   return (
@@ -393,51 +356,25 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
             </div>
           </div>
 
-          {/* Rating Categories */}
+          {/* Overall Rating */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-4">
               {translations?.rateYourExperience || 'Rate Your Experience'} *
             </label>
-            <div className="space-y-6">
-              {ratingCategories.map((category) => (
-                <div key={category.key} className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium text-gray-800">
-                      {category.label}
-                    </h4>
-                    <span className="text-sm text-gray-500">
-                      {formData.ratingDetails[category.key as keyof typeof formData.ratingDetails] > 0 
-                        ? `${formData.ratingDetails[category.key as keyof typeof formData.ratingDetails]}/5` 
-                        : ''}
-                    </span>
-                  </div>
-                  <StarRating 
-                    rating={formData.ratingDetails[category.key as keyof typeof formData.ratingDetails]} 
-                    onRatingChange={(rating) => handleCategoryRatingChange(category.key, rating)} 
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 py-4 border-t border-b border-gray-200">
+            <div className="bg-gray-50 rounded-xl p-6">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-gray-800">
                   {translations?.overallRating || 'Overall Rating'}
                 </h4>
-                <div className="flex items-center space-x-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star 
-                      key={star} 
-                      className={`w-5 h-5 ${
-                        star <= calculateAverageRating() 
-                          ? 'text-yellow-400 fill-current' 
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
-                  <span className="ml-2 text-sm font-medium text-gray-700">
-                    {calculateAverageRating() > 0 ? `${calculateAverageRating()}/5` : '-'}
-                  </span>
-                </div>
+                <span className="text-sm text-gray-500">
+                  {formData.rating > 0 ? `${formData.rating.toFixed(1)}/5.0` : ''}
+                </span>
+              </div>
+              <div className="mt-4">
+                <StarRating 
+                  rating={formData.rating} 
+                  onRatingChange={(rating) => setFormData(prev => ({ ...prev, rating }))} 
+                />
               </div>
             </div>
           </div>
@@ -567,7 +504,7 @@ const AddReviewModal: React.FC<AddReviewModalProps> = ({
           <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 rtl:space-x-reverse pt-4">
             <button
               type="submit"
-              disabled={loading || uploadingAttachments || !calculateAverageRating() || !formData.title.trim() || !formData.content.trim()}
+              disabled={loading || uploadingAttachments || !formData.rating || !formData.title.trim() || !formData.content.trim()}
               className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 rtl:space-x-reverse"
             >
               {loading || uploadingAttachments ? (
