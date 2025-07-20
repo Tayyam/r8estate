@@ -6,15 +6,18 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import { useAuth } from '../contexts/AuthContext';
 
 const Verification: React.FC = () => {
   const { translations } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [processingClaim, setProcessingClaim] = useState(false);
+  const [autoLoggingIn, setAutoLoggingIn] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
   // Helper function to add debug info
@@ -23,6 +26,40 @@ const Verification: React.FC = () => {
     setDebugInfo(prev => [...prev, info]); // Add to state for display
   };
 
+  // Auto-login function
+  const attemptAutoLogin = async () => {
+    const pendingEmail = localStorage.getItem('pendingLoginEmail');
+    const pendingPassword = localStorage.getItem('pendingLoginPassword');
+    
+    if (pendingEmail && pendingPassword) {
+      try {
+        setAutoLoggingIn(true);
+        addDebugInfo(`🔄 Auto-logging in with saved credentials for ${pendingEmail}`);
+        
+        await login(pendingEmail, pendingPassword);
+        
+        // Clear the stored credentials after successful login
+        localStorage.removeItem('pendingLoginEmail');
+        localStorage.removeItem('pendingLoginPassword');
+        
+        addDebugInfo("✅ Auto-login successful! Redirecting to home page...");
+        
+        // Redirect to home page after successful login
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+        
+      } catch (loginError) {
+        addDebugInfo(`❌ Auto-login failed: ${JSON.stringify(loginError)}`);
+        console.error('Auto-login failed:', loginError);
+        // Clear invalid credentials
+        localStorage.removeItem('pendingLoginEmail');
+        localStorage.removeItem('pendingLoginPassword');
+      } finally {
+        setAutoLoggingIn(false);
+      }
+    }
+  };
   useEffect(() => {
     const verifyEmail = async () => {
       addDebugInfo("🔍 Starting email verification process with debug info enabled");
@@ -69,6 +106,10 @@ const Verification: React.FC = () => {
         }
         
         setSuccess(true);
+        
+        // Attempt auto-login after successful verification
+        await attemptAutoLogin();
+        
         setLoading(false);
       } catch (error) {
         console.error('Error verifying email:', error);
@@ -218,9 +259,14 @@ const Verification: React.FC = () => {
   };
 
   const handleGoToLogin = () => {
+    // Clear any pending credentials before going to login
+    localStorage.removeItem('pendingLoginEmail');
+    localStorage.removeItem('pendingLoginPassword');
     navigate('/login');
   };
 
+  // Check if we have pending credentials for a different display
+  const hasPendingCredentials = localStorage.getItem('pendingLoginEmail') && localStorage.getItem('pendingLoginPassword');
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -245,8 +291,19 @@ const Verification: React.FC = () => {
                 {translations?.processingClaimRequest || 'Processing your claim request...'}
               </p>
             )}
+            {autoLoggingIn && (
+              <div className="mb-6">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-blue-600 font-medium">
+                  {translations?.signingInNow || 'Signing you in now...'}
+                </p>
+              </div>
+            )}
             <p className="text-gray-600 mb-6">
-              {translations?.emailVerifiedMessage || 'Your email has been verified! Please log in to your account.'}
+              {autoLoggingIn 
+                ? (translations?.emailVerifiedAutoLogin || 'Your email has been verified! We are signing you in automatically.')
+                : (translations?.emailVerifiedMessage || 'Your email has been verified! Please log in to your account.')
+              }
             </p>
             
             {/* Debug Information Section */}
@@ -264,12 +321,14 @@ const Verification: React.FC = () => {
             </div> */}
 
             
-            <button
-              onClick={handleGoToLogin}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200"
-            >
-              {translations?.goToLogin || 'Go to Login'}
-            </button>
+            {!autoLoggingIn && (
+              <button
+                onClick={handleGoToLogin}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200"
+              >
+                {translations?.goToLogin || 'Go to Login'}
+              </button>
+            )}
           </div>
         ) : (
           <div className="py-6">
@@ -280,12 +339,26 @@ const Verification: React.FC = () => {
             <p className="text-gray-600 mb-6">
               {error || translations?.genericVerificationError || 'We couldn\'t verify your email. Please try again or request a new verification link.'}
             </p>
-            <button
-              onClick={handleGoToLogin}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200"
-            >
-              {translations?.goToLogin || 'Go to Login'}
-            </button>
+            {hasPendingCredentials ? (
+              <div className="space-y-3">
+                <button
+                  onClick={handleGoToLogin}
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200"
+                >
+                  {translations?.goToLogin || 'Go to Login'}
+                </button>
+                <p className="text-sm text-gray-500">
+                  {translations?.loginWithRegisteredAccount || 'Login with your registered account'}
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={handleGoToLogin}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all duration-200"
+              >
+                {translations?.goToLogin || 'Go to Login'}
+              </button>
+            )}
           </div>
         )}
       </div>
