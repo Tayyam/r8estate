@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, ChevronRight, Building2, Users, ChevronDown, ChevronUp, Star, ArrowLeft, ArrowRight } from 'lucide-react';
 import TrustpilotStars from './UI/TrustpilotStars';
-import TrustpilotStars from './UI/TrustpilotStars';
 import { collection, getDocs, query, orderBy, where, doc, getDoc } from 'firebase/firestore';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../config/firebase';
