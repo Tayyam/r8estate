@@ -347,22 +347,36 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
                   </div>
                   
                   <div className="flex items-center space-x-4 rtl:space-x-reverse mt-4 sm:mt-0">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{properties.length}</div>
-                      <div className="text-sm text-gray-600">{translations?.properties || 'Properties'}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{reviews.length}</div>
-                      <div className="text-sm text-gray-600">{translations?.reviews || 'Reviews'}</div>
-                    </div>
-                    <div className="text-center min-w-[120px]">
-                      <div className="flex flex-col items-center justify-center space-y-2">
-                        <TrustpilotStars rating={averageRating} size="medium" />
-                        <div className="text-lg font-bold text-gray-900">
-                          {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
+                      {/* Properties Card */}
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-900 mb-1">{properties.length}</div>
+                          <div className="text-sm font-medium text-blue-700">{translations?.properties || 'Properties'}</div>
                         </div>
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">{translations?.averageRating || 'Average Rating'}</div>
+                      
+                      {/* Reviews Card */}
+                      <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-900 mb-1">{reviews.length}</div>
+                          <div className="text-sm font-medium text-green-700">{translations?.reviews || 'Reviews'}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Rating Card - Featured */}
+                      <div className="bg-gradient-to-br from-yellow-50 to-orange-100 rounded-xl p-4 border-2 border-yellow-300 shadow-lg">
+                        <div className="text-center">
+                          <div className="flex justify-center mb-2">
+                            <TrustpilotStars rating={averageRating} size="medium" />
+                          </div>
+                          <div className="text-lg font-bold text-orange-900 mb-1">
+                            {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
+                          </div>
+                          <div className="text-xs font-medium text-orange-700">{translations?.averageRating || 'Average Rating'}</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
