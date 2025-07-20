@@ -290,7 +290,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ company }) => {
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
                           <Reply className="h-4 w-4 text-blue-600 mr-2" />
-                          <span className="text-sm font-medium text-blue-800">
+                          <span className="text-sm font-medium text-blue-900">
                             {translations?.companyResponse || 'Company Response'}
                           </span>
                           <span className="text-xs text-blue-600 ml-2">
