@@ -5,7 +5,7 @@ import TrustpilotStars from '../UI/TrustpilotStars';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Company } from '../../types/company';
 import { Review } from '../../types/property';
-import { Star, Filter, ArrowDown, ArrowUp, Reply, Eye, X, Edit, Loader, AlertCircle } from 'lucide-react';
+import { Star, Filter, ArrowDown, ArrowUp, Reply, Eye, X, Edit, Loader, AlertCircle, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
@@ -284,6 +284,19 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ company }) => {
                 </div>
                 
                 {/* Company Reply */}
+                {review.companyReply && (
+                  <div className="bg-blue-50 rounded-lg p-4 mt-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          <Reply className="h-4 w-4 text-blue-600 mr-2" />
+                          <span className="text-sm font-medium text-blue-800">
+                            {translations?.companyResponse || 'Company Response'}
+                          </span>
+                          <span className="text-xs text-blue-600 ml-2">
+                            {formatDate(review.companyReply.repliedAt)}
+                          </span>
+                        </div>
                         <TrustpilotStars rating={review.rating} size="small" />
                         <p className="text-gray-700 mt-2">{review.companyReply.content}</p>
                       </div>
