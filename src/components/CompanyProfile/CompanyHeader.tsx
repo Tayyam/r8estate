@@ -346,7 +346,32 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
                     </div>
                   </div>
                   
-                 F
+                  <div className="flex items-center justify-between gap-6 flex-wrap mt-6">
+  {/* Properties Count */}
+  <div className="flex flex-col items-center min-w-[100px]">
+    <div className="text-3xl font-semibold text-gray-900">{properties.length}</div>
+    <div className="text-sm text-gray-500">{translations?.properties || 'Properties'}</div>
+  </div>
+
+  {/* Reviews Count */}
+  <div className="flex flex-col items-center min-w-[100px]">
+    <div className="text-3xl font-semibold text-gray-900">{reviews.length}</div>
+    <div className="text-sm text-gray-500">{translations?.reviews || 'Reviews'}</div>
+  </div>
+
+  {/* Average Rating */}
+  <div className="flex flex-col items-center min-w-[140px] px-4 py-2 rounded-lg bg-gray-50 shadow-sm">
+    <TrustpilotStars rating={averageRating} size="medium" />
+    <div className="text-xl font-semibold text-gray-900 mt-1">
+      {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
+    </div>
+    <div className="text-sm text-gray-500 mt-1">{translations?.averageRating || 'Average Rating'}</div>
+  </div>
+</div>
+
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
