@@ -481,7 +481,7 @@ const Reviews: React.FC = () => {
                   {/* Rating */}
 <td className="px-6 py-4 whitespace-nowrap">
   <div className="flex flex-col items-start">
-    <TrustpilotStars rating={review.rating} size="small" />
+    <TrustpilotStars rating={review.rating} size="medium" />
     <div className="text-sm text-gray-600 mt-1">{review.rating.toFixed(1)}</div>
   </div>
 </td>
