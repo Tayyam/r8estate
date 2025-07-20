@@ -445,11 +445,22 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
                                       {[...Array(5)].map((_, i) => (
                                         <Star 
                                           key={i}
-                                  <TrustpilotStars rating={company.rating} size="medium" />
-                                  <TrustpilotStars rating={company.rating} size="small" />
+                                          className={`w-4 h-4 ${
+                                            i < Math.floor(company.rating) 
+                                              ? 'text-yellow-400 fill-current' 
+                                              : 'text-gray-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="ml-2 rtl:mr-2 rtl:ml-0 text-sm text-gray-600">
+                                      {company.rating.toFixed(1)} ({company.reviews} {translations?.reviews || 'reviews'})
+                                    </span>
+                                  </div>
                                 </div>
                                 
                                 {/* View Details */}
+                                <ChevronRight className="w-5 h-5 text-gray-400" />
                               </div>
                             ))}
                           </div>
