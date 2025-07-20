@@ -127,6 +127,9 @@ const LatestReviews: React.FC = () => {
                           className={`w-4 h-4 ${
                             i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
                           }`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
                 
