@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Star, MessageSquare, User, AlertCircle, X, Edit, Upload, Paperclip, FileText, XCircle, Eye } from 'lucide-react';
+import TrustpilotStars from '../UI/TrustpilotStars';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
@@ -48,26 +49,31 @@ const EditReviewModal: React.FC<EditReviewModalProps> = ({
     const [hoverRating, setHoverRating] = useState(0);
 
     return (
-      <div className="flex items-center space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => onRatingChange(star)}
-            onMouseEnter={() => setHoverRating(star)}
-            onMouseLeave={() => setHoverRating(0)}
-            className="p-1 rounded transition-all duration-200 hover:scale-110"
-          >
-            <Star
-              className={`w-6 h-6 transition-all duration-200 ${
-                star <= (hoverRating || rating)
-                  ? 'text-yellow-400 fill-current'
-                  : 'text-gray-300 hover:text-yellow-200'
-              }`}
-            />
-          </button>
-        ))}
-        <span className="ml-2 text-sm text-gray-600 font-medium">
+      <div className="flex flex-col items-center space-y-3">
+        <div className="flex items-center space-x-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => onRatingChange(star)}
+              onMouseEnter={() => setHoverRating(star)}
+              onMouseLeave={() => setHoverRating(0)}
+              className="p-1 rounded transition-all duration-200 hover:scale-110"
+            >
+              <Star
+                className={`w-6 h-6 transition-all duration-200 ${
+                  star <= (hoverRating || rating)
+                    ? 'text-yellow-400 fill-current'
+                    : 'text-gray-300 hover:text-yellow-200'
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+        {rating > 0 && (
+          <TrustpilotStars rating={rating} size="medium" />
+        )}
+        <span className="text-sm text-gray-600 font-medium">
           {rating > 0 ? `${rating} / 5` : (translations?.selectRating || 'Select rating')}
         </span>
       </div>

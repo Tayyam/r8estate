@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { ArrowLeft, Building2, MapPin, Globe, Phone, Mail, Star, Calendar , Camera } from 'lucide-react';
+import TrustpilotStars from '../UI/TrustpilotStars';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
@@ -355,11 +356,11 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
                       <div className="text-sm text-gray-600">{translations?.reviews || 'Reviews'}</div>
                     </div>
                     <div className="text-center">
-                      <div className="flex items-center justify-center space-x-1 rtl:space-x-reverse">
-                        <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                        <span className="text-2xl font-bold text-gray-900">
+                      <div className="flex flex-col items-center justify-center">
+                        <TrustpilotStars rating={averageRating} size="medium" />
+                        <div className="text-lg font-bold text-gray-900 mt-1">
                           {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
-                        </span>
+                        </div>
                       </div>
                       <div className="text-sm text-gray-600">{translations?.averageRating || 'Average Rating'}</div>
                     </div>

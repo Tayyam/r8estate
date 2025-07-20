@@ -1,5 +1,6 @@
 import React from 'react';
 import { Star } from 'lucide-react';
+import TrustpilotStars from '../UI/TrustpilotStars';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../types/property';
 
@@ -34,14 +35,7 @@ const ReviewStats: React.FC<ReviewStatsProps> = ({
                 {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
               </div>
               <div className="flex items-center justify-center lg:justify-start space-x-1 rtl:space-x-reverse mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-6 w-6 ${
-                      i < Math.round(averageRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                    }`}
-                  />
-                ))}
+                <TrustpilotStars rating={averageRating} size="medium" />
               </div>
               <p className="text-gray-600">
                 {translations?.basedOnReviews?.replace('{count}', totalReviews.toString()) || 

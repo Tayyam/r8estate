@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import TrustpilotStars from '../UI/TrustpilotStars';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Company } from '../../types/company';
 import { Review } from '../../types/property';
@@ -283,14 +284,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ company }) => {
                 </div>
                 
                 {/* Company Reply */}
-                {review.companyReply && (
-                  <div className="bg-blue-50 border-l-4 border-blue-400 rounded-r-xl p-4 mt-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center">
-                          <span className="font-medium text-blue-800">{translations?.yourReply || 'Your Reply'}</span>
-                          <span className="text-xs text-gray-500 ml-2">{formatDate(review.companyReply.repliedAt)}</span>
-                        </div>
+                        <TrustpilotStars rating={review.rating} size="small" />
                         <p className="text-gray-700 mt-2">{review.companyReply.content}</p>
                       </div>
                       

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Star, Shield, ChevronDown, ChevronUp, User, FileText, Image, Paperclip } from 'lucide-react';
+import TrustpilotStars from '../UI/TrustpilotStars';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../types/property';
 import { CompanyProfile as CompanyProfileType } from '../../types/companyProfile';
@@ -176,16 +177,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
             </div>
             
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-4 w-4 ${
-                      i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
+              <TrustpilotStars rating={review.rating} size="small" />
               <span className="text-sm text-gray-600">
                 {formatDate(review.createdAt)}
                 {review.updatedAt > review.createdAt && (

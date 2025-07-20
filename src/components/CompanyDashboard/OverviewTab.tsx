@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy, limit, Timestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import TrustpilotStars from '../UI/TrustpilotStars';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Company } from '../../types/company';
 import { Review } from '../../types/property';
@@ -283,15 +284,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ company }) => {
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <span className="font-medium text-gray-900">{review.userName}</span>
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star 
-                            key={i} 
-                            className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                          />
-                        ))}
-                      </div>
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse mt-1">
+                      <TrustpilotStars rating={review.rating} size="small" />
                       <span className="text-xs text-gray-500">{formatDate(review.createdAt)}</span>
                     </div>
                   </div>
