@@ -361,7 +361,7 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
 
   {/* Average Rating */}
   <div className="flex flex-col items-center sm:items-start min-w-[120px]">
-    <TrustpilotStars rating={averageRating} size="small" />
+    <TrustpilotStars rating={averageRating} size="medium" />
     <div className="text-base font-semibold text-gray-900 mt-1">
       {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
     </div>
