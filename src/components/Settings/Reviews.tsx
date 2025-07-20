@@ -3,7 +3,6 @@ import {
   MessageSquare, Search, Eye, EyeOff, Trash2, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, Calendar, Star, User ,ChevronLeft ,ChevronRight, 
   AlertTriangle, X, Tag, Filter
 } from 'lucide-react';
-import TrustpilotStars from '../UI/TrustpilotStars';
 import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, where, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
