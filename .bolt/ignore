@@ -10,13 +10,6 @@ src/components/Auth/ResetPassword.tsx
 # 🦶 الفوتر
 src/components/Footer.tsx
 
-# 🦸‍♂️ الصفحة الرئيسية (Hero Section)
-src/components/Hero/CategorySlider.tsx
-src/components/Hero/HeroSection.tsx
-src/components/Hero/LatestReviews.tsx
-src/components/Hero/TopCompanies.tsx
-src/components/Hero/index.tsx
-
 # 🔔 الهيدر والإشعارات
 src/components/Header/NotificationBell.tsx
 src/components/Header/NotificationDropdown.tsx
