@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getCompanySlug } from '../../utils/urlUtils';
+import TrustpilotStars from '../UI/TrustpilotStars';
 
 interface TopCompaniesProps {
   onNavigateToProfile?: (companyId: string, companyName: string) => void;
@@ -153,13 +154,15 @@ const TopCompanies: React.FC<TopCompaniesProps> = ({ onNavigateToProfile }) => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                       <Building2 className="h-16 w-16 text-gray-400" />
                     </div>
                   )}
                 </div>
+                
                 <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <TrustpilotStars rating={company.rating} size="small" />
                     <span className="px-3 py-1 text-sm font-medium rounded-full" style={{ backgroundColor: 'rgba(25, 72, 102, 0.1)', color: '#194866' }}>
                       {company.categoryName}
                     </span>
