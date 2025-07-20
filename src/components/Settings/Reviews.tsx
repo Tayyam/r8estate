@@ -479,12 +479,13 @@ const Reviews: React.FC = () => {
                   </td>
                   
                   {/* Rating */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-1 rtl:space-x-reverse bg-green-500 text-white px-2 py-1 rounded text-xs font-bold inline-flex w-min">
-                      <Star className="h-3 w-3 fill-current" />
-                      <span>{review.rating}</span>
-                    </div>
-                  </td>
+<td className="px-6 py-4 whitespace-nowrap">
+  <div className="flex flex-col items-start">
+    <TrustpilotStars rating={review.rating} size="small" />
+    <div className="text-sm text-gray-600 mt-1">{review.rating.toFixed(1)}</div>
+  </div>
+</td>
+
                   
                   {/* Status */}
                   <td className="px-6 py-4 whitespace-nowrap">
