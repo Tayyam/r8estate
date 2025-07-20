@@ -9,6 +9,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../types/property';
 import { useNavigate } from 'react-router-dom';
 import { getCompanySlug } from '../../utils/urlUtils';
+import TrustpilotStars from '../UI/TrustpilotStars'; // عدّل المسار حسب مكانه
 
 const Reviews: React.FC = () => {
   const { translations, language } = useLanguage();
