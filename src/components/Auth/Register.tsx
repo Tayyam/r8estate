@@ -72,6 +72,10 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       const data = result.data as any;
       
       if (data.success) {
+        // Save credentials to localStorage for auto-login after verification
+        localStorage.setItem('pendingLoginEmail', formData.email);
+        localStorage.setItem('pendingLoginPassword', formData.password);
+        
         setUserId(data.userId);
         setRegistrationSuccess(true);
       } else {
