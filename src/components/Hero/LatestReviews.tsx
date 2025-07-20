@@ -127,11 +127,14 @@ const LatestReviews: React.FC = () => {
                           className={`w-4 h-4 ${
                             i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
                           }`}
-                        />
-                      ))}
-                    </div>
                   </div>
                 </div>
+                
+                {/* Trustpilot Rating Badge - Centered */}
+                <div className="flex justify-center mb-4">
+                  <TrustpilotStars rating={review.rating} size="medium" />
+                </div>
+                
                 <h4 className="font-medium text-gray-800 mb-3">{review.title}</h4>
                 <p className="text-gray-700 mb-6 leading-relaxed line-clamp-3">
                   {review.content}

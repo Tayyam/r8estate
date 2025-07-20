@@ -161,14 +161,15 @@ const TopCompanies: React.FC<TopCompaniesProps> = ({ onNavigateToProfile }) => {
                 </div>
                 
                 <div className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <TrustpilotStars rating={company.rating} size="small" />
+                  <div className="flex flex-col items-center mb-4">
+                    <TrustpilotStars rating={company.totalRating} size="medium" />
+                    <div className="flex items-center justify-between w-full mt-3">
                     <span className="px-3 py-1 text-sm font-medium rounded-full" style={{ backgroundColor: 'rgba(25, 72, 102, 0.1)', color: '#194866' }}>
                       {company.categoryName}
                     </span>
-                    <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                      <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                      <span className="font-semibold text-gray-900">{company.totalRating?.toFixed(1) || '0.0'}</span>
+                      <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                        <span className="font-semibold text-gray-900 text-lg">{company.totalRating?.toFixed(1) || '0.0'}</span>
+                      </div>
                     </div>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{company.name}</h3>
