@@ -25,18 +25,21 @@ const ReviewStats: React.FC<ReviewStatsProps> = ({
   }));
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         {/* Average Rating */}
         <div className="text-center lg:text-left">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-6 rtl:space-x-reverse">
+          <div className="flex flex-col items-center lg:items-start space-y-4">
             <div className="mb-4 lg:mb-0">
-              <div className="text-5xl font-bold text-gray-900 mb-2">
+              <div className="text-4xl sm:text-5xl font-bold text-gray-900 mb-3">
                 {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
               </div>
-              <div className="flex items-center justify-center lg:justify-start space-x-1 rtl:space-x-reverse mb-2">
+              
+              {/* Trustpilot Stars - Centered and properly sized */}
+              <div className="flex items-center justify-center lg:justify-start mb-3">
                 <TrustpilotStars rating={averageRating} size="medium" />
               </div>
+              
               <p className="text-gray-600">
                 {translations?.basedOnReviews?.replace('{count}', totalReviews.toString()) || 
                  `Based on ${totalReviews} review${totalReviews > 1 ? 's' : ''}`}
@@ -46,7 +49,7 @@ const ReviewStats: React.FC<ReviewStatsProps> = ({
         </div>
 
         {/* Rating Distribution */}
-        <div className="space-y-3">
+        <div className="space-y-3 mt-6 lg:mt-0">
           {ratingDistribution.map(({ rating, count, percentage }) => (
             <div key={rating} className="flex items-center space-x-3 rtl:space-x-reverse">
               <div className="flex items-center space-x-1 rtl:space-x-reverse w-12">
