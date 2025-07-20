@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, ChevronRight, Building2, Users, ChevronDown, ChevronUp, Star, ArrowLeft, ArrowRight } from 'lucide-react';
 import TrustpilotStars from './UI/TrustpilotStars';
+import TrustpilotStars from './UI/TrustpilotStars';
 import { collection, getDocs, query, orderBy, where, doc, getDoc } from 'firebase/firestore';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../config/firebase';
@@ -441,18 +442,7 @@ const Categories: React.FC<CategoriesProps> = ({ onNavigateToProfile }) => {
                                 <div className="flex-1 min-w-0">
                                   <h5 className="font-medium text-gray-900 truncate">{company.name}</h5>
                                   <div className="flex items-center mt-1">
-                                    <div className="flex">
-                                      {[...Array(5)].map((_, i) => (
-                                        <Star 
-                                          key={i}
-                                          className={`w-4 h-4 ${
-                                            i < Math.floor(company.rating) 
-                                              ? 'text-yellow-400 fill-current' 
-                                              : 'text-gray-300'
-                                          }`}
-                                        />
-                                      ))}
-                                    </div>
+                                    <TrustpilotStars rating={company.rating} size="medium" />
                                     <span className="ml-2 rtl:mr-2 rtl:ml-0 text-sm text-gray-600">
                                       {company.rating.toFixed(1)} ({company.reviews} {translations?.reviews || 'reviews'})
                                     </span>
