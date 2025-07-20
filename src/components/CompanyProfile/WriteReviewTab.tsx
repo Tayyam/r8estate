@@ -36,24 +36,11 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
     title: '',
     content: '',
     isAnonymous: false,
-    ratingDetails: {
-      communication: 0,
-      valueForMoney: 0,
-      friendliness: 0,
-      responsiveness: 0
-    },
     attachments: [] as { url: string; type: 'image' | 'pdf'; name: string; }[]
   });
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<{ url: string; type: 'image' | 'pdf'; name: string; isNew?: boolean; }[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const ratingCategories: RatingCategory[] = [
-    { key: 'communication', label: translations?.communication || 'Communication' },
-    { key: 'valueForMoney', label: translations?.valueForMoney || 'Value for Money' },
-    { key: 'friendliness', label: translations?.friendliness || 'Friendliness' },
-    { key: 'responsiveness', label: translations?.responsiveness || 'Responsiveness' }
-  ];
 
   // Check if user has already reviewed this company
   useEffect(() => {
@@ -89,12 +76,6 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
             title: review.title,
             content: review.content,
             isAnonymous: review.isAnonymous || false,
-            ratingDetails: review.ratingDetails || {
-              communication: 0,
-              valueForMoney: 0,
-              friendliness: 0,
-              responsiveness: 0
-            },
             attachments: review.attachments || []
           });
         }
@@ -105,13 +86,6 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
     
     checkExistingReview();
   }, [currentUser, company.id]);
-
-  // Calculate average rating from all categories
-  const calculateAverageRating = () => {
-    const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
-    const sum = communication + valueForMoney + friendliness + responsiveness;
-    return sum > 0 ? Math.round(sum / 4) : 0;
-  };
 
   // Handle file selection for attachments
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,10 +280,8 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
       return;
     }
 
-    // Check if any of the category ratings are 0
-    const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
-    if (communication === 0 || valueForMoney === 0 || friendliness === 0 || responsiveness === 0) {
-      onError(translations?.pleaseRateAllCategories || 'Please rate all categories');
+    if (formData.rating === 0) {
+      onError(translations?.pleaseSelectRating || 'Please select a rating');
       return;
     }
 
@@ -333,17 +305,13 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
         }
       }
 
-      // Calculate average rating
-      const overallRating = calculateAverageRating();
-
       // Add review to Firestore
       await addDoc(collection(db, 'reviews'), {
         companyId: company.id,
         userId: currentUser.uid,
         userName: formData.isAnonymous ? (translations?.anonymousUser || 'Anonymous User') : (currentUser.displayName || currentUser.email),
         userEmail: currentUser.email,
-        rating: overallRating,
-        ratingDetails: formData.ratingDetails,
+        rating: formData.rating,
         title: formData.title.trim(),
         content: formData.content.trim(),
         isAnonymous: formData.isAnonymous,
@@ -411,10 +379,8 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
       return;
     }
 
-    // Check if any of the category ratings are 0
-    const { communication, valueForMoney, friendliness, responsiveness } = formData.ratingDetails;
-    if (communication === 0 || valueForMoney === 0 || friendliness === 0 || responsiveness === 0) {
-      onError(translations?.pleaseRateAllCategories || 'Please rate all categories');
+    if (formData.rating === 0) {
+      onError(translations?.pleaseSelectRating || 'Please select a rating');
       return;
     }
 
@@ -441,14 +407,10 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
       // Combine existing (not removed) attachments with new ones
       const combinedAttachments = [...formData.attachments, ...newAttachments];
 
-      // Calculate average rating
-      const overallRating = calculateAverageRating();
-
       // Update review in Firestore
       const reviewRef = doc(db, 'reviews', userReview.id);
       await updateDoc(reviewRef, {
-        rating: overallRating,
-        ratingDetails: formData.ratingDetails,
+        rating: formData.rating,
         title: formData.title.trim(),
         content: formData.content.trim(),
         isAnonymous: formData.isAnonymous,
@@ -462,8 +424,7 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
       // Update local state
       setUserReview({
         ...userReview,
-        rating: overallRating,
-        ratingDetails: formData.ratingDetails,
+        rating: formData.rating,
         title: formData.title.trim(),
         content: formData.content.trim(),
         isAnonymous: formData.isAnonymous,
@@ -483,17 +444,6 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
   // Handle input changes
   const handleInputChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Handle rating changes for a specific category
-  const handleCategoryRatingChange = (category: string, value: number) => {
-    setFormData(prev => ({
-      ...prev,
-      ratingDetails: {
-        ...prev.ratingDetails,
-        [category]: value
-      }
-    }));
   };
 
   // If user is not logged in
@@ -577,51 +527,25 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
           </div>
         </div>
 
-        {/* Rating Categories */}
+        {/* Overall Rating */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {translations?.rateYourExperience || 'Rate Your Experience'} *
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {ratingCategories.map((category) => (
-              <div key={category.key} className="bg-gray-50 rounded-xl p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-medium text-gray-800">
-                    {category.label}
-                  </h4>
-                  <span className="text-sm text-gray-500">
-                    {formData.ratingDetails[category.key as keyof typeof formData.ratingDetails] > 0 
-                      ? `${formData.ratingDetails[category.key as keyof typeof formData.ratingDetails]}/5` 
-                      : ''}
-                  </span>
-                </div>
-                <StarRating 
-                  rating={formData.ratingDetails[category.key as keyof typeof formData.ratingDetails]} 
-                  onRatingChange={(rating) => handleCategoryRatingChange(category.key, rating)} 
-                />
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 py-4 border-t border-b border-gray-200">
+          <div className="bg-gray-50 rounded-xl p-6">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-gray-800">
                 {translations?.overallRating || 'Overall Rating'}
               </h4>
-              <div className="flex items-center space-x-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star 
-                    key={star} 
-                    className={`w-5 h-5 ${
-                      star <= calculateAverageRating() 
-                        ? 'text-yellow-400 fill-current' 
-                        : 'text-gray-300'
-                    }`}
-                  />
-                ))}
-                <span className="ml-2 text-sm font-medium text-gray-700">
-                  {calculateAverageRating() > 0 ? `${calculateAverageRating()}/5` : '-'}
-                </span>
-              </div>
+              <span className="text-sm text-gray-500">
+                {formData.rating > 0 ? `${formData.rating.toFixed(1)}/5.0` : ''}
+              </span>
+            </div>
+            <div className="mt-4">
+              <StarRating 
+                rating={formData.rating} 
+                onRatingChange={(rating) => setFormData(prev => ({ ...prev, rating }))} 
+              />
             </div>
           </div>
         </div>
@@ -756,11 +680,11 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
         <div>
           <button
             type="submit"
-            disabled={loading || uploadingAttachments || !calculateAverageRating() || !formData.title.trim() || !formData.content.trim()}
+            disabled={loading || uploadingAttachments || !formData.rating || !formData.title.trim() || !formData.content.trim()}
             className="w-full sm:w-auto text-white py-4 px-8 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-lg hover:shadow-xl"
             style={{ backgroundColor: isEditing ? '#f97316' : '#194866' }}
             onMouseEnter={(e) => {
-              if (!loading && calculateAverageRating() !== 0 && formData.title.trim() && formData.content.trim()) {
+              if (!loading && formData.rating !== 0 && formData.title.trim() && formData.content.trim()) {
                 e.target.style.backgroundColor = isEditing ? '#ea580c' : '#0f3147';
               }
             }}

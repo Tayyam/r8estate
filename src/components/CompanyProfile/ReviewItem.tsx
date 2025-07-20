@@ -37,41 +37,6 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
   const [previewAttachment, setPreviewAttachment] = useState<{url: string; type: 'image' | 'pdf'} | null>(null);
   const [previewAttachmentIndex, setPreviewAttachmentIndex] = useState<number>(0);
 
-  // Render detailed ratings if available
-  const renderDetailedRatings = () => {
-    if (!review.ratingDetails) return null;
-    
-    const ratingDetails = review.ratingDetails;
-    const categories = [
-      { key: 'communication', label: translations?.communication || 'Communication' },
-      { key: 'valueForMoney', label: translations?.valueForMoney || 'Value for Money' },
-      { key: 'friendliness', label: translations?.friendliness || 'Friendliness' },
-      { key: 'responsiveness', label: translations?.responsiveness || 'Responsiveness' }
-    ];
-    
-    return (
-      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-        {categories.map((category) => {
-          const rating = ratingDetails[category.key as keyof typeof ratingDetails] || 0;
-          if (rating === 0) return null;
-          
-          return (
-            <div key={category.key} className="flex items-center text-xs text-gray-600">
-              <span>{category.label}:</span>
-              <div className="flex ml-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`w-3 h-3 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   // Format date
   const formatDate = (date: Date) => {
@@ -153,9 +118,6 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
                     )}
                   </span>
                 </div>
-                
-                {/* Detailed Ratings */}
-                {renderDetailedRatings()}
               </div>
             </div>
           </div>

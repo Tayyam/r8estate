@@ -358,7 +358,7 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
                       <div className="flex items-center justify-center space-x-1 rtl:space-x-reverse">
                         <Star className="h-5 w-5 text-yellow-400 fill-current" />
                         <span className="text-2xl font-bold text-gray-900">
-                          {averageRating > 0 ? averageRating : '0.0'}
+                          {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
                         </span>
                       </div>
                       <div className="text-sm text-gray-600">{translations?.averageRating || 'Average Rating'}</div>

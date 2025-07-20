@@ -164,41 +164,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ company }) => {
     return format(date, 'PPP', { locale: language === 'ar' ? ar : undefined });
   };
 
-  // Render detailed ratings if available
-  const renderDetailedRatings = (review: Review) => {
-    if (!review.ratingDetails) return null;
-    
-    const ratingDetails = review.ratingDetails;
-    const categories = [
-      { key: 'communication', label: translations?.communication || 'Communication' },
-      { key: 'valueForMoney', label: translations?.valueForMoney || 'Value for Money' },
-      { key: 'friendliness', label: translations?.friendliness || 'Friendliness' },
-      { key: 'responsiveness', label: translations?.responsiveness || 'Responsiveness' }
-    ];
-    
-    return (
-      <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-        {categories.map((category) => {
-          const rating = ratingDetails[category.key as keyof typeof ratingDetails] || 0;
-          if (rating === 0) return null;
-          
-          return (
-            <div key={category.key} className="flex items-center text-xs text-gray-600">
-              <span>{category.label}:</span>
-              <div className="flex ml-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`w-3 h-3 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   if (loading) {
     return (
@@ -287,8 +252,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ company }) => {
                     </div>
                     <p className="text-sm text-gray-500">{formatDate(review.createdAt)}</p>
                     
-                    {/* Detailed Ratings */}
-                    {renderDetailedRatings(review)}
                   </div>
                   
                   {/* Action Buttons */}
