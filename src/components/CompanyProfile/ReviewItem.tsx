@@ -196,8 +196,6 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
               </span>
             </div>
             
-            {/* Detailed Ratings */}
-            {renderDetailedRatings()}
           </div>
         </div>
 
