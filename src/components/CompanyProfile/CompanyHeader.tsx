@@ -346,28 +346,29 @@ const CompanyHeader: React.FC<CompanyHeaderProps> = ({
                     </div>
                   </div>
                   
-                 <div className="flex items-center space-x-6 rtl:space-x-reverse mt-4 sm:mt-0">
+                 <div className="mt-4 sm:mt-2 flex flex-wrap sm:flex-nowrap items-center gap-6 sm:gap-10 text-center sm:text-right">
   {/* Properties Count */}
-  <div className="flex flex-col items-center">
-    <div className="text-xl sm:text-2xl font-semibold text-gray-900">{properties.length}</div>
-    <div className="text-sm text-gray-500">{translations?.properties || 'Properties'}</div>
+  <div className="flex flex-col items-center sm:items-start min-w-[80px]">
+    <div className="text-xl font-semibold text-gray-900">{properties.length}</div>
+    <div className="text-xs text-gray-500">{translations?.properties || 'Properties'}</div>
   </div>
 
   {/* Reviews Count */}
-  <div className="flex flex-col items-center">
-    <div className="text-xl sm:text-2xl font-semibold text-gray-900">{reviews.length}</div>
-    <div className="text-sm text-gray-500">{translations?.reviews || 'Reviews'}</div>
+  <div className="flex flex-col items-center sm:items-start min-w-[80px]">
+    <div className="text-xl font-semibold text-gray-900">{reviews.length}</div>
+    <div className="text-xs text-gray-500">{translations?.reviews || 'Reviews'}</div>
   </div>
 
   {/* Average Rating */}
-  <div className="flex flex-col items-center min-w-[100px]">
-    <TrustpilotStars rating={averageRating} size="medium" />
-    <div className="text-base sm:text-lg font-semibold text-gray-900 mt-1">
+  <div className="flex flex-col items-center sm:items-start min-w-[120px]">
+    <TrustpilotStars rating={averageRating} size="small" />
+    <div className="text-base font-semibold text-gray-900 mt-1">
       {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
     </div>
-    <div className="text-sm text-gray-500">{translations?.averageRating || 'Average Rating'}</div>
+    <div className="text-xs text-gray-500">{translations?.averageRating || 'Average Rating'}</div>
   </div>
 </div>
+
 
                 </div>
               </div>
