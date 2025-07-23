@@ -14,7 +14,7 @@ const App = () => {
       textAlign: 'center',
       padding: '20px'
     }}>
-      <h1 style={{ fontSize: '2.5rem' }}>تم إغلاق الموقع</h1>
+      <h1 style={{ fontSize: '2.5rem' }}>الموقع مغلق</h1>
     </div>
   );
 };
