@@ -219,7 +219,6 @@ const MyReviews: React.FC<MyReviewsProps> = ({ onNavigate }) => {
             const companyRef = doc(db, 'companies', review.companyId);
             await updateDoc(companyRef, {
               totalRating: roundedRating,
-              rating: roundedRating,
               totalReviews: allReviews.length,
               updatedAt: new Date()
             });

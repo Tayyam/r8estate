@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Plus, Edit, Trash2, AlertCircle, Reply } from 'lucide-react';
-import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, increment, DocumentData, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, startAfter, getDocs, deleteDoc, doc, updateDoc, DocumentData, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -365,7 +365,6 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({
       
       await updateDoc(companyRef, {
         totalRating: roundedRating,
-        rating: roundedRating, // Also update the rating field
         totalReviews: currentReviews.length,
         updatedAt: new Date()
       });

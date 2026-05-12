@@ -16,22 +16,24 @@ const LatestReviews: React.FC = () => {
     const fetchRecentReviews = async () => {
       setLoading(true);
       try {
-        // Create a query to get reviews with rating >= 3, ordered by date
+        // firestoreLite maps to a single PostgREST order; fetch recent then prefer rating >= 3 client-side
         const reviewsQuery = query(
           collection(db, 'reviews'),
-          orderBy('rating', 'desc'),
           orderBy('createdAt', 'desc'),
-          limit(3)
+          limit(40)
         );
-        
-        // Get the reviews
+
         const reviewsSnapshot = await getDocs(reviewsQuery);
-        const reviewsData = reviewsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        })) as Review[];
+        const reviewsData = reviewsSnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+            updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+          }))
+          .filter((r) => (r as Review).rating >= 3)
+          .sort((a, b) => (b as Review).rating - (a as Review).rating)
+          .slice(0, 3) as Review[];
         
         // Get company names for each review
         const reviewsWithCompanyNames = await Promise.all(

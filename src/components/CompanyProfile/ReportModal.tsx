@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Flag, Send, AlertCircle } from 'lucide-react';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -57,8 +56,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
     try {
       setLoading(true);
       
-      // Create report document in Firestore
-      await addDoc(collection(db, 'reports'), {
+      const { error } = await supabase.from('reports').insert({
         contentId,
         contentType,
         reporterId: currentUser.uid,
@@ -67,9 +65,10 @@ const ReportModal: React.FC<ReportModalProps> = ({
         reason: formData.reason,
         details: formData.details.trim(),
         status: 'pending',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
+      if (error) throw error;
       
       showSuccessToast(
         translations?.reportSubmitted || 'Report Submitted',

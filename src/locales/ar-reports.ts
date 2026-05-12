@@ -40,7 +40,6 @@ export const arReports = {
   // Report Information
   reportInformation: 'معلومات البلاغ',
   reportType: 'نوع المحتوى',
-  reportReason: 'سبب البلاغ',
   reportDate: 'تاريخ البلاغ',
   resolvedDate: 'تاريخ الحل',
   reportedContent: 'المحتوى المبلغ عنه',

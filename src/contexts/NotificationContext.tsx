@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { collection, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, doc, writeBatch, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { supabase } from '../config/supabase';
 import { Notification } from '../types/notification';
 import { useAuth } from './AuthContext';
+import { asDate } from '../utils/asDate';
 
 export type NotificationType = 'success' | 'error' | 'warning' | 'info';
 
@@ -31,28 +31,20 @@ export interface NotificationToast {
 }
 
 interface NotificationContextType {
-  // Modals
   showModal: (modal: Omit<NotificationModal, 'id'>) => void;
   hideModal: (id: string) => void;
   hideAllModals: () => void;
-  
-  // Toasts
   showToast: (toast: Omit<NotificationToast, 'id'>) => void;
   hideToast: (id: string) => void;
   hideAllToasts: () => void;
-  
-  // Quick methods
   showSuccessModal: (title: string, message: string, onConfirm?: () => void) => void;
   showErrorModal: (title: string, message: string, onConfirm?: () => void) => void;
   showWarningModal: (title: string, message: string, onConfirm?: () => void, onCancel?: () => void) => void;
   showInfoModal: (title: string, message: string, onConfirm?: () => void) => void;
-  
   showSuccessToast: (title: string, message: string, duration?: number) => void;
   showErrorToast: (title: string, message: string, duration?: number) => void;
   showWarningToast: (title: string, message: string, duration?: number) => void;
   showInfoToast: (title: string, message: string, duration?: number) => void;
-  
-  // State
   modals: NotificationModal[];
   toasts: NotificationToast[];
 }
@@ -83,6 +75,20 @@ interface NotificationProviderProps {
   children: ReactNode;
 }
 
+function mapRow(row: Record<string, unknown>): Notification {
+  return {
+    id: row.id as string,
+    userId: row.userId as string,
+    title: row.title as string,
+    message: row.message as string,
+    type: row.type as Notification['type'],
+    isRead: !!row.isRead,
+    relatedId: (row.relatedId as string) || undefined,
+    link: (row.link as string) || undefined,
+    createdAt: asDate(row.createdAt),
+  };
+}
+
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [modals, setModals] = useState<NotificationModal[]>([]);
   const [toasts, setToasts] = useState<NotificationToast[]>([]);
@@ -90,253 +96,157 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const { currentUser } = useAuth();
 
-  // Generate unique ID
-  const generateId = () => Math.random().toString(36).substr(2, 9);
+  const generateId = () => Math.random().toString(36).substring(2, 11);
 
-  // Listen for notifications
+  const loadList = async (count?: number) => {
+    if (!currentUser) return [];
+    let q = supabase
+      .from('notifications')
+      .select('*')
+      .eq('userId', currentUser.uid)
+      .order('createdAt', { ascending: false });
+    if (count) q = q.limit(count);
+    const { data, error } = await q;
+    if (error) {
+      console.error(error);
+      return [];
+    }
+    return (data || []).map((r) => mapRow(r as Record<string, unknown>));
+  };
+
   React.useEffect(() => {
     if (!currentUser) {
       setNotifications([]);
       setUnreadCount(0);
       return;
     }
-    
-    // Create query for user's notifications
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc'),
-      limit(100) // Limit to last 100 notifications to avoid performance issues
-    );
-    
-    // Subscribe to real-time updates
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const newNotifications = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date()
-      })) as Notification[];
-      
-      setNotifications(newNotifications);
-      setUnreadCount(newNotifications.filter(n => !n.isRead).length);
-    }, (error) => {
-      console.error("Error listening to notifications:", error);
-    });
-    
-    return () => unsubscribe();
-  }, [currentUser]);
-  
-  // Fetch recent notifications
-  const fetchNotifications = async (count = 5): Promise<Notification[]> => {
-    if (!currentUser) return [];
-    
-    try {
-      const q = query(
-        collection(db, 'notifications'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc'),
-        limit(count)
-      );
-      
-      const snapshot = await getDocs(q);
-      const fetchedNotifications = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date()
-      })) as Notification[];
-      
-      return fetchedNotifications;
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      return [];
-    }
-  };
-  
-  // Fetch all notifications
-  const fetchAllNotifications = async (): Promise<Notification[]> => {
-    if (!currentUser) return [];
-    
-    try {
-      const q = query(
-        collection(db, 'notifications'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const snapshot = await getDocs(q);
-      const fetchedNotifications = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date()
-      })) as Notification[];
-      
-      return fetchedNotifications;
-    } catch (error) {
-      console.error('Error fetching all notifications:', error);
-      return [];
-    }
-  };
-  
-  // Mark notification as read
+
+    let cancelled = false;
+    const refresh = async () => {
+      const list = await loadList(100);
+      if (cancelled) return;
+      setNotifications(list);
+      setUnreadCount(list.filter((n) => !n.isRead).length);
+    };
+    void refresh();
+
+    const channel = supabase
+      .channel(`notifications:${currentUser.uid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `userId=eq.${currentUser.uid}`,
+        },
+        () => {
+          void refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
+  }, [currentUser?.uid]);
+
+  const fetchNotifications = async (count = 5): Promise<Notification[]> => loadList(count);
+
+  const fetchAllNotifications = async (): Promise<Notification[]> => loadList();
+
   const markAsRead = async (id: string): Promise<void> => {
     if (!currentUser) return;
-    
-    try {
-      await updateDoc(doc(db, 'notifications', id), {
-        isRead: true
-      });
-      
-      // Update local state
-      setNotifications(prev => prev.map(n => 
-        n.id === id ? { ...n, isRead: true } : n
-      ));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-      throw error;
-    }
+    const { error } = await supabase.from('notifications').update({ isRead: true }).eq('id', id);
+    if (error) throw error;
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
   };
-  
-  // Mark all notifications as read
+
   const markAllAsRead = async (): Promise<void> => {
     if (!currentUser) return;
-    
-    try {
-      const batch = writeBatch(db);
-      const unreadNotifications = notifications.filter(n => !n.isRead);
-      
-      unreadNotifications.forEach(notification => {
-        const notificationRef = doc(db, 'notifications', notification.id);
-        batch.update(notificationRef, { isRead: true });
-      });
-      
-      await batch.commit();
-      
-      // Update local state
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-      throw error;
-    }
+    const { error } = await supabase
+      .from('notifications')
+      .update({ isRead: true })
+      .eq('userId', currentUser.uid)
+      .eq('isRead', false);
+    if (error) throw error;
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setUnreadCount(0);
   };
-  
-  // Delete notification
+
   const deleteNotification = async (id: string): Promise<void> => {
     if (!currentUser) return;
-    
-    try {
-      await deleteDoc(doc(db, 'notifications', id));
-      
-      // Update local state
-      const notificationToDelete = notifications.find(n => n.id === id);
-      setNotifications(prev => prev.filter(n => n.id !== id));
-      if (notificationToDelete && !notificationToDelete.isRead) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      throw error;
+    const notificationToDelete = notifications.find((n) => n.id === id);
+    const { error } = await supabase.from('notifications').delete().eq('id', id);
+    if (error) throw error;
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    if (notificationToDelete && !notificationToDelete.isRead) {
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     }
   };
-  
-  // Delete all notifications
+
   const deleteAllNotifications = async (): Promise<void> => {
     if (!currentUser) return;
-    
-    try {
-      const batch = writeBatch(db);
-      
-      notifications.forEach(notification => {
-        const notificationRef = doc(db, 'notifications', notification.id);
-        batch.delete(notificationRef);
-      });
-      
-      await batch.commit();
-      
-      // Update local state
-      setNotifications([]);
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Error deleting all notifications:', error);
-      throw error;
-    }
+    const { error } = await supabase.from('notifications').delete().eq('userId', currentUser.uid);
+    if (error) throw error;
+    setNotifications([]);
+    setUnreadCount(0);
   };
-  
-  // Refresh notifications
+
   const refreshNotifications = () => {
-    fetchNotifications().then(fetchedNotifications => {
-      setNotifications(fetchedNotifications);
-      setUnreadCount(fetchedNotifications.filter(n => !n.isRead).length);
-    }).catch(error => {
-      console.error('Error refreshing notifications:', error);
-    });
+    loadList(100)
+      .then((fetched) => {
+        setNotifications(fetched);
+        setUnreadCount(fetched.filter((n) => !n.isRead).length);
+      })
+      .catch(console.error);
   };
-  
-  // Modal methods
+
   const showModal = (modal: Omit<NotificationModal, 'id'>) => {
     const newModal: NotificationModal = {
       ...modal,
       id: generateId(),
-      showCancel: modal.showCancel ?? true
+      showCancel: modal.showCancel ?? true,
     };
-    setModals(prev => [...prev, newModal]);
+    setModals((prev) => [...prev, newModal]);
   };
 
   const hideModal = (id: string) => {
-    setModals(prev => prev.filter(modal => modal.id !== id));
+    setModals((prev) => prev.filter((modal) => modal.id !== id));
   };
 
   const hideAllModals = () => {
     setModals([]);
   };
 
-  // Toast methods
   const showToast = (toast: Omit<NotificationToast, 'id'>) => {
     const newToast: NotificationToast = {
       ...toast,
       id: generateId(),
-      duration: toast.duration ?? 5000
+      duration: toast.duration ?? 5000,
     };
-    setToasts(prev => [...prev, newToast]);
-
-    // Auto hide toast
+    setToasts((prev) => [...prev, newToast]);
     if (newToast.duration && newToast.duration > 0) {
-      setTimeout(() => {
-        hideToast(newToast.id);
-      }, newToast.duration);
+      setTimeout(() => hideToast(newToast.id), newToast.duration);
     }
   };
 
   const hideToast = (id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
   const hideAllToasts = () => {
     setToasts([]);
   };
 
-  // Quick modal methods
   const showSuccessModal = (title: string, message: string, onConfirm?: () => void) => {
-    showModal({
-      type: 'success',
-      title,
-      message,
-      onConfirm,
-      showCancel: false,
-      confirmText: 'OK'
-    });
+    showModal({ type: 'success', title, message, onConfirm, showCancel: false, confirmText: 'OK' });
   };
 
   const showErrorModal = (title: string, message: string, onConfirm?: () => void) => {
-    showModal({
-      type: 'error',
-      title,
-      message,
-      onConfirm,
-      showCancel: false,
-      confirmText: 'OK'
-    });
+    showModal({ type: 'error', title, message, onConfirm, showCancel: false, confirmText: 'OK' });
   };
 
   const showWarningModal = (title: string, message: string, onConfirm?: () => void, onCancel?: () => void) => {
@@ -348,22 +258,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       onCancel,
       showCancel: true,
       confirmText: 'Confirm',
-      cancelText: 'Cancel'
+      cancelText: 'Cancel',
     });
   };
 
   const showInfoModal = (title: string, message: string, onConfirm?: () => void) => {
-    showModal({
-      type: 'info',
-      title,
-      message,
-      onConfirm,
-      showCancel: false,
-      confirmText: 'OK'
-    });
+    showModal({ type: 'info', title, message, onConfirm, showCancel: false, confirmText: 'OK' });
   };
 
-  // Quick toast methods
   const showSuccessToast = (title: string, message: string, duration?: number) => {
     showToast({ type: 'success', title, message, duration });
   };
@@ -397,7 +299,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     showInfoToast,
     modals,
     toasts,
-    // Add the new notification-related methods and state
     notifications,
     unreadCount,
     fetchNotifications,
@@ -406,12 +307,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     markAllAsRead,
     deleteNotification,
     deleteAllNotifications,
-    refreshNotifications
+    refreshNotifications,
   };
 
-  return (
-    <NotificationContext.Provider value={value}>
-      {children}
-    </NotificationContext.Provider>
-  );
+  return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 };

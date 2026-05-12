@@ -68,9 +68,6 @@ export const arCategories = {
   consultant: 'مستشار عقاري',
   propertyManager: 'مدير ممتلكات',
   
-  // Category Slider
-  noCategoriesFound: 'لم يتم العثور على فئات',
-  
   // Filter options
   all: 'الكل',
   filterByRating: 'تصفية حسب التقييم',

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Key, Lock, Save, Eye, EyeOff , AlertCircle} from 'lucide-react';
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -10,7 +10,7 @@ interface PasswordSecurityProps {
 }
 
 const PasswordSecurity: React.FC<PasswordSecurityProps> = ({ setError, setSuccess }) => {
-  const { firebaseUser } = useAuth();
+  const { currentUser } = useAuth();
   const { translations } = useLanguage();
   
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -28,7 +28,7 @@ const PasswordSecurity: React.FC<PasswordSecurityProps> = ({ setError, setSucces
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!firebaseUser) {
+    if (!currentUser?.email) {
       setError(translations?.noUserLoggedIn || 'No user logged in');
       return;
     }
@@ -51,15 +51,17 @@ const PasswordSecurity: React.FC<PasswordSecurityProps> = ({ setError, setSucces
     try {
       setLoading(true);
       
-      // Re-authenticate user first
-      const credential = EmailAuthProvider.credential(
-        firebaseUser.email!,
-        formData.currentPassword
-      );
-      await reauthenticateWithCredential(firebaseUser, credential);
-      
-      // Update password
-      await updatePassword(firebaseUser, formData.newPassword);
+      const { error: signErr } = await supabase.auth.signInWithPassword({
+        email: currentUser.email,
+        password: formData.currentPassword,
+      });
+      if (signErr) {
+        setError(translations?.currentPasswordIncorrect || 'Current password is incorrect');
+        return;
+      }
+
+      const { error: updErr } = await supabase.auth.updateUser({ password: formData.newPassword });
+      if (updErr) throw updErr;
       
       // Clear password fields
       setFormData({
@@ -72,9 +74,7 @@ const PasswordSecurity: React.FC<PasswordSecurityProps> = ({ setError, setSucces
       setSuccess(translations?.passwordUpdatedSuccess || 'Password updated successfully');
     } catch (error: any) {
       console.error('Error updating password:', error);
-      if (error.code === 'auth/wrong-password') {
-        setError(translations?.currentPasswordIncorrect || 'Current password is incorrect');
-      } else if (error.code === 'auth/weak-password') {
+      if (error.message?.toLowerCase().includes('password')) {
         setError(translations?.newPasswordTooWeak || 'New password is too weak');
       } else {
         setError(translations?.failedToUpdatePassword || 'Failed to update password');

@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { AlertOctagon, Mail } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../config/firebase';
 import { useNotification } from '../contexts/NotificationContext';
 
 const UnverifiedUserView = () => {
   const { translations } = useLanguage();
-  const { logout, currentUser } = useAuth();
+  const { logout, currentUser, sendVerificationEmail } = useAuth();
   const { showSuccessToast, showErrorToast } = useNotification();
   const [sending, setSending] = useState(false);
 
@@ -26,8 +24,7 @@ const UnverifiedUserView = () => {
     try {
       setSending(true);
       
-      const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
-      await sendVerificationEmailFunction({ email: currentUser.email });
+      await sendVerificationEmail();
       
       showSuccessToast(
         translations?.verificationEmailResent || 'Verification Email Resent',

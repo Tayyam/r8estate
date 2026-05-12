@@ -1,9 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Download, X, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
-import { doc, getDoc, setDoc, collection, addDoc, updateDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db, functions } from '../../../config/firebase';
+import { doc, setDoc, collection, addDoc, updateDoc } from 'firebase/firestore';
+import { db, functions } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Category } from '../../../types/company';
 import { parseCompaniesExcel, generateCompanyTemplate } from '../../../utils/excelUtils';
@@ -29,6 +28,8 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
   const [successCount, setSuccessCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const createUserFunction = httpsCallable(functions, 'createUser');
 
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,10 +106,15 @@ const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
           const createAccount = company.email && company.password;
           
           if (createAccount) {
-            // Create user with email and password
-            const userCredential = await createUserWithEmailAndPassword(auth, company.email, company.password);
-            const userId = userCredential.user.uid;
-            
+            const createRes = await createUserFunction({
+              email: company.email,
+              password: company.password,
+              displayName: company.name,
+              role: 'company',
+            });
+            const userId = (createRes.data as { user?: { uid: string } }).user?.uid;
+            if (!userId) throw new Error('Failed to create user account');
+
             // Store company data in Firestore
             await setDoc(doc(db, 'companies', userId), {
               id: userId,

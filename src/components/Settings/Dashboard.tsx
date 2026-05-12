@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, PieChart, ArrowUp, Building2, Users, Star, CheckCircle, CreditCard } from 'lucide-react';
-import { collection, query, where, getDocs, orderBy, limit, CountQuerySnapshot, getCountFromServer } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useLanguage } from '../../contexts/LanguageContext';
 

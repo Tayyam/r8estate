@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 import { User, Mail, Save, RefreshCw, Edit, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -12,7 +9,7 @@ interface BasicInfoProps {
 }
 
 const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
-  const { currentUser, firebaseUser, changeEmailWithoutPassword, sendVerificationEmail } = useAuth();
+  const { currentUser, updateUserProfile, changeEmailWithoutPassword, sendVerificationEmail } = useAuth();
   const { translations, language, direction } = useLanguage();
   
   const [loading, setLoading] = useState(false);
@@ -30,7 +27,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!firebaseUser || !currentUser) {
+    if (!currentUser) {
       setError(translations?.noUserLoggedIn || 'No user logged in');
       return;
     }
@@ -43,15 +40,8 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
     try {
       setLoading(true);
       
-      // Update Firebase profile
-      await updateProfile(firebaseUser, {
-        displayName: formData.displayName.trim()
-      });
-      
-      // Update Firestore document
-      await updateDoc(doc(db, 'users', currentUser.uid), {
+      await updateUserProfile({
         displayName: formData.displayName.trim(),
-        updatedAt: new Date()
       });
 
       setSuccess(translations?.profileUpdatedSuccess || 'Profile updated successfully');
@@ -65,7 +55,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ setError, setSuccess }) => {
 
   // Send email verification
   const handleSendVerification = async () => {
-    if (!firebaseUser || !currentUser) {
+    if (!currentUser) {
       setError(translations?.noUserLoggedIn || 'No user logged in');
       return;
     }

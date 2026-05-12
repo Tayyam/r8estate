@@ -25,6 +25,8 @@ interface SearchResultsProps {
 }
 
 const COMPANIES_PER_PAGE = 9;
+/** Client-side text search: fetch enough rows before filtering (Postgres has no Firestore-style full-text in this shim). */
+const SEARCH_FETCH_CAP = 500;
 
 const SearchResults: React.FC<SearchResultsProps> = ({ 
   onNavigate, 
@@ -86,31 +88,28 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     loadCategories();
   }, []);
 
-  // Load companies based on search query
+  // Load companies: URL + sidebar filters (single effect avoids racing loadAll vs search on 9 rows)
   useEffect(() => {
-    if (categories.length > 0) {
-      const q = searchParams.get('q') || '';
-      const category = searchParams.get('category') || 'all';
-      
-      setSearchQuery(q);
-      setSelectedCategory(category);
-      
-      if (!q && category === 'all') {
-        // If no filters are applied, load all companies
-        loadAllCompanies();
-      } else {
-        // Otherwise, apply filters
-        searchCompanies();
-      }
-    }
-  }, [searchParams, categories.length]);
+    if (categories.length === 0) return;
 
-  // Apply filters automatically when they change
-  useEffect(() => {
-    if (categories.length > 0) {
+    const q = searchParams.get('q') || '';
+    const category = searchParams.get('category') || 'all';
+
+    setSearchQuery(q);
+    setSelectedCategory(category);
+
+    const browsing =
+      !q &&
+      category === 'all' &&
+      selectedLocation === 'all' &&
+      selectedRating === 'all';
+
+    if (browsing) {
+      loadAllCompanies();
+    } else {
       searchCompanies();
     }
-  }, [selectedLocation, selectedRating]);
+  }, [searchParams, categories.length, selectedLocation, selectedRating]);
 
   // Fetch search suggestions
   const fetchSearchSuggestions = async (query: string) => {
@@ -244,28 +243,36 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     try {
       setLoading(true);
       setError('');
-      
+
+      const effectiveQuery = (searchParams.get('q') || searchQuery).trim();
+      const effectiveCategory =
+        searchParams.get('category') || selectedCategory || 'all';
+      const hasActiveSearch = effectiveQuery !== '';
+      if (loadMore && hasActiveSearch) {
+        setLoading(false);
+        return;
+      }
+
       // Start building the query
       let baseQuery = collection(db, 'companies');
       let conditions: any[] = [];
-      
+
       // Add category filter
-      if (selectedCategory !== 'all') {
-        conditions.push(where('categoryId', '==', selectedCategory));
+      if (effectiveCategory !== 'all') {
+        conditions.push(where('categoryId', '==', effectiveCategory));
       }
-      
+
       // Add location filter
       if (selectedLocation !== 'all') {
         conditions.push(where('location', '==', selectedLocation));
       }
-      
-      // Add rating filter
-      if (selectedRating !== 'all') {
-        const minRating = parseInt(selectedRating);
-        conditions.push(where('rating', '>=', minRating));
-        conditions.push(where('rating', '<', minRating + 1));
-      }
-      
+
+      // Rating: `companies` has no `rating` column in Supabase — filter on totalRating after fetch
+      const minRatingBucket =
+        selectedRating !== 'all' ? parseInt(selectedRating, 10) : null;
+
+      const pageLimit = hasActiveSearch ? SEARCH_FETCH_CAP : COMPANIES_PER_PAGE;
+
       // Create query with conditions
       let companiesQuery;
       if (conditions.length > 0) {
@@ -273,43 +280,56 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           baseQuery,
           ...conditions,
           orderBy('createdAt', 'desc'),
-          limit(COMPANIES_PER_PAGE)
+          limit(pageLimit)
         );
       } else {
         companiesQuery = query(
           baseQuery,
           orderBy('createdAt', 'desc'),
-          limit(COMPANIES_PER_PAGE)
+          limit(pageLimit)
         );
       }
-      
-      // Add pagination
-      if (loadMore && lastDoc) {
+
+      // Add pagination (only for non–text-search lists)
+      if (loadMore && lastDoc && !hasActiveSearch) {
         companiesQuery = query(
           baseQuery,
           ...conditions,
           orderBy('createdAt', 'desc'),
           startAfter(lastDoc),
-          limit(COMPANIES_PER_PAGE)
+          limit(pageLimit)
         );
       }
 
       const companiesSnapshot = await getDocs(companiesQuery);
       const companiesData = await processCompaniesData(companiesSnapshot);
-      
-      // Filter by search term (client-side filtering for name matching)
-      const filtered = searchQuery.trim() !== '' 
-        ? companiesData.filter(company => 
-            company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (company.description && company.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-            company.locationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (company.locationNameAr && company.locationNameAr.includes(searchQuery))
-          )
-        : companiesData;
+
+      const qLower = effectiveQuery.toLowerCase();
+      let filtered =
+        hasActiveSearch
+          ? companiesData.filter((company) => {
+              const nameAr = (company as { nameAr?: string }).nameAr;
+              return (
+                company.name.toLowerCase().includes(qLower) ||
+                (nameAr && nameAr.toLowerCase().includes(qLower)) ||
+                (company.description &&
+                  company.description.toLowerCase().includes(qLower)) ||
+                company.locationName.toLowerCase().includes(qLower) ||
+                (company.locationNameAr && company.locationNameAr.includes(effectiveQuery))
+              );
+            })
+          : companiesData;
+
+      if (minRatingBucket !== null && !Number.isNaN(minRatingBucket)) {
+        filtered = filtered.filter(
+          (c) =>
+            c.totalRating >= minRatingBucket && c.totalRating < minRatingBucket + 1
+        );
+      }
 
       // Update state
       if (loadMore) {
-        setCompanies(prev => [...prev, ...filtered]);
+        setCompanies((prev) => [...prev, ...filtered]);
       } else {
         setCompanies(filtered);
         setTotalResults(filtered.length);
@@ -317,8 +337,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
       // Update pagination state
       setLastDoc(companiesSnapshot.docs[companiesSnapshot.docs.length - 1] || null);
-      setHasMore(companiesSnapshot.docs.length === COMPANIES_PER_PAGE);
-      
+      if (hasActiveSearch) {
+        setHasMore(false);
+      } else {
+        setHasMore(companiesSnapshot.docs.length === pageLimit);
+      }
+
       // Update filtered companies
       setFilteredCompanies(filtered);
       
@@ -361,7 +385,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   // Load more companies
   const handleLoadMore = () => {
     if (!loading && hasMore) {
-      if (!searchQuery && selectedCategory === 'all' && selectedLocation === 'all') {
+      const q = (searchParams.get('q') || searchQuery).trim();
+      const cat = searchParams.get('category') || selectedCategory || 'all';
+      if (!q && cat === 'all' && selectedLocation === 'all') {
         loadAllCompanies(true);
       } else {
         searchCompanies(true);
@@ -490,7 +516,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 placeholder={translations?.searchPlaceholder || 'Search companies...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setShowSuggestions(true)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSearch();
                 }}
@@ -500,6 +525,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   focusRingColor: '#EE183F'
                 }}
                 onFocus={(e) => {
+                  setShowSuggestions(true);
                   e.target.style.borderColor = '#EE183F';
                   e.target.style.boxShadow = `0 0 0 3px rgba(238, 24, 63, 0.1)`;
                 }}

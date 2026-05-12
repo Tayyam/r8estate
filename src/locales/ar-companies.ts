@@ -112,7 +112,6 @@ export const arCompanies = {
   companyPhone: 'هاتف الشركة',
   companyWebsite: 'موقع الشركة الإلكتروني',
   companyLogo: 'شعار الشركة',
-  claimStatus: 'حالة الإسناد',
   
   // Form Placeholders
   enterCompanyName: 'أدخل اسم الشركة',

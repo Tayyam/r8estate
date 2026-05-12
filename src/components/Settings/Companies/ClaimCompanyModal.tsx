@@ -1,8 +1,8 @@
 import React, { useState , useEffect } from 'react';
 import { UserPlus, AlertCircle, Lock, Mail, User, Building2, Search, RefreshCw, X, Check } from 'lucide-react';
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
 import { doc, updateDoc, setDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { auth, db } from '../../../config/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company } from '../../../types/company';
 import { User as UserType } from '../../../types/user';
@@ -32,6 +32,8 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
     password: '',
     confirmPassword: ''
   });
+
+  const createUserFunction = httpsCallable(functions, 'createUser');
 
   // Handle user search
   const handleSearch = async () => {
@@ -226,10 +228,15 @@ const ClaimCompanyModal: React.FC<ClaimCompanyModalProps> = ({
       setLoading(true);
       
       if (claimMode === 'new') {
-        // Create user account with Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        const userId = userCredential.user.uid;
-        
+        const createRes = await createUserFunction({
+          email: formData.email,
+          password: formData.password,
+          displayName: company.name,
+          role: 'company',
+        });
+        const userId = (createRes.data as { user?: { uid: string } }).user?.uid;
+        if (!userId) throw new Error('create user failed');
+
         // Create user document in Firestore
         await setDoc(doc(db, 'users', userId), {
           uid: userId,

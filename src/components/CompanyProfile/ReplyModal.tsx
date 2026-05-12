@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Reply, Building2, X, Send } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../types/property';
@@ -55,17 +54,19 @@ const ReplyModal: React.FC<ReplyModalProps> = ({
     try {
       setLoading(true);
 
-      // Update review document with company reply
-      const reviewRef = doc(db, 'reviews', review.id);
-      await updateDoc(reviewRef, {
-        companyReply: {
-          content: replyContent.trim(),
-          repliedAt: new Date(),
-          repliedBy: currentUser.uid,
-          replierName: currentUser.displayName || currentUser.email
-        },
-        updatedAt: new Date()
-      });
+      const { error } = await supabase
+        .from('reviews')
+        .update({
+          companyReply: {
+            content: replyContent.trim(),
+            repliedAt: new Date().toISOString(),
+            repliedBy: currentUser.uid,
+            replierName: currentUser.displayName || currentUser.email,
+          },
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', review.id);
+      if (error) throw error;
 
       onSuccess();
       onClose();

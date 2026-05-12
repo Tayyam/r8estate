@@ -82,7 +82,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate, onSearch }) => {
         collection(db, 'companies'),
         ...(selectedCategory !== 'all' ? [where('categoryId', '==', selectedCategory)] : []),
         where('name', '>=', searchQueryText),
-        where('name', '<=', searchQueryText + '\uf8ff'), 
+        where('name', '<=', searchQueryText + '\uf8ff'),
+        orderBy('name', 'asc'),
         limit(5)
       );
           

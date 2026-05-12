@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Mail, AlertCircle, Check, Loader, Search, Building2, RefreshCw, User as UserIcon } from 'lucide-react';
-import { collection, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../../../config/firebase';
+import { collection, query, where, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../../../config/firebase';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Company } from '../../../types/company';
 import { User } from '../../../types/user';
@@ -35,6 +35,9 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
     displayName: '',
     password: ''
   });
+
+  const createUserFunction = httpsCallable(functions, 'createUser');
+  const deleteUserFunction = httpsCallable(functions, 'deleteUser');
 
   // Load users associated with this company
   useEffect(() => {
@@ -209,35 +212,41 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
         return;
       }
       
-      // Create Firebase Auth user
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-      
+      const createRes = await createUserFunction({
+        email: formData.email,
+        password: formData.password,
+        displayName: formData.displayName,
+        role: 'company',
+      });
+      const userId = (createRes.data as { user?: { uid: string } }).user?.uid;
+      if (!userId) {
+        onError(translations?.failedToAddUser || 'Failed to add user');
+        setActionLoading(null);
+        return;
+      }
+
       // Create user document in Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        uid: userCredential.user.uid,
+      await setDoc(doc(db, 'users', userId), {
+        uid: userId,
         email: formData.email,
         displayName: formData.displayName,
         role: 'company',
         companyId: company.id,
         createdAt: new Date(),
         updatedAt: new Date(),
-        isEmailVerified: false
+        isEmailVerified: true
       });
       
       // Add the new user to the local state
       const newUser: User = {
-        uid: userCredential.user.uid,
+        uid: userId,
         email: formData.email,
         displayName: formData.displayName,
         role: 'company',
         companyId: company.id,
         createdAt: new Date(),
         updatedAt: new Date(),
-        isEmailVerified: false
+        isEmailVerified: true
       };
       
       setUsers(prev => [...prev, newUser]);
@@ -286,8 +295,7 @@ const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
       // Check if this is the last user for this company
       const isLastUser = users.length === 1;
       
-      // Delete the user document from Firestore
-      await deleteDoc(doc(db, 'users', user.uid));
+      await deleteUserFunction({ uid: user.uid });
       
       // Update the local state
       setUsers(prev => prev.filter(u => u.uid !== user.uid));

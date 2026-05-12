@@ -1,9 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Camera, User } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
-import { storage, db } from '../../config/firebase';
+import { storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -13,7 +11,7 @@ interface ProfilePhotoProps {
 }
 
 const ProfilePhoto: React.FC<ProfilePhotoProps> = ({ setError, setSuccess }) => {
-  const { currentUser, firebaseUser } = useAuth();
+  const { currentUser, updateUserProfile } = useAuth();
   const { translations } = useLanguage();
   const [photoLoading, setPhotoLoading] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -61,12 +59,27 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({ setError, setSuccess }) => 
     });
   };
 
+  const storagePathFromPublicUrl = (photoURL: string): string | null => {
+    try {
+      const u = new URL(photoURL);
+      const marker = '/object/public/media/';
+      const i = u.pathname.indexOf(marker);
+      if (i >= 0) return decodeURIComponent(u.pathname.slice(i + marker.length));
+    } catch {
+      /* ignore */
+    }
+    const baseUrl = 'https://firebasestorage.googleapis.com/v0/b/r8estate-2a516.firebasestorage.app/o/';
+    if (photoURL.startsWith(baseUrl)) {
+      return decodeURIComponent(photoURL.replace(baseUrl, '').split('?')[0]);
+    }
+    return null;
+  };
+
   // Delete old profile photo
   const deleteOldPhoto = async (photoURL: string) => {
     try {
-      const baseUrl = 'https://firebasestorage.googleapis.com/v0/b/r8estate-2a516.firebasestorage.app/o/';
-      if (photoURL.startsWith(baseUrl)) {
-        const filePath = decodeURIComponent(photoURL.replace(baseUrl, '').split('?')[0]);
+      const filePath = storagePathFromPublicUrl(photoURL);
+      if (filePath) {
         const storageRef = ref(storage, filePath);
         await deleteObject(storageRef);
       }
@@ -98,7 +111,7 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({ setError, setSuccess }) => 
   // Handle photo upload
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !firebaseUser) return;
+    if (!file || !currentUser) return;
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -118,23 +131,14 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({ setError, setSuccess }) => 
       setPhotoLoading(true);
       
       // Delete old photo if exists
-      if (firebaseUser.photoURL) {
-        await deleteOldPhoto(firebaseUser.photoURL);
+      if (currentUser.photoURL) {
+        await deleteOldPhoto(currentUser.photoURL);
       }
 
       // Upload new photo
       const photoURL = await uploadProfilePhoto(file);
-      
-      // Update Firebase profile
-      await updateProfile(firebaseUser, { photoURL });
-      
-      // Update Firestore document
-      if (currentUser) {
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-          photoURL: photoURL,
-          updatedAt: new Date()
-        });
-      }
+
+      await updateUserProfile({ photoURL });
 
       setSuccess(translations?.photoUpdatedSuccess || 'Profile photo updated successfully');
     } catch (error: any) {
@@ -155,9 +159,9 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({ setError, setSuccess }) => 
       <div className="flex flex-col sm:flex-row items-center space-y-6 sm:space-y-0 sm:space-x-8 rtl:space-x-reverse">
         <div className="relative group">
           <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg bg-gray-100 flex items-center justify-center border-4 border-white transition-transform duration-300 group-hover:scale-105">
-            {firebaseUser?.photoURL ? (
+            {currentUser?.photoURL ? (
               <img
-                src={firebaseUser.photoURL}
+                src={currentUser.photoURL}
                 alt={currentUser?.displayName || ''}
                 className="w-full h-full object-cover"
               />

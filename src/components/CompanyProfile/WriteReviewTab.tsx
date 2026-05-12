@@ -261,7 +261,6 @@ const WriteReviewTab: React.FC<WriteReviewTabProps> = ({
       const companyRef = doc(db, 'companies', company.id);
       await updateDoc(companyRef, {
         totalRating: roundedRating,
-        rating: roundedRating, // Also update the rating field
         totalReviews: allReviews.length,
         updatedAt: new Date()
       });

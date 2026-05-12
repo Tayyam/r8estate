@@ -70,9 +70,7 @@ export const arAuth = {
   forgotPasswordTitle: 'إعادة تعيين كلمة المرور',
   forgotPasswordSubtitle: 'أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور',
   resetPassword: 'إعادة تعيين كلمة المرور',
-  sending: 'جاري الإرسال...',
   emailRequired: 'البريد الإلكتروني مطلوب',
-  invalidEmailFormat: 'يرجى إدخال عنوان بريد إلكتروني صالح',
   
   // Return Navigation
   youWillBeRedirected: 'ستتم إعادة توجيهك إلى الصفحة السابقة بعد تسجيل الدخول',

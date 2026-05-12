@@ -3,8 +3,6 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Globe, AlertCircl
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../../config/firebase';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 interface RegisterProps {
@@ -12,9 +10,9 @@ interface RegisterProps {
 }
 
 const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
-  const { register, loginWithGoogle } = useAuth();
+  const { register, sendVerificationEmail } = useAuth();
   const { translations, language, setLanguage } = useLanguage();
-  const { showSuccessToast } = useNotification();
+  const { showSuccessToast, showErrorToast } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -31,11 +29,9 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,27 +56,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     setLoading(true);
 
     try {
-      // Call the Cloud Function to create a verified user
-      const createVerifiedUserFunction = httpsCallable(functions, 'createVerifiedUser');
-      const result = await createVerifiedUserFunction({
-        email: formData.email,
-        password: formData.password,
-        displayName: formData.displayName,
-        role: 'user'
-      });
-      
-      const data = result.data as any;
-      
-      if (data.success) {
-        // Save credentials to localStorage for auto-login after verification
-        localStorage.setItem('pendingLoginEmail', formData.email);
-        localStorage.setItem('pendingLoginPassword', formData.password);
-        
-        setUserId(data.userId);
-        setRegistrationSuccess(true);
-      } else {
-        throw new Error(data.message || 'Registration failed');
-      }
+      await register(formData.email, formData.password, formData.displayName, 'user');
+      setRegistrationSuccess(true);
       
     } catch (error: any) {
       // Create user-friendly error messages
@@ -114,9 +91,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
     
     try {
       setLoading(true);
-      
-      const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
-      await sendVerificationEmailFunction({ email: formData.email });
+      await sendVerificationEmail(formData.email);
       
       showSuccessToast(
         translations?.verificationEmailResent || 'Verification Email Resent',
@@ -148,40 +123,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       onNavigate('home');
     } else {
       navigate('/');
-    }
-  };
-  
-  // Handle Google signup
-  const handleGoogleSignup = async () => {
-    try {
-      setSocialLoading('google');
-      setRegisterError('');
-      
-      await loginWithGoogle();
-      
-      // Add a small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Navigate to return URL if provided
-      setTimeout(() => {
-        if (returnTo && returnTo !== '/login' && returnTo !== '/register') {
-          navigate(returnTo);
-        } else if (onNavigate) {
-          onNavigate('home');
-        } else {
-          navigate('/');
-        }
-      }, 200);
-      
-    } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-        // User closed popup - don't show error
-        return;
-      }
-      
-      setRegisterError(translations?.socialLoginErrorDesc || 'Failed to sign up with Google');
-    } finally {
-      setSocialLoading(null);
     }
   };
 
@@ -270,50 +211,8 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             )}
           </div>
 
-          {/* Social Signup Buttons */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6 animate-slideInUp" style={{ animationDelay: '0.2s' }}>
-            <button
-              type="button"
-              onClick={handleGoogleSignup}
-              disabled={loading || socialLoading !== null}
-              className="w-full flex items-center justify-center space-x-2 rtl:space-x-reverse py-3 px-4 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
-            >
-              {socialLoading === 'google' ? (
-                <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M23.745 12.27c0-.79-.07-1.54-.19-2.27h-11.3v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12.255 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96h-3.98v3.09c1.97 3.92 6.02 6.62 10.71 6.62z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.525 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29v-3.09h-3.98c-.8 1.61-1.26 3.43-1.26 5.38s.46 3.77 1.26 5.38l3.98-3.09z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12.255 5.04c1.77 0 3.35.61 4.6 1.8l3.42-3.42c-2.07-1.94-4.78-3.13-8.02-3.13-4.69 0-8.74 2.7-10.71 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"
-                    />
-                  </svg>
-                  <span>{translations?.signUpWithGoogle || 'Sign up with Google'}</span>
-                </>
-              )}
-            </button>
-            
-            <div className="flex items-center my-4">
-              <div className="flex-grow border-t border-gray-300"></div>
-              <span className="px-4 text-gray-500 text-sm">{translations?.orContinueWith || 'or continue with'}</span>
-              <div className="flex-grow border-t border-gray-300"></div>
-            </div>
-          </div>
-
           {/* Register Form */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 animate-slideInUp" style={{ animationDelay: '0.2s' }}>
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6 animate-slideInUp" style={{ animationDelay: '0.2s' }}>
             {registerError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 rtl:space-x-reverse">
                 <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />

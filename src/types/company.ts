@@ -21,6 +21,8 @@ export interface Company {
   website?: string;
   establishmentDate?: string; // Year as a 4-digit string
   claimed: boolean; // Track if company is claimed by a user
+  claimedByName?: string;
+  galleryImages?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

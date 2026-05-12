@@ -33,7 +33,6 @@ export const arCompanyProfile = {
   // Contact Info
   email: 'البريد الإلكتروني',
   phone: 'الهاتف',
-  website: 'الموقع الإلكتروني',
   location: 'الموقع',
   
   // Photo Gallery

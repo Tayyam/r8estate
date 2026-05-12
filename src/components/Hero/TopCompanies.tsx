@@ -25,25 +25,14 @@ const TopCompanies: React.FC<TopCompaniesProps> = ({ onNavigateToProfile }) => {
       setCompaniesError(null);
       
       try {
-        // First try to get companies with ratings
-        let companiesQuery = query(
+        /* Postgres `companies` has no denormalized `rating` column; use recent companies. */
+        const companiesQuery = query(
           collection(db, 'companies'),
-          orderBy('rating', 'desc'), // Order by rating descending
-          limit(3) // Limit to 3 companies
+          orderBy('createdAt', 'desc'),
+          limit(3)
         );
-        
-        let companiesSnapshot = await getDocs(companiesQuery);
-        
-        // If no companies found with this query, try getting any companies
-        if (companiesSnapshot.empty) {
-          companiesQuery = query(
-            collection(db, 'companies'),
-            orderBy('createdAt', 'desc'), // Order by creation date instead
-            limit(3) // Still limit to 3 companies
-          );
-          
-          companiesSnapshot = await getDocs(companiesQuery);
-        }
+
+        const companiesSnapshot = await getDocs(companiesQuery);
         
         if (companiesSnapshot.empty) {
           // Still no companies found

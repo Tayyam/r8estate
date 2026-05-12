@@ -1,34 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  User as FirebaseUser,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  sendEmailVerification,
-  GoogleAuthProvider,
-  signInWithPopup,
-  applyActionCode
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, db, functions } from '../config/firebase';
+import type { User as SupabaseAuthUser, Session } from '@supabase/supabase-js';
+import { supabase } from '../config/supabase';
 import { User, UserRole } from '../types/user';
-import { httpsCallable } from 'firebase/functions';
+import { apiFetch } from '../lib/api';
 
 interface AuthContextType {
   currentUser: User | null;
-  firebaseUser: FirebaseUser | null;
+  authUser: SupabaseAuthUser | null;
+  session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string, role?: UserRole) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
   changeEmailWithoutPassword: (newEmail: string) => Promise<void>;
-  verifyEmail: (oobCode: string) => Promise<void>;
-  sendVerificationEmail: (email: string) => Promise<void>;
+  verifyEmailWithToken: (token: string) => Promise<void>;
+  sendVerificationEmail: (email?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,310 +33,249 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+type ProfileRow = {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  role: string | null;
+  companyId: string | null;
+  photoUrl: string | null;
+  isEmailVerified: boolean | null;
+  status: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+function mapProfile(row: ProfileRow): User {
+  return {
+    uid: row.id,
+    email: row.email ?? '',
+    displayName: row.displayName ?? '',
+    role: (row.role as UserRole) || 'user',
+    createdAt: row.createdAt ? new Date(row.createdAt) : new Date(),
+    updatedAt: row.updatedAt ? new Date(row.updatedAt) : new Date(),
+    companyId: row.companyId ?? undefined,
+    isEmailVerified: !!row.isEmailVerified,
+    photoURL: row.photoUrl ?? undefined,
+    status: (row.status as User['status']) || 'not-active',
+  };
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [authUser, setAuthUser] = useState<SupabaseAuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user data from Firestore
-  const loadUserData = async (firebaseUser: FirebaseUser): Promise<User | null> => {
+  const loadUserData = async (userId: string): Promise<User | null> => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-      if (userDoc.exists()) {
-        console.log("User document found:", userDoc.id);
-        const userData = userDoc.data();
-        return {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email!,
-          displayName: userData.displayName || firebaseUser.displayName || '',
-          role: userData.role || 'user',
-          createdAt: userData.createdAt?.toDate() || new Date(),
-          updatedAt: userData.updatedAt?.toDate() || new Date(),
-          companyId: userData.companyId,
-          isEmailVerified: firebaseUser.emailVerified,
-          photoURL: firebaseUser.photoURL || userData.photoURL,
-          status: userData.status || (firebaseUser.emailVerified ? 'active' : 'not-active')
-        };
-      } else {
-        console.log("No user document found for Firebase user:", firebaseUser.uid);
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (error || !data) {
+        console.error('Error loading profile:', error);
         return null;
       }
-    } catch (error) {
-      console.error('Error loading user data:', error);
+      return mapProfile(data as ProfileRow);
+    } catch (e) {
+      console.error('Error loading user data:', e);
       return null;
     }
   };
 
-  // Register new user
+  const refreshUser = async (userId: string) => {
+    const u = await loadUserData(userId);
+    setCurrentUser(u);
+  };
+
   const register = async (email: string, password: string, displayName: string, role: UserRole = 'user') => {
-    try {
-      // Create the user with email/password
-      const { user } = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update Firebase profile
-      await updateProfile(user, { displayName });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          display_name: displayName,
+          role,
+        },
+      },
+    });
+    if (error) throw new Error(error.message);
 
-      // Create user document in Firestore
-      const userData: Omit<User, 'uid'> = {
-        email: user.email!,
-        displayName,
-        role,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isEmailVerified: user.emailVerified
-      };
+    if (data.session) {
+      setSession(data.session);
+      setAuthUser(data.session.user);
+      await refreshUser(data.session.user.id);
+    }
 
-      await setDoc(doc(db, 'users', user.uid), userData);
-
-      // Send custom email verification
-      try {
-        const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
-        await sendVerificationEmailFunction({ email });
-      } catch (verificationError) {
-        console.error('Error sending verification email:', verificationError);
-        // Fall back to default Firebase verification email if our custom one fails
-        await sendEmailVerification(user);
-      }
-      
-      // No need to manually sign in since createUserWithEmailAndPassword
-      // already signs the user in. Just update the current user state.
-      const newUserData: User = {
-        uid: user.uid,
-        ...userData
-      };
-      
-      setCurrentUser(newUserData);
-      setFirebaseUser(user);
-      
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      throw new Error(error.message);
+    const res = await apiFetch('/api/auth/send-verification-by-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error((j as { error?: string }).error || 'Failed to send verification email');
     }
   };
 
-  // Login with email and password
   const login = async (email: string, password: string) => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw new Error(error.message);
-    }
-  };
-  
-  // Login with Google
-  const loginWithGoogle = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      // Check if user exists in Firestore
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      
-      // If user doesn't exist, create a new document
-      if (!userDoc.exists()) {
-        const userData: Omit<User, 'uid'> = {
-          email: user.email!,
-          displayName: user.displayName || user.email!,
-          role: 'user', // Default role for social logins
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isEmailVerified: user.emailVerified,
-          photoURL: user.photoURL
-        };
-        
-        await setDoc(doc(db, 'users', user.uid), userData);
-        
-        // Immediately update the local state with the new user data
-        const newUser: User = {
-          uid: user.uid,
-          ...userData
-        };
-        setCurrentUser(newUser);
-        setFirebaseUser(user);
-      } else {
-        // User exists, load the data and update state immediately
-        const userData = await loadUserData(user);
-        setCurrentUser(userData);
-        setFirebaseUser(user);
-      }
-    } catch (error: any) {
-      console.error('Google login error:', error);
-      throw new Error(error.message);
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
   };
 
-  // Reset password
-  const resetPassword = async (email: string) => {
-    try {
-      // Send email using our custom function
-      const sendEmailFunction = httpsCallable(functions, 'sendEmail');
-      const result = await sendEmailFunction({
-        to: email,
-        subject: 'Reset Your R8 Estate Password',
-        templateType: 'password-reset',
-        templateData: {
-          email: email // Just pass the email; the function will generate the link
-        }
-      });
-      
-      // Check if the function returned success
-      const data = result.data as any;
-      if (!data.success) {
-        throw new Error('Failed to send password reset email');
-      }
-    } catch (error: any) {
-      console.error('Password reset error:', error);
-      throw new Error(error.message);
-    }
-  };
-
-  // Logout user
   const logout = async () => {
-    try {
-      await signOut(auth);
-      setCurrentUser(null);
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      throw new Error(error.message);
-    }
+    await supabase.auth.signOut();
+    setCurrentUser(null);
+    setAuthUser(null);
+    setSession(null);
   };
 
-  // Send verification email
-  const sendVerificationEmail = async (email: string): Promise<void> => {
-    try {
-      const sendVerificationEmailFunction = httpsCallable(functions, 'sendVerificationEmail');
-      await sendVerificationEmailFunction({ email });
-    } catch (error: any) {
-      console.error('Error sending verification email:', error);
-      throw new Error(error.message || 'Failed to send verification email');
-    }
+  const resetPassword = async (email: string) => {
+    const res = await apiFetch('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((j as { error?: string }).error || 'Failed to send reset email');
   };
-  // Update user profile
-  const updateUserProfile = async (updates: Partial<User>) => {
-    if (!firebaseUser) throw new Error('No user logged in');
 
-    try {
-      const userRef = doc(db, 'users', firebaseUser.uid);
-      await updateDoc(userRef, {
-        ...updates,
-        updatedAt: new Date()
+  const sendVerificationEmail = async (emailArg?: string) => {
+    const { data: s } = await supabase.auth.getSession();
+    const token = s.session?.access_token;
+    if (token) {
+      const res = await apiFetch('/api/auth/send-verification', {
+        method: 'POST',
+        accessToken: token,
+        body: JSON.stringify({}),
       });
-
-      // Update local state
-      if (currentUser) {
-        const updatedUser = { ...currentUser, ...updates, updatedAt: new Date() };
-        
-        // If isEmailVerified is set to true, also update status to 'active'
-        if (updates.isEmailVerified === true && (!updatedUser.status || updatedUser.status === 'not-active')) {
-          updatedUser.status = 'active';
-          
-          // Also update status in Firestore
-          await updateDoc(userRef, { status: 'active' });
-        }
-        
-        setCurrentUser(updatedUser);
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as { error?: string }).error || 'Failed to send verification email');
       }
-    } catch (error: any) {
-      console.error('Profile update error:', error);
-      throw new Error(error.message);
+      return;
+    }
+    const email = emailArg?.trim();
+    if (!email) throw new Error('Email required');
+    const res = await apiFetch('/api/auth/send-verification-by-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error((j as { error?: string }).error || 'Failed to send verification email');
     }
   };
 
-  // Change email without password
-  const changeEmailWithoutPassword = async (newEmail: string): Promise<void> => {
-    if (!firebaseUser) throw new Error('No user logged in');
+  const updateUserProfile = async (updates: Partial<User>) => {
+    if (!authUser) throw new Error('No user logged in');
+    const row: Record<string, unknown> = {
+      updatedAt: new Date().toISOString(),
+    };
+    if (updates.displayName !== undefined) row.displayName = updates.displayName;
+    if (updates.photoURL !== undefined) row.photoUrl = updates.photoURL;
+    if (updates.companyId !== undefined) row.companyId = updates.companyId;
+    if (updates.role !== undefined) row.role = updates.role;
+    if (updates.isEmailVerified !== undefined) row.isEmailVerified = updates.isEmailVerified;
+    if (updates.status !== undefined) row.status = updates.status;
 
-    try {
-      // Call our cloud function to change email
-      const changeEmailFunction = httpsCallable(functions, 'changeEmail');
-      const result = await changeEmailFunction({ newEmail });
-      
-      const data = result.data as any;
-      if (!data.success) {
-        throw new Error('Failed to change email');
-      }
+    const { error } = await supabase.from('profiles').update(row).eq('id', authUser.id);
+    if (error) throw new Error(error.message);
 
-      // Update local state
-      if (currentUser) {
-        setCurrentUser({
-          ...currentUser,
-          email: newEmail,
-          isEmailVerified: false,
-          updatedAt: new Date()
-        });
-      }
-      
-    } catch (error: any) {
-      console.error('Error changing email:', error);
-      throw new Error(error.message || 'Failed to change email');
+    if (updates.displayName !== undefined || updates.photoURL !== undefined) {
+      const meta: Record<string, string> = {};
+      if (updates.displayName !== undefined) meta.display_name = updates.displayName;
+      if (updates.photoURL !== undefined) meta.avatar_url = updates.photoURL;
+      await supabase.auth.updateUser({ data: meta });
     }
-  };
-  
-  // Verify email
-  const verifyEmail = async (oobCode: string): Promise<void> => {
-    try {
-      await applyActionCode(auth, oobCode);
-      
-      // Update local state if user is logged in
-      if (currentUser && firebaseUser) {
-        setCurrentUser({
-          ...currentUser,
-          isEmailVerified: true,
-          updatedAt: new Date()
-        });
-        
-        // Update Firestore
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-          isEmailVerified: true,
-          updatedAt: new Date()
-        });
+
+    if (currentUser) {
+      const next = { ...currentUser, ...updates, updatedAt: new Date() };
+      if (updates.isEmailVerified === true && next.status === 'not-active') {
+        next.status = 'active';
+        await supabase.from('profiles').update({ status: 'active', updatedAt: new Date().toISOString() }).eq('id', authUser.id);
       }
-    } catch (error: any) {
-      console.error('Error verifying email:', error);
-      throw new Error(error.message || 'Failed to verify email');
+      setCurrentUser(next);
     }
   };
 
-  // Auth state observer
+  const changeEmailWithoutPassword = async (newEmail: string) => {
+    const { data: s } = await supabase.auth.getSession();
+    const token = s.session?.access_token;
+    if (!token) throw new Error('No session');
+    const res = await apiFetch('/api/auth/change-email', {
+      method: 'POST',
+      accessToken: token,
+      body: JSON.stringify({ newEmail }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((j as { error?: string }).error || 'Failed to change email');
+    if (currentUser) {
+      setCurrentUser({
+        ...currentUser,
+        email: newEmail,
+        isEmailVerified: false,
+        updatedAt: new Date(),
+      });
+    }
+    await supabase.auth.signOut();
+  };
+
+  const verifyEmailWithToken = async (token: string) => {
+    const res = await apiFetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((j as { error?: string }).error || 'Verification failed');
+    const { data: s } = await supabase.auth.getSession();
+    if (s.session?.user) {
+      await refreshUser(s.session.user.id);
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true);
-      
-      if (user) {
-        setFirebaseUser(user);
-        const userData = await loadUserData(user);
-        setCurrentUser(userData);
+    let mounted = true;
+    const init = async () => {
+      const { data: { session: sess } } = await supabase.auth.getSession();
+      if (!mounted) return;
+      setSession(sess);
+      setAuthUser(sess?.user ?? null);
+      if (sess?.user) {
+        const u = await loadUserData(sess.user.id);
+        setCurrentUser(u);
       } else {
-        setFirebaseUser(null);
         setCurrentUser(null);
       }
-      
+      setLoading(false);
+    };
+    void init();
+
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, sess) => {
+      setSession(sess);
+      setAuthUser(sess?.user ?? null);
+      if (sess?.user) {
+        const u = await loadUserData(sess.user.id);
+        setCurrentUser(u);
+      } else {
+        setCurrentUser(null);
+      }
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const value: AuthContextType = {
     currentUser,
-    firebaseUser,
+    authUser,
+    session,
     loading,
     login,
     register,
-    loginWithGoogle,
     logout,
     resetPassword,
     updateUserProfile,
     changeEmailWithoutPassword,
-    verifyEmail,
-    sendVerificationEmail
+    verifyEmailWithToken,
+    sendVerificationEmail,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

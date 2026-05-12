@@ -1,54 +1,38 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { storage } from '../config/firebase';
+import { supabase } from '../config/supabase';
 
-// Upload company logo to Firebase Storage
+const BUCKET = 'media';
+
 export const uploadCompanyLogo = async (file: File, companyId: string): Promise<string> => {
-  try {
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error('Invalid file type. Please upload an image file (JPEG, PNG, GIF, or WebP)');
-    }
-
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-    if (file.size > maxSize) {
-      throw new Error('File size too large. Please upload an image under 5MB');
-    }
-
-    // Create a unique filename
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${companyId}_${timestamp}.${fileExtension}`;
-    
-    // Create storage reference
-    const storageRef = ref(storage, `company-logos/${fileName}`);
-    
-    // Upload file
-    const snapshot = await uploadBytes(storageRef, file);
-    
-    // Get download URL
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    
-    return downloadURL;
-  } catch (error) {
-    console.error('Error uploading logo:', error);
-    throw error;
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Invalid file type. Please upload an image file (JPEG, PNG, GIF, or WebP)');
   }
+  const maxSize = 5 * 1024 * 1024;
+  if (file.size > maxSize) {
+    throw new Error('File size too large. Please upload an image under 5MB');
+  }
+  const timestamp = Date.now();
+  const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const path = `company-logos/${companyId}_${timestamp}.${fileExtension}`;
+
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    contentType: file.type,
+    upsert: true,
+  });
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 };
 
-// Delete logo from Firebase Storage
 export const deleteCompanyLogo = async (logoUrl: string): Promise<void> => {
   try {
-    // Extract file path from URL
-    const baseUrl = 'https://firebasestorage.googleapis.com/v0/b/r8estate-2a516.firebasestorage.app/o/';
-    if (logoUrl.startsWith(baseUrl)) {
-      const filePath = decodeURIComponent(logoUrl.replace(baseUrl, '').split('?')[0]);
-      const storageRef = ref(storage, filePath);
-      await deleteObject(storageRef);
-    }
-  } catch (error) {
-    console.error('Error deleting logo:', error);
-    // Don't throw error for delete operations as it might be already deleted
+    const marker = `/object/public/${BUCKET}/`;
+    const idx = logoUrl.indexOf(marker);
+    if (idx === -1) return;
+    const path = decodeURIComponent(logoUrl.slice(idx + marker.length).split('?')[0]);
+    await supabase.storage.from(BUCKET).remove([path]);
+  } catch (e) {
+    console.error('Error deleting logo:', e);
   }
 };
